@@ -1,8 +1,5 @@
 // use crate::Particle;
-use crate::particle;
 use plotters::prelude::*;
-
-use particle::Particle;
 
 // pub fn create_2d_scatter(particles: &Vec<Particle>) -> Result<(), Box<dyn std::error::Error>> {
 //     let root = BitMapBackend::new("graphs/0.png", (640, 480)).into_drawing_area();
@@ -26,42 +23,34 @@ use particle::Particle;
 //     Ok(())
 // }
 
-pub fn create_progress_graph(
-    data: &Vec<(f64, Vec<f64>)>,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let max = data
-        .iter()
-        .flat_map(|(_, vec)| vec.iter())
-        .fold(f64::MIN, |acc, &val| acc.max(val));
+pub fn create_progress_graph(data: &Vec<(f64, Vec<f64>)>) -> Result<(), Box<dyn std::error::Error>> {
+  // Create the root drawing area for the graph.
+  let root = BitMapBackend::new("graphs/0.png", (640, 480)).into_drawing_area();
 
-    let root = BitMapBackend::new("graphs/0.png", (640, 480)).into_drawing_area();
-    root.fill(&WHITE)?;
-    let mut chart = ChartBuilder::on(&root)
-        .margin(5)
-        .x_label_area_size(30)
-        .y_label_area_size(30)
-        .build_cartesian_2d(0f32..data.len() as f32, 0f32..0.01f32)?;
+  root.fill(&WHITE)?;
 
-    chart.configure_mesh().draw()?;
+  // Set the caption, margin, and the axis.
+  let mut chart = ChartBuilder::on(&root)
+    .margin(5)
+    .x_label_area_size(30)
+    .y_label_area_size(30)
+    .build_cartesian_2d(0f32..data.len() as f32, (0.000001f32..1000f32).log_scale())?;
 
-    for (i, (_g, p)) in data.iter().enumerate() {
-        chart.draw_series(p.iter().map(|datum| {
-            Circle::new(
-                (i as f32, *datum as f32),
-                1,
-                ShapeStyle::from(&BLUE).filled(),
-            )
-        }))?;
-    }
+  chart.configure_mesh().draw()?;
 
-    chart.draw_series(LineSeries::new(
-        data.iter()
-            .enumerate()
-            .map(|(i, (g, _p))| (i as f32, g.clone() as f32))
-            .collect::<Vec<_>>(),
-        &RED,
-    ))?;
+  for (iteration, (_g, p)) in data.iter().enumerate() {
+    // Draw a blue circle for each particle in (iteration, fitness).
+    chart.draw_series(
+      p.iter().map(|datum| Circle::new((iteration as f32, *datum as f32), 1, ShapeStyle::from(&BLUE).filled())),
+    )?;
+  }
 
-    root.present()?;
-    Ok(())
+  // Draw a line graph for the global minimums for each iteration.
+  chart.draw_series(LineSeries::new(
+    data.iter().enumerate().map(|(i, (g, _p))| (i as f32, g.clone() as f32)).collect::<Vec<_>>(),
+    &RED,
+  ))?;
+
+  root.present()?;
+  Ok(())
 }
