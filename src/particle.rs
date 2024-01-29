@@ -10,11 +10,31 @@ pub trait ParticleTrait {
   fn new(f: &fn(&DVector<f64>) -> f64, dimensions: usize) -> Self
   where
     Self: Sized;
+
   fn pos(&self) -> &DVector<f64>;
-  fn vel(&self) -> &DVector<f64>;
+  fn set_pos(&mut self, pos: DVector<f64>);
+  fn update_pos(&mut self, f: &fn(&DVector<f64>) -> f64) -> bool {
+    // This function returns whether the personal best was updated.
+    self.set_pos(self.pos() + self.vel());
+    self.eval(f)
+  }
+
   fn best_pos(&self) -> &DVector<f64>;
-  fn update_vel(&mut self, global_best_pos: &DVector<f64>);
-  fn update_pos(&mut self, f: &fn(&DVector<f64>) -> f64) -> bool;
+
+  fn vel(&self) -> &DVector<f64>;
+  fn set_vel(&mut self, vel: DVector<f64>);
+  fn update_vel(&mut self, global_best_pos: &DVector<f64>) {
+    let w = 0.8;
+    let phi_p = 2.;
+    let phi_g = 2.;
+    let mut rng = rand::thread_rng();
+    let r_p: f64 = rng.gen_range(0.0..1.0);
+    let r_g: f64 = rng.gen_range(0.0..1.0);
+    self.set_vel(
+      w * self.vel() + phi_p * r_p * (self.best_pos() - self.pos()) + phi_g * r_g * (global_best_pos - self.pos()),
+    );
+  }
+
   fn eval(&mut self, f: &fn(&DVector<f64>) -> f64) -> bool;
 }
 
@@ -49,28 +69,20 @@ impl ParticleTrait for Particle {
     &self.pos
   }
 
+  fn set_pos(&mut self, pos: DVector<f64>) {
+    self.pos = pos;
+  }
+
   fn vel(&self) -> &DVector<f64> {
     &self.vel
   }
 
+  fn set_vel(&mut self, vel: DVector<f64>) {
+    self.vel = vel;
+  }
+
   fn best_pos(&self) -> &DVector<f64> {
     &self.best_pos
-  }
-
-  fn update_vel(&mut self, global_best_pos: &DVector<f64>) {
-    let w = 0.8;
-    let phi_p = 2.;
-    let phi_g = 2.;
-    let mut rng = rand::thread_rng();
-    let r_p: f64 = rng.gen_range(0.0..1.0);
-    let r_g: f64 = rng.gen_range(0.0..1.0);
-    self.vel = w * &self.vel + phi_p * r_p * (&self.best_pos - &self.pos) + phi_g * r_g * (global_best_pos - &self.pos);
-  }
-
-  fn update_pos(&mut self, f: &fn(&DVector<f64>) -> f64) -> bool {
-    // This function returns whether the personal best was updated.
-    self.pos = &self.pos + &self.vel;
-    self.eval(f)
   }
 
   fn eval(&mut self, f: &fn(&DVector<f64>) -> f64) -> bool {
