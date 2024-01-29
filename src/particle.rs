@@ -12,7 +12,9 @@ pub trait ParticleTrait {
     Self: Sized;
 
   fn pos(&self) -> &DVector<f64>;
+
   fn set_pos(&mut self, pos: DVector<f64>);
+
   fn update_pos(&mut self, f: &fn(&DVector<f64>) -> f64) -> bool {
     // This function returns whether the personal best was updated.
     self.set_pos(self.pos() + self.vel());
@@ -22,7 +24,9 @@ pub trait ParticleTrait {
   fn best_pos(&self) -> &DVector<f64>;
 
   fn vel(&self) -> &DVector<f64>;
+
   fn set_vel(&mut self, vel: DVector<f64>);
+
   fn update_vel(&mut self, global_best_pos: &DVector<f64>) {
     let w = 0.8;
     let phi_p = 2.;
@@ -46,18 +50,10 @@ pub struct Particle {
 
 impl ParticleTrait for Particle {
   fn new(f: &fn(&DVector<f64>) -> f64, dimensions: usize) -> Particle {
-    let b_lo: DVector<f64> = DVector::from_element(dimensions, -1.0);
-    let b_up: DVector<f64> = DVector::from_element(dimensions, 1.0);
-
-    let pos: DVector<f64> = utils::uniform_distribution(&b_lo, &b_up);
-    let vel: DVector<f64> = utils::uniform_distribution(
-      &DVector::from_iterator(dimensions, (&b_up - &b_lo).iter().map(|b| -b.abs())),
-      &DVector::from_iterator(dimensions, (&b_up - &b_lo).iter().map(|b| b.abs())),
-    );
-
+    let pos = utils::random_init_pos(dimensions);
     let mut particle = Particle {
       pos: pos.clone(),
-      vel: vel.clone(),
+      vel: utils::random_init_vel(dimensions),
       best_pos: pos,
     };
 
@@ -73,16 +69,16 @@ impl ParticleTrait for Particle {
     self.pos = pos;
   }
 
+  fn best_pos(&self) -> &DVector<f64> {
+    &self.best_pos
+  }
+
   fn vel(&self) -> &DVector<f64> {
     &self.vel
   }
 
   fn set_vel(&mut self, vel: DVector<f64>) {
     self.vel = vel;
-  }
-
-  fn best_pos(&self) -> &DVector<f64> {
-    &self.best_pos
   }
 
   fn eval(&mut self, f: &fn(&DVector<f64>) -> f64) -> bool {

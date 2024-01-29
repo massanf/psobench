@@ -37,7 +37,7 @@ impl<T: ParticleTrait> PSO<T> {
     }
   }
 
-  pub fn run(&mut self, iterations: usize) {
+  pub fn run(&mut self, iterations: usize) -> f64 {
     // Initialize the progress bar.
     let progress = ProgressBar::new(iterations as u64);
     progress.set_style(
@@ -77,6 +77,8 @@ impl<T: ParticleTrait> PSO<T> {
 
     // Draw and save the graph for the run.
     let _ = grapher::create_progress_graph(&data);
+
+    (self.f)(&self.global_best_pos)
   }
 }
 
