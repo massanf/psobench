@@ -1,6 +1,7 @@
 extern crate nalgebra as na;
 extern crate rand;
 
+use nalgebra::DVector;
 mod grapher;
 mod particle;
 mod pso;
@@ -10,10 +11,11 @@ use particle::Particle;
 use pso::PSO;
 
 fn main() {
-  let mut pso: PSO<Particle> = pso::PSO::new(100, 300);
-  // `PSO` has to be initialized after being created.
-  // TODO: Fix this.
-  pso.init();
+  fn f(x: &DVector<f64>) -> f64 {
+    x.iter().map(|&x| x * x).sum()
+  }
+
+  let mut pso: PSO<Particle> = pso::PSO::new(f, 100, 300);
 
   pso.run(10000);
 }

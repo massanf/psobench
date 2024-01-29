@@ -8,48 +8,32 @@ use particle::ParticleTrait;
 use std::fmt;
 
 pub struct PSO<T: ParticleTrait> {
+  f: fn(&DVector<f64>) -> f64,
   particles: Vec<T>,
   global_best_pos: DVector<f64>,
-  global_best_pos_eval: f64,
 }
 
 impl<T: ParticleTrait> PSO<T> {
-  pub fn new(dimensions: usize, number_of_particles: usize) -> PSO<T> {
-    // When calling `new`, make sure to call `init()` right after to
-    // properly initialize all of the variables.
-    // TODO: Fix this.
-    let mut particles = Vec::new();
+  pub fn new(f: fn(&DVector<f64>) -> f64, dimensions: usize, number_of_particles: usize) -> PSO<T> {
+    let mut particles: Vec<T> = Vec::new();
 
     // Create and save particle of type T.
     for _ in 0..number_of_particles {
-      let mut particle: T = ParticleTrait::new(dimensions);
+      particles.push(ParticleTrait::new(&f, dimensions));
+    }
 
-      // `new` does not automatically call `eval()`,
-      // so we have to make sure to call it here.
-      // TODO: Fix this.
-      particle.eval();
-
-      particles.push(particle);
+    let mut global_best_pos = DVector::from_element(dimensions, -1.);
+    for particle in &mut particles {
+      // if particle.pos_eval() < &global_best_pos_eval {
+      if f(&particle.pos()) < f(&global_best_pos) {
+        global_best_pos = particle.pos().clone();
+      }
     }
 
     PSO {
+      f,
       particles,
-      // This is initialized with `-1`, which is why the `init` has to be
-      // called after `new`.
-      // TODO: Fix this.
-      global_best_pos: DVector::from_element(dimensions, -1.),
-      global_best_pos_eval: f64::MAX,
-    }
-  }
-
-  pub fn init(&mut self) {
-    for particle in &mut self.particles {
-      if particle.pos_eval() < &self.global_best_pos_eval {
-        // `pos_eval()` returns `true` if its personal best was updated,
-        // in which case the global best should be examined as well.
-        self.global_best_pos = particle.pos().clone();
-        self.global_best_pos_eval = particle.pos_eval().clone();
-      }
+      global_best_pos,
     }
   }
 
@@ -71,19 +55,18 @@ impl<T: ParticleTrait> PSO<T> {
 
       for particle in self.particles.iter_mut() {
         particle.update_vel(&self.global_best_pos);
-        if particle.update_pos() {
+        if particle.update_pos(&self.f) {
           // `update_pos()` returns `true` if its personal best was updated,
           // in which case the global best should be examined as well.
-          if particle.best_pos_eval() < &self.global_best_pos_eval {
+          if (self.f)(&particle.best_pos()) < (self.f)(&self.global_best_pos) {
             self.global_best_pos = particle.best_pos().clone();
-            self.global_best_pos_eval = particle.best_pos_eval().clone();
           }
         }
-        iteration_data.push(particle.pos_eval().clone());
+        iteration_data.push((self.f)(&particle.pos()).clone());
       }
 
       // Save the data for current iteration.
-      data.push((self.global_best_pos_eval, iteration_data));
+      data.push(((self.f)(&self.global_best_pos), iteration_data));
 
       // Increment the progress bar.
       progress.inc(1);
@@ -108,7 +91,8 @@ impl<T: ParticleTrait + std::fmt::Display> fmt::Display for PSO<T> {
     result.push_str(&format!(
       "global best pos: [{}] ({:.3})",
       utils::format_dvector(&self.global_best_pos),
-      self.global_best_pos_eval,
+      (self.f)(&self.global_best_pos),
+      // self.global_best_pos_eval,
     ));
     write!(f, "{}", result)
   }
