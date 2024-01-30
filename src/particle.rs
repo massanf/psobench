@@ -11,20 +11,30 @@ pub trait ParticleTrait {
   where
     Self: Sized;
 
-  fn pos(&self) -> &DVector<f64>;
+  fn init(&mut self, f: &fn(&DVector<f64>) -> f64, dimensions: usize) {
+    let pos = utils::random_init_pos(dimensions);
+    self.new_pos(pos, f);
+    self.set_vel(utils::random_init_vel(dimensions));
+  }
 
+  fn pos(&self) -> &DVector<f64>;
   fn set_pos(&mut self, pos: DVector<f64>);
+  fn new_pos(&mut self, pos: DVector<f64>, f: &fn(&DVector<f64>) -> f64) {
+    self.set_pos(pos);
+    self.eval(f);
+  }
 
   fn update_pos(&mut self, f: &fn(&DVector<f64>) -> f64) -> bool {
     // This function returns whether the personal best was updated.
-    self.set_pos(self.pos() + self.vel());
+    self.new_pos(self.pos() + self.vel(), f);
     self.eval(f)
   }
 
-  fn best_pos(&self) -> &DVector<f64>;
+  fn best_pos(&self) -> DVector<f64>;
+  fn option_best_pos(&self) -> &Option<DVector<f64>>;
+  fn set_best_pos(&mut self, pos: DVector<f64>);
 
   fn vel(&self) -> &DVector<f64>;
-
   fn set_vel(&mut self, vel: DVector<f64>);
 
   fn update_vel(&mut self, global_best_pos: &DVector<f64>) {
@@ -39,52 +49,10 @@ pub trait ParticleTrait {
     );
   }
 
-  fn eval(&mut self, f: &fn(&DVector<f64>) -> f64) -> bool;
-}
-
-pub struct Particle {
-  pos: DVector<f64>,
-  vel: DVector<f64>,
-  best_pos: DVector<f64>,
-}
-
-impl ParticleTrait for Particle {
-  fn new(f: &fn(&DVector<f64>) -> f64, dimensions: usize) -> Particle {
-    let pos = utils::random_init_pos(dimensions);
-    let mut particle = Particle {
-      pos: pos.clone(),
-      vel: utils::random_init_vel(dimensions),
-      best_pos: pos,
-    };
-
-    particle.eval(f);
-    particle
-  }
-
-  fn pos(&self) -> &DVector<f64> {
-    &self.pos
-  }
-
-  fn set_pos(&mut self, pos: DVector<f64>) {
-    self.pos = pos;
-  }
-
-  fn best_pos(&self) -> &DVector<f64> {
-    &self.best_pos
-  }
-
-  fn vel(&self) -> &DVector<f64> {
-    &self.vel
-  }
-
-  fn set_vel(&mut self, vel: DVector<f64>) {
-    self.vel = vel;
-  }
-
   fn eval(&mut self, f: &fn(&DVector<f64>) -> f64) -> bool {
     // This function returns whether the personal best was updated.
-    if f(&self.pos()) < f(&self.best_pos()) {
-      self.best_pos = self.pos.clone();
+    if self.option_best_pos().is_none() || f(&self.pos()) < f(&self.best_pos()) {
+      self.set_best_pos(self.pos().clone());
       return true;
     }
     false

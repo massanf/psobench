@@ -5,25 +5,15 @@ use crate::particle;
 use nalgebra::DVector;
 use particle::ParticleTrait;
 
-use crate::rand::Rng;
-
-pub struct AWParticle {
+pub struct DefaultParticle {
   pos: DVector<f64>,
   vel: DVector<f64>,
   best_pos: Option<DVector<f64>>,
 }
 
-fn sigmoid(x: f64, m: f64) -> f64 {
-  let a = 0.000035 * m;
-  let b = 0.5;
-  let c = 0.;
-  let d = 1.5;
-  b / (1.0 + (-a * (x - c)).exp()) + d
-}
-
-impl ParticleTrait for AWParticle {
-  fn new(f: &fn(&DVector<f64>) -> f64, dimensions: usize) -> AWParticle {
-    let mut particle = AWParticle {
+impl ParticleTrait for DefaultParticle {
+  fn new(f: &fn(&DVector<f64>) -> f64, dimensions: usize) -> DefaultParticle {
+    let mut particle = DefaultParticle {
       pos: DVector::from_element(dimensions, 0.),
       vel: DVector::from_element(dimensions, 0.),
       best_pos: None,
@@ -58,17 +48,5 @@ impl ParticleTrait for AWParticle {
 
   fn set_vel(&mut self, vel: DVector<f64>) {
     self.vel = vel;
-  }
-
-  fn update_vel(&mut self, global_best_pos: &DVector<f64>) {
-    let w = 0.8;
-    let phi_p = sigmoid((self.best_pos() - self.pos()).norm(), 2.);
-    let phi_g = sigmoid((global_best_pos - self.pos()).norm(), 2.);
-    let mut rng = rand::thread_rng();
-    let r_p: f64 = rng.gen_range(0.0..1.0);
-    let r_g: f64 = rng.gen_range(0.0..1.0);
-    self.set_vel(
-      w * self.vel() + phi_p * r_p * (self.best_pos() - self.pos()) + phi_g * r_g * (global_best_pos - self.pos()),
-    );
   }
 }

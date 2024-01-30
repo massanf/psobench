@@ -10,7 +10,8 @@ use std::fmt;
 pub struct PSO<T: ParticleTrait> {
   f: fn(&DVector<f64>) -> f64,
   particles: Vec<T>,
-  global_best_pos: DVector<f64>,
+  global_best_pos: Option<DVector<f64>>,
+  data: Vec<(f64, Vec<f64>)>,
 }
 
 impl<T: ParticleTrait> PSO<T> {
@@ -22,18 +23,29 @@ impl<T: ParticleTrait> PSO<T> {
       particles.push(ParticleTrait::new(&f, dimensions));
     }
 
-    let mut global_best_pos = DVector::from_element(dimensions, -1.);
-    for particle in &mut particles {
-      // if particle.pos_eval() < &global_best_pos_eval {
-      if f(&particle.pos()) < f(&global_best_pos) {
-        global_best_pos = particle.pos().clone();
-      }
-    }
-
-    PSO {
+    let mut pso = PSO {
       f,
       particles,
-      global_best_pos,
+      global_best_pos: None,
+      data: Vec::new(),
+    };
+    pso.init(dimensions);
+    pso
+  }
+
+  fn global_best_pos(&self) -> DVector<f64> {
+    self.global_best_pos.clone().unwrap()
+  }
+
+  pub fn init(&mut self, dimensions: usize) {
+    for particle in &mut self.particles {
+      particle.init(&self.f, dimensions);
+    }
+
+    for particle in &self.particles {
+      if self.global_best_pos.is_none() || (self.f)(&particle.pos()) < (self.f)(&self.global_best_pos()) {
+        self.global_best_pos = Some(particle.pos().clone());
+      }
     }
   }
 
@@ -47,26 +59,26 @@ impl<T: ParticleTrait> PSO<T> {
     );
 
     // Initialize data storing variable.
-    let mut data: Vec<(f64, Vec<f64>)> = Vec::new();
 
     for _ in 0..iterations {
       // Variable to store data for this iteration.
       let mut iteration_data: Vec<f64> = Vec::new();
 
-      for particle in self.particles.iter_mut() {
-        particle.update_vel(&self.global_best_pos);
+      let global_best_pos = self.global_best_pos();
+      let mut new_global_best_pos = self.global_best_pos().clone();
+      for particle in &mut self.particles {
+        particle.update_vel(&global_best_pos);
         if particle.update_pos(&self.f) {
-          // `update_pos()` returns `true` if its personal best was updated,
-          // in which case the global best should be examined as well.
-          if (self.f)(&particle.best_pos()) < (self.f)(&self.global_best_pos) {
-            self.global_best_pos = particle.best_pos().clone();
+          if (self.f)(&particle.best_pos()) < (self.f)(&new_global_best_pos) {
+            new_global_best_pos = particle.best_pos().clone();
           }
         }
         iteration_data.push((self.f)(&particle.pos()).clone());
       }
+      self.global_best_pos = Some(new_global_best_pos);
 
       // Save the data for current iteration.
-      data.push(((self.f)(&self.global_best_pos), iteration_data));
+      self.data.push(((self.f)(&self.global_best_pos()), iteration_data));
 
       // Increment the progress bar.
       progress.inc(1);
@@ -76,9 +88,9 @@ impl<T: ParticleTrait> PSO<T> {
     progress.finish();
 
     // Draw and save the graph for the run.
-    let _ = grapher::create_progress_graph(&data);
+    let _ = grapher::create_progress_graph(&self.data);
 
-    (self.f)(&self.global_best_pos)
+    (self.f)(&self.global_best_pos())
   }
 }
 
@@ -92,8 +104,8 @@ impl<T: ParticleTrait + std::fmt::Display> fmt::Display for PSO<T> {
     }
     result.push_str(&format!(
       "global best pos: [{}] ({:.3})",
-      utils::format_dvector(&self.global_best_pos),
-      (self.f)(&self.global_best_pos),
+      utils::format_dvector(&self.global_best_pos()),
+      (self.f)(&self.global_best_pos()),
       // self.global_best_pos_eval,
     ));
     write!(f, "{}", result)
