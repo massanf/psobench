@@ -63,7 +63,6 @@ impl<T: ParticleTrait> PSO<'_, T> {
         .progress_chars("=> "),
     );
 
-    // Initialize data storing variable.
     for _ in 0..iterations {
       let global_best_pos = self.global_best_pos();
       let mut new_global_best_pos = self.global_best_pos().clone();
