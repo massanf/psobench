@@ -19,15 +19,14 @@ pub trait ParticleTrait {
 
   fn pos(&self) -> &DVector<f64>;
   fn set_pos(&mut self, pos: DVector<f64>);
-  fn new_pos(&mut self, pos: DVector<f64>, f: &fn(&DVector<f64>) -> f64) {
+  fn new_pos(&mut self, pos: DVector<f64>, f: &fn(&DVector<f64>) -> f64) -> bool {
     self.set_pos(pos);
-    self.eval(f);
+    self.eval(f)
   }
 
   fn update_pos(&mut self, f: &fn(&DVector<f64>) -> f64) -> bool {
     // This function returns whether the personal best was updated.
-    self.new_pos(self.pos() + self.vel(), f);
-    self.eval(f)
+    self.new_pos(self.pos() + self.vel(), f)
   }
 
   fn best_pos(&self) -> DVector<f64>;

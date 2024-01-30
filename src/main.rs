@@ -2,6 +2,7 @@ extern crate nalgebra as na;
 extern crate rand;
 
 use nalgebra::DVector;
+use std::path::Path;
 mod awparticle;
 mod defaultparticle;
 mod grapher;
@@ -21,8 +22,12 @@ fn main() {
   }
 
   let mut pso: PSO<DefaultParticle> = pso::PSO::new(f, dimensions, particle_count);
-  println!("PSO: {}", pso.run(10000));
+  pso.run(100);
+  println!("PSO: {}", f(&pso.global_best_pos()));
+  let _ = grapher::generate_progress_graph(Path::new("graphs/pso.png"), pso.data());
 
   let mut awpso: PSO<AWParticle> = pso::PSO::new(f, dimensions, particle_count);
-  println!("AWPSO: {}", awpso.run(10000));
+  awpso.run(100);
+  println!("AWPSO: {}", f(&awpso.global_best_pos()));
+  let _ = grapher::generate_progress_graph(Path::new("graphs/awpso.png"), awpso.data());
 }

@@ -1,5 +1,6 @@
 // use crate::Particle;
 use plotters::prelude::*;
+use std::path::Path;
 
 // pub fn create_2d_scatter(particles: &Vec<Particle>) -> Result<(), Box<dyn std::error::Error>> {
 //     let root = BitMapBackend::new("graphs/0.png", (640, 480)).into_drawing_area();
@@ -23,9 +24,9 @@ use plotters::prelude::*;
 //     Ok(())
 // }
 
-pub fn create_progress_graph(data: &Vec<(f64, Vec<f64>)>) -> Result<(), Box<dyn std::error::Error>> {
+pub fn generate_progress_graph(filename: &Path, data: &Vec<f64>) -> Result<(), Box<dyn std::error::Error>> {
   // Create the root drawing area for the graph.
-  let root = BitMapBackend::new("graphs/0.png", (640, 480)).into_drawing_area();
+  let root = BitMapBackend::new(filename, (640, 480)).into_drawing_area();
 
   root.fill(&WHITE)?;
 
@@ -38,16 +39,16 @@ pub fn create_progress_graph(data: &Vec<(f64, Vec<f64>)>) -> Result<(), Box<dyn 
 
   chart.configure_mesh().draw()?;
 
-  for (iteration, (_g, p)) in data.iter().enumerate() {
-    // Draw a blue circle for each particle in (iteration, fitness).
-    chart.draw_series(
-      p.iter().map(|datum| Circle::new((iteration as f32, *datum as f32), 1, ShapeStyle::from(&BLUE).filled())),
-    )?;
-  }
+  //   for (iteration, (_g, p)) in data.iter().enumerate() {
+  //     // Draw a blue circle for each particle in (iteration, fitness).
+  //     chart.draw_series(
+  //       p.iter().map(|datum| Circle::new((iteration as f32, *datum as f32), 1, ShapeStyle::from(&BLUE).filled())),
+  //     )?;
+  //   }
 
   // Draw a line graph for the global minimums for each iteration.
   chart.draw_series(LineSeries::new(
-    data.iter().enumerate().map(|(i, (g, _p))| (i as f32, g.clone() as f32)).collect::<Vec<_>>(),
+    data.iter().enumerate().map(|(i, g)| (i as f32, g.clone() as f32)).collect::<Vec<_>>(),
     &RED,
   ))?;
 

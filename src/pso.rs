@@ -1,4 +1,3 @@
-use crate::grapher;
 use crate::particle;
 use crate::utils;
 
@@ -11,14 +10,13 @@ pub struct PSO<T: ParticleTrait> {
   f: fn(&DVector<f64>) -> f64,
   particles: Vec<T>,
   global_best_pos: Option<DVector<f64>>,
-  data: Vec<(f64, Vec<f64>)>,
+  data: Vec<f64>,
 }
 
 impl<T: ParticleTrait> PSO<T> {
   pub fn new(f: fn(&DVector<f64>) -> f64, dimensions: usize, number_of_particles: usize) -> PSO<T> {
     let mut particles: Vec<T> = Vec::new();
 
-    // Create and save particle of type T.
     for _ in 0..number_of_particles {
       particles.push(ParticleTrait::new(&f, dimensions));
     }
@@ -29,12 +27,17 @@ impl<T: ParticleTrait> PSO<T> {
       global_best_pos: None,
       data: Vec::new(),
     };
+
     pso.init(dimensions);
     pso
   }
 
-  fn global_best_pos(&self) -> DVector<f64> {
+  pub fn global_best_pos(&self) -> DVector<f64> {
     self.global_best_pos.clone().unwrap()
+  }
+
+  pub fn data(&self) -> &Vec<f64> {
+    &self.data
   }
 
   pub fn init(&mut self, dimensions: usize) {
@@ -49,7 +52,7 @@ impl<T: ParticleTrait> PSO<T> {
     }
   }
 
-  pub fn run(&mut self, iterations: usize) -> f64 {
+  pub fn run(&mut self, iterations: usize) {
     // Initialize the progress bar.
     let progress = ProgressBar::new(iterations as u64);
     progress.set_style(
@@ -59,11 +62,7 @@ impl<T: ParticleTrait> PSO<T> {
     );
 
     // Initialize data storing variable.
-
     for _ in 0..iterations {
-      // Variable to store data for this iteration.
-      let mut iteration_data: Vec<f64> = Vec::new();
-
       let global_best_pos = self.global_best_pos();
       let mut new_global_best_pos = self.global_best_pos().clone();
       for particle in &mut self.particles {
@@ -73,12 +72,11 @@ impl<T: ParticleTrait> PSO<T> {
             new_global_best_pos = particle.best_pos().clone();
           }
         }
-        iteration_data.push((self.f)(&particle.pos()).clone());
       }
       self.global_best_pos = Some(new_global_best_pos);
 
       // Save the data for current iteration.
-      self.data.push(((self.f)(&self.global_best_pos()), iteration_data));
+      self.data.push((self.f)(&self.global_best_pos()));
 
       // Increment the progress bar.
       progress.inc(1);
@@ -86,11 +84,6 @@ impl<T: ParticleTrait> PSO<T> {
 
     // Finish the progress bar.
     progress.finish();
-
-    // Draw and save the graph for the run.
-    let _ = grapher::create_progress_graph(&self.data);
-
-    (self.f)(&self.global_best_pos())
   }
 }
 
