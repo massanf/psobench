@@ -24,7 +24,7 @@ use std::path::Path;
 //     Ok(())
 // }
 
-pub fn generate_progress_graph(filename: &Path, data: &Vec<f64>) -> Result<(), Box<dyn std::error::Error>> {
+pub fn progress_graph(filename: &Path, data: &Vec<f64>) -> Result<(), Box<dyn std::error::Error>> {
   // Create the root drawing area for the graph.
   let root = BitMapBackend::new(filename, (640, 480)).into_drawing_area();
 

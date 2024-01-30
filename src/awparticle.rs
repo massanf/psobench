@@ -1,7 +1,8 @@
 extern crate nalgebra as na;
 
+use crate::function;
 use crate::particle;
-
+use function::OptimizationProblem;
 use nalgebra::DVector;
 use particle::ParticleTrait;
 
@@ -22,13 +23,13 @@ fn sigmoid(x: f64, m: f64) -> f64 {
 }
 
 impl ParticleTrait for AWParticle {
-  fn new(f: &fn(&DVector<f64>) -> f64, dimensions: usize) -> AWParticle {
+  fn new(problem: &OptimizationProblem, dimensions: usize) -> AWParticle {
     let mut particle = AWParticle {
       pos: DVector::from_element(dimensions, 0.),
       vel: DVector::from_element(dimensions, 0.),
       best_pos: None,
     };
-    particle.init(f, dimensions);
+    particle.init(problem, dimensions);
     particle
   }
 

@@ -1,5 +1,7 @@
 extern crate nalgebra as na;
 
+use crate::function;
+use function::OptimizationProblem;
 use nalgebra::DVector;
 use std::fmt;
 
@@ -7,26 +9,26 @@ use crate::rand::Rng;
 use crate::utils;
 
 pub trait ParticleTrait {
-  fn new(f: &fn(&DVector<f64>) -> f64, dimensions: usize) -> Self
+  fn new(problem: &OptimizationProblem, dimensions: usize) -> Self
   where
     Self: Sized;
 
-  fn init(&mut self, f: &fn(&DVector<f64>) -> f64, dimensions: usize) {
-    let pos = utils::random_init_pos(dimensions);
-    self.new_pos(pos, f);
-    self.set_vel(utils::random_init_vel(dimensions));
+  fn init(&mut self, problem: &OptimizationProblem, dimensions: usize) {
+    let pos = utils::random_init_pos(dimensions, problem);
+    self.new_pos(pos, problem);
+    self.set_vel(utils::random_init_vel(dimensions, problem));
   }
 
   fn pos(&self) -> &DVector<f64>;
   fn set_pos(&mut self, pos: DVector<f64>);
-  fn new_pos(&mut self, pos: DVector<f64>, f: &fn(&DVector<f64>) -> f64) -> bool {
+  fn new_pos(&mut self, pos: DVector<f64>, problem: &OptimizationProblem) -> bool {
     self.set_pos(pos);
-    self.eval(f)
+    self.eval(problem)
   }
 
-  fn update_pos(&mut self, f: &fn(&DVector<f64>) -> f64) -> bool {
+  fn update_pos(&mut self, problem: &OptimizationProblem) -> bool {
     // This function returns whether the personal best was updated.
-    self.new_pos(self.pos() + self.vel(), f)
+    self.new_pos(self.pos() + self.vel(), problem)
   }
 
   fn best_pos(&self) -> DVector<f64>;
@@ -48,9 +50,9 @@ pub trait ParticleTrait {
     );
   }
 
-  fn eval(&mut self, f: &fn(&DVector<f64>) -> f64) -> bool {
+  fn eval(&mut self, problem: &OptimizationProblem) -> bool {
     // This function returns whether the personal best was updated.
-    if self.option_best_pos().is_none() || f(&self.pos()) < f(&self.best_pos()) {
+    if self.option_best_pos().is_none() || problem.f(&self.pos()) < problem.f(&self.best_pos()) {
       self.set_best_pos(self.pos().clone());
       return true;
     }

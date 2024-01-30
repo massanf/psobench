@@ -1,3 +1,5 @@
+use crate::function;
+use function::OptimizationProblem;
 use nalgebra::DVector;
 use rand::distributions::{Distribution, Uniform};
 
@@ -10,16 +12,16 @@ pub fn uniform_distribution(low: &DVector<f64>, high: &DVector<f64>) -> DVector<
 }
 
 // TODO: There must be a better place to put this.
-pub fn random_init_pos(dimensions: usize) -> DVector<f64> {
-  let b_lo: DVector<f64> = DVector::from_element(dimensions, -1.0);
-  let b_up: DVector<f64> = DVector::from_element(dimensions, 1.0);
+pub fn random_init_pos(dimensions: usize, problem: &OptimizationProblem) -> DVector<f64> {
+  let b_lo: DVector<f64> = DVector::from_element(dimensions, problem.domain().0);
+  let b_up: DVector<f64> = DVector::from_element(dimensions, problem.domain().1);
   uniform_distribution(&b_lo, &b_up)
 }
 
 // TODO: There must be a better place to put this.
-pub fn random_init_vel(dimensions: usize) -> DVector<f64> {
-  let b_lo: DVector<f64> = DVector::from_element(dimensions, -1.0);
-  let b_up: DVector<f64> = DVector::from_element(dimensions, 1.0);
+pub fn random_init_vel(dimensions: usize, problem: &OptimizationProblem) -> DVector<f64> {
+  let b_lo: DVector<f64> = DVector::from_element(dimensions, problem.domain().0);
+  let b_up: DVector<f64> = DVector::from_element(dimensions, problem.domain().1);
 
   uniform_distribution(
     &DVector::from_iterator(dimensions, (&b_up - &b_lo).iter().map(|b| -b.abs())),

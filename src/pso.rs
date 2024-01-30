@@ -1,28 +1,30 @@
 use crate::particle;
 use crate::utils;
 
+use crate::function;
+use function::OptimizationProblem;
 use indicatif::{ProgressBar, ProgressStyle};
 use nalgebra::DVector;
 use particle::ParticleTrait;
 use std::fmt;
 
-pub struct PSO<T: ParticleTrait> {
-  f: fn(&DVector<f64>) -> f64,
+pub struct PSO<'a, T: ParticleTrait> {
+  problem: &'a OptimizationProblem,
   particles: Vec<T>,
   global_best_pos: Option<DVector<f64>>,
   data: Vec<f64>,
 }
 
-impl<T: ParticleTrait> PSO<T> {
-  pub fn new(f: fn(&DVector<f64>) -> f64, dimensions: usize, number_of_particles: usize) -> PSO<T> {
+impl<T: ParticleTrait> PSO<'_, T> {
+  pub fn new(problem: &OptimizationProblem, dimensions: usize, number_of_particles: usize) -> PSO<T> {
     let mut particles: Vec<T> = Vec::new();
 
     for _ in 0..number_of_particles {
-      particles.push(ParticleTrait::new(&f, dimensions));
+      particles.push(ParticleTrait::new(&problem, dimensions));
     }
 
     let mut pso = PSO {
-      f,
+      problem,
       particles,
       global_best_pos: None,
       data: Vec::new(),
@@ -42,11 +44,11 @@ impl<T: ParticleTrait> PSO<T> {
 
   pub fn init(&mut self, dimensions: usize) {
     for particle in &mut self.particles {
-      particle.init(&self.f, dimensions);
+      particle.init(&self.problem, dimensions);
     }
 
     for particle in &self.particles {
-      if self.global_best_pos.is_none() || (self.f)(&particle.pos()) < (self.f)(&self.global_best_pos()) {
+      if self.global_best_pos.is_none() || self.problem.f(&particle.pos()) < self.problem.f(&self.global_best_pos()) {
         self.global_best_pos = Some(particle.pos().clone());
       }
     }
@@ -67,8 +69,8 @@ impl<T: ParticleTrait> PSO<T> {
       let mut new_global_best_pos = self.global_best_pos().clone();
       for particle in &mut self.particles {
         particle.update_vel(&global_best_pos);
-        if particle.update_pos(&self.f) {
-          if (self.f)(&particle.best_pos()) < (self.f)(&new_global_best_pos) {
+        if particle.update_pos(&self.problem) {
+          if self.problem.f(&particle.best_pos()) < self.problem.f(&new_global_best_pos) {
             new_global_best_pos = particle.best_pos().clone();
           }
         }
@@ -76,7 +78,7 @@ impl<T: ParticleTrait> PSO<T> {
       self.global_best_pos = Some(new_global_best_pos);
 
       // Save the data for current iteration.
-      self.data.push((self.f)(&self.global_best_pos()));
+      self.data.push(self.problem.f(&self.global_best_pos()));
 
       // Increment the progress bar.
       progress.inc(1);
@@ -89,7 +91,7 @@ impl<T: ParticleTrait> PSO<T> {
 
 // A util formatter that returns a formatted string that prints out
 // current information about all of the particles.
-impl<T: ParticleTrait + std::fmt::Display> fmt::Display for PSO<T> {
+impl<T: ParticleTrait + std::fmt::Display> fmt::Display for PSO<'_, T> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     let mut result = String::new();
     for (i, particle) in self.particles.iter().enumerate() {
@@ -98,7 +100,7 @@ impl<T: ParticleTrait + std::fmt::Display> fmt::Display for PSO<T> {
     result.push_str(&format!(
       "global best pos: [{}] ({:.3})",
       utils::format_dvector(&self.global_best_pos()),
-      (self.f)(&self.global_best_pos()),
+      self.problem.f(&self.global_best_pos()),
       // self.global_best_pos_eval,
     ));
     write!(f, "{}", result)

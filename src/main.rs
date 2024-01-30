@@ -1,10 +1,10 @@
 extern crate nalgebra as na;
 extern crate rand;
 
-use nalgebra::DVector;
 use std::path::Path;
 mod awparticle;
 mod defaultparticle;
+mod function;
 mod grapher;
 mod particle;
 mod pso;
@@ -12,22 +12,26 @@ mod utils;
 
 use awparticle::AWParticle;
 use defaultparticle::DefaultParticle;
+use function::OptimizationProblem;
 use pso::PSO;
 
 fn main() {
+  // Experimental Settings
+  let f1 = OptimizationProblem::new(|x| x.iter().map(|&x| x * x).sum(), (-1., 1.));
+
   let dimensions = 30;
   let particle_count = 100;
-  fn f(x: &DVector<f64>) -> f64 {
-    x.iter().map(|&x| x * x).sum()
-  }
+  let iterations = 100;
 
-  let mut pso: PSO<DefaultParticle> = pso::PSO::new(f, dimensions, particle_count);
-  pso.run(100);
-  println!("PSO: {}", f(&pso.global_best_pos()));
-  let _ = grapher::generate_progress_graph(Path::new("graphs/pso.png"), pso.data());
+  // SPSO
+  let mut pso: PSO<DefaultParticle> = pso::PSO::new(&f1, dimensions, particle_count);
+  pso.run(iterations);
+  println!("PSO: {}", f1.f(&pso.global_best_pos()));
+  let _ = grapher::progress_graph(Path::new("graphs/pso.png"), pso.data());
 
-  let mut awpso: PSO<AWParticle> = pso::PSO::new(f, dimensions, particle_count);
-  awpso.run(100);
-  println!("AWPSO: {}", f(&awpso.global_best_pos()));
-  let _ = grapher::generate_progress_graph(Path::new("graphs/awpso.png"), awpso.data());
+  // AWPSO
+  let mut awpso: PSO<AWParticle> = pso::PSO::new(&f1, dimensions, particle_count);
+  awpso.run(iterations);
+  println!("AWPSO: {}", f1.f(&awpso.global_best_pos()));
+  let _ = grapher::progress_graph(Path::new("graphs/awpso.png"), awpso.data());
 }
