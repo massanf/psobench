@@ -1,2 +1,5 @@
-/target
-/graphs/*
+.DS_Store
+target/
+graphs/
+data/
+Cargo.lock

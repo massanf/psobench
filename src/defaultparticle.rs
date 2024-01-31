@@ -1,8 +1,6 @@
 extern crate nalgebra as na;
-
-use crate::particle;
-
 use crate::function;
+use crate::particle;
 use function::OptimizationProblem;
 use nalgebra::DVector;
 use particle::ParticleTrait;

@@ -1,12 +1,15 @@
+use crate::function;
 use crate::particle;
 use crate::utils;
-
-use crate::function;
+use csv::Writer;
 use function::OptimizationProblem;
 use indicatif::{ProgressBar, ProgressStyle};
 use nalgebra::DVector;
 use particle::ParticleTrait;
+use std::error::Error;
 use std::fmt;
+use std::fs::File;
+use std::path::Path;
 
 pub struct PSO<'a, T: ParticleTrait> {
   problem: &'a OptimizationProblem,
@@ -52,6 +55,9 @@ impl<T: ParticleTrait> PSO<'_, T> {
         self.global_best_pos = Some(particle.pos().clone());
       }
     }
+
+    self.data = Vec::new();
+    self.data.push(self.problem.f(&self.global_best_pos()));
   }
 
   pub fn run(&mut self, iterations: usize) {
@@ -85,6 +91,19 @@ impl<T: ParticleTrait> PSO<'_, T> {
 
     // Finish the progress bar.
     progress.finish();
+  }
+
+  pub fn export_global_best_progress(&self, file_path: &Path) -> Result<(), Box<dyn Error>> {
+    let file = File::create(file_path)?;
+    let mut wtr = Writer::from_writer(file);
+
+    wtr.serialize(("global_best_pos",))?;
+    for value in self.data() {
+      wtr.serialize((value,))?;
+    }
+
+    wtr.flush()?;
+    Ok(())
   }
 }
 
