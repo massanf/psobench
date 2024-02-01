@@ -85,6 +85,9 @@ impl<'a, T: ParticleTrait> PSOTrait<'a, T> for DefaultPSO<'a, T> {
       }
       self.global_best_pos = Some(new_global_best_pos);
 
+      let average_vel =
+        self.particles().iter().map(|particle| particle.vel().norm()).sum::<f64>() / self.particles().len() as f64;
+      println!("{}", average_vel);
       // Save the data for current iteration.
       self.data.push(self.problem.f(&self.global_best_pos()));
 
