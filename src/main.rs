@@ -1,18 +1,17 @@
 extern crate nalgebra as na;
 extern crate rand;
 
-use std::process::Command;
-mod awparticle;
-mod defaultparticle;
+mod awpso;
 mod defaultpso;
+use std::process::Command;
 mod function;
 mod particle;
 mod problems;
 mod pso;
 mod utils;
-use awparticle::AWParticle;
-use defaultparticle::DefaultParticle;
-use defaultpso::DefaultPSO;
+use awpso::particle::AWParticle;
+use defaultpso::particle::DefaultParticle;
+use defaultpso::pso::DefaultPSO;
 use pso::PSOTrait;
 use std::path::Path;
 
