@@ -4,6 +4,7 @@ extern crate rand;
 use std::process::Command;
 mod awparticle;
 mod defaultparticle;
+mod defaultpso;
 mod function;
 mod particle;
 mod problems;
@@ -11,7 +12,8 @@ mod pso;
 mod utils;
 use awparticle::AWParticle;
 use defaultparticle::DefaultParticle;
-use pso::PSO;
+use defaultpso::DefaultPSO;
+use pso::PSOTrait;
 use std::path::Path;
 
 fn main() {
@@ -22,12 +24,12 @@ fn main() {
   let iterations = 10000;
 
   // SPSO
-  let mut pso: PSO<DefaultParticle> = pso::PSO::new(&problem, dimensions, particle_count);
+  let mut pso: DefaultPSO<'_, DefaultParticle> = DefaultPSO::new(&problem, dimensions, particle_count);
   pso.run(iterations);
   let _ = pso.export_global_best_progress(Path::new("data/PSO.csv"));
 
   // AWPSO
-  let mut awpso: PSO<AWParticle> = pso::PSO::new(&problem, dimensions, particle_count);
+  let mut awpso: DefaultPSO<AWParticle> = DefaultPSO::new(&problem, dimensions, particle_count);
   awpso.run(iterations);
   let _ = awpso.export_global_best_progress(Path::new("data/AWPSO.csv"));
 
