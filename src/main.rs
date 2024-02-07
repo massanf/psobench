@@ -18,7 +18,7 @@ use std::path::Path;
 // use std::process::Command;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-  // Experimental Settings
+  // Experiment Settings
   let problem = problems::f1();
   let dimensions = 30;
   let particle_count = 100;
