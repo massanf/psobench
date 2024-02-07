@@ -19,10 +19,10 @@ use std::path::Path;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
   // Experimental Settings
-  let problem = problems::f2();
+  let problem = problems::f1();
   let dimensions = 30;
   let particle_count = 100;
-  let iterations = 5000;
+  let iterations = 10000;
 
   // SPSO
   let mut pso: DefaultPSO<'_, DefaultParticle> = DefaultPSO::new("Default PSO", &problem, dimensions, particle_count);
@@ -39,14 +39,5 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   pppso.run(iterations);
   pppso.save_history(Path::new("data/PPSO.json"))?;
 
-  // Generate progress graph
-  //   let output = Command::new("python").arg("visualizer.py").output().expect("Failed to execute command");
-  //   if output.status.success() {
-  //     let stdout = String::from_utf8_lossy(&output.stdout);
-  //     println!("{}", stdout);
-  //   } else {
-  //     let stderr = String::from_utf8_lossy(&output.stderr);
-  //     eprintln!("Visualizer generated an error: {}", stderr);
-  //   }
   Ok(())
 }
