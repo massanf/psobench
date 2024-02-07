@@ -28,14 +28,3 @@ pub fn random_init_vel(dimensions: usize, problem: &OptimizationProblem) -> DVec
     &DVector::from_iterator(dimensions, (&b_up - &b_lo).iter().map(|b| b.abs())),
   )
 }
-
-pub fn format_dvector(vec: &DVector<f64>) -> String {
-  let mut result = String::new();
-  for i in 0..vec.len() {
-    result.push_str(&format!("{:.3}", vec[i]));
-    if i != vec.len() - 1 {
-      result.push_str(", ");
-    }
-  }
-  result
-}

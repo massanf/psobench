@@ -5,6 +5,7 @@ use function::OptimizationProblem;
 use nalgebra::DVector;
 use particle::ParticleTrait;
 
+#[derive(Clone)]
 pub struct DefaultParticle {
   pos: DVector<f64>,
   vel: DVector<f64>,

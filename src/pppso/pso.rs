@@ -15,15 +15,16 @@ const E: f64 = 1000.0;
 const POPSIZE_SET: usize = 200;
 
 pub struct PPPSO<'a, T: ParticleTrait> {
+  name: String,
   problem: &'a OptimizationProblem,
   particles: Vec<T>,
   global_best_pos: Option<DVector<f64>>,
-  data: Vec<f64>,
+  data: Vec<(f64, Vec<T>)>,
   accumulated_e: isize,
 }
 
 impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PPPSO<'a, T> {
-  fn new(problem: &'a OptimizationProblem, dimensions: usize, number_of_particles: usize) -> PPPSO<'a, T> {
+  fn new(name: &str, problem: &'a OptimizationProblem, dimensions: usize, number_of_particles: usize) -> PPPSO<'a, T> {
     let mut particles: Vec<T> = Vec::new();
 
     for _ in 0..number_of_particles {
@@ -31,6 +32,7 @@ impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PPPSO<'a, T> {
     }
 
     let mut pso = PPPSO {
+      name: name.to_owned(),
       problem,
       particles,
       global_best_pos: None,
@@ -42,8 +44,18 @@ impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PPPSO<'a, T> {
     pso
   }
 
-  fn particles(&mut self) -> &mut Vec<T> {
-    return &mut self.particles;
+  fn name(&self) -> &String {
+    &self.name
+  }
+
+  fn particles(&self) -> &Vec<T> {
+    &self.particles
+  }
+
+  fn init_particles(&mut self, problem: &OptimizationProblem, dimensions: usize) {
+    for i in 0..self.particles.len() {
+      self.particles[i].init(problem, dimensions);
+    }
   }
 
   fn problem(&self) -> &OptimizationProblem {
@@ -62,7 +74,7 @@ impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PPPSO<'a, T> {
     &self.global_best_pos
   }
 
-  fn data(&self) -> &Vec<f64> {
+  fn data(&self) -> &Vec<(f64, Vec<T>)> {
     &self.data
   }
 
@@ -70,8 +82,10 @@ impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PPPSO<'a, T> {
     self.data = Vec::new();
   }
 
-  fn add_data(&mut self, datum: f64) {
-    self.data.push(datum);
+  fn add_data(&mut self) {
+    let gbest = self.problem().f(&self.global_best_pos());
+    let particles = self.particles().clone();
+    self.data.push((gbest, particles));
   }
 
   fn run(&mut self, iterations: usize) {
@@ -116,16 +130,15 @@ impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PPPSO<'a, T> {
           let p_r = self.particles()[r].vel().clone();
           let problem = &self.problem().clone();
           let dim = self.global_best_pos().len();
-          self.particles()[i].init(problem, dim);
-          self.particles()[i].new_pos(p_r, problem);
+          self.particles[i].init(problem, dim);
+          self.particles[i].new_pos(p_r, problem);
         }
       }
 
-      println!("{}", eliminated.len());
       // Actually remove eliminated particles.
       eliminated.sort_unstable_by(|a, b| b.cmp(a));
       for &index in &eliminated {
-        self.particles().remove(index);
+        self.particles.remove(index);
       }
 
       // Generate new particles.
@@ -141,7 +154,7 @@ impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PPPSO<'a, T> {
       self.accumulated_e += e;
 
       // Save the data for current iteration.
-      self.data.push(self.problem.f(&self.global_best_pos()));
+      self.add_data();
 
       // Increment the progress bar.
       progress.inc(1);

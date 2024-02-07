@@ -23,10 +23,10 @@ fn rosenbrock(v: &DVector<f64>) -> f64 {
 
 #[allow(dead_code)]
 pub fn f1() -> OptimizationProblem {
-  OptimizationProblem::new(sphere, (-1., 1.))
+  OptimizationProblem::new("Sphere", sphere, (-1., 1.))
 }
 
 #[allow(dead_code)]
 pub fn f2() -> OptimizationProblem {
-  OptimizationProblem::new(rosenbrock, (-30., 30.))
+  OptimizationProblem::new("Rosenbrock", rosenbrock, (-30., 30.))
 }

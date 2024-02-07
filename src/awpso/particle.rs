@@ -8,6 +8,7 @@ use particle::ParticleTrait;
 
 use crate::rand::Rng;
 
+#[derive(Clone)]
 pub struct AWParticle {
   pos: DVector<f64>,
   vel: DVector<f64>,

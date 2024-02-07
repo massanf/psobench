@@ -3,12 +3,11 @@ extern crate nalgebra as na;
 use crate::function;
 use function::OptimizationProblem;
 use nalgebra::DVector;
-use std::fmt;
 
 use crate::rand::Rng;
 use crate::utils;
 
-pub trait ParticleTrait {
+pub trait ParticleTrait: Clone {
   fn new(problem: &OptimizationProblem, dimensions: usize) -> Self
   where
     Self: Sized;
@@ -57,23 +56,5 @@ pub trait ParticleTrait {
       return true;
     }
     false
-  }
-}
-
-// A util formatter that returns a string that is formatted to
-// contain all the information about a particle including its
-// `pos`, `pos_eval`, `vel`, `best_pos`, and `best_eval`.
-impl fmt::Display for dyn ParticleTrait {
-  fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(
-      fmt,
-      "{}",
-      &format!(
-        " pos:  [{}] \n vel:  [{}]\n best: [{}] \n",
-        utils::format_dvector(self.pos()),
-        utils::format_dvector(&self.vel()),
-        utils::format_dvector(&self.best_pos()),
-      )
-    )
   }
 }
