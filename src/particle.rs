@@ -14,7 +14,8 @@ pub trait ParticleTrait: Clone {
 
   fn init(&mut self, problem: &OptimizationProblem, dimensions: usize) {
     let pos = utils::random_init_pos(dimensions, problem);
-    self.new_pos(pos, problem);
+    self.new_pos(pos.clone(), problem);
+    self.set_best_pos(pos);
     self.set_vel(utils::random_init_vel(dimensions, problem));
   }
 

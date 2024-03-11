@@ -1,6 +1,7 @@
 use crate::function;
 use crate::particle;
 use function::OptimizationProblem;
+use indicatif::{ProgressBar, ProgressStyle};
 use nalgebra::DVector;
 use particle::ParticleTrait;
 use serde_json::json;
@@ -12,17 +13,17 @@ pub trait PSOTrait<'a, T: ParticleTrait> {
   where
     Self: Sized;
 
-  fn init(&mut self, dimensions: usize) {
+  fn init(&mut self) {
     let problem = self.problem().clone();
     let mut global_best_pos = None;
-    self.init_particles(&problem, dimensions);
+    self.init_particles(&problem, self.dimensions().clone());
     for particle in self.particles() {
       if global_best_pos.is_none() || problem.f(&particle.pos()) < problem.f(global_best_pos.as_ref().unwrap()) {
         global_best_pos = Some(particle.pos().clone());
       }
     }
     self.set_global_best_pos(global_best_pos.unwrap());
-    self.init_data();
+    self.new_data();
     self.add_data();
   }
 
@@ -31,43 +32,73 @@ pub trait PSOTrait<'a, T: ParticleTrait> {
   fn particles(&self) -> &Vec<T>;
   fn init_particles(&mut self, problem: &OptimizationProblem, dimensions: usize);
 
+  fn dimensions(&self) -> &usize;
   fn problem(&self) -> &OptimizationProblem;
 
   fn global_best_pos(&self) -> DVector<f64>;
   fn set_global_best_pos(&mut self, pos: DVector<f64>);
   fn option_global_best_pos(&self) -> &Option<DVector<f64>>;
 
-  fn data(&self) -> &Vec<(f64, Vec<T>)>;
-  fn init_data(&mut self);
+  fn data(&self) -> &Vec<Vec<(f64, Vec<T>)>>;
+  fn new_data(&mut self);
   fn add_data(&mut self);
 
   fn run(&mut self, iterations: usize);
+  fn experiment(&mut self, trials: usize, iterations: usize) {
+    // Initialize the progress bar.
+    let progress = ProgressBar::new(trials as u64);
+    progress.set_style(
+      ProgressStyle::default_bar()
+        .template("[{elapsed_precise}] {bar:40.cyan/blue} {percent}% ({eta})")
+        .progress_chars("=> "),
+    );
+
+    for _ in 0..trials {
+      self.init();
+      self.run(iterations);
+
+      // Increment the progress bar.
+      progress.inc(1);
+    }
+  }
 
   fn save_history(&self, file_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    // Initialize the progress bar.
+    let progress = ProgressBar::new(self.data().len() as u64);
+    progress.set_style(
+      ProgressStyle::default_bar()
+        .template("[{elapsed_precise}] {bar:40.cyan/blue} {percent}% ({eta})")
+        .progress_chars("=> "),
+    );
+
     // Serialize it to a JSON string
     let mut vec_data = Vec::new();
-    for t in 0..self.data().len() {
-      let mut iter_data = Vec::new();
-      for i in 0..self.data()[t].1.len() {
-        let pos = self.data()[t].1[i].pos().clone();
-        let vel = self.data()[t].1[i].vel().norm();
-        iter_data.push(json!({
-          "fitness": self.problem().f(&pos),
-          "vel": vel,
+    for a in 0..self.data().len() {
+      let mut attempt_data = Vec::new();
+      for t in 0..self.data()[a].len() {
+        let mut iter_data = Vec::new();
+        for i in 0..self.data()[a][t].1.len() {
+          let pos = self.data()[a][t].1[i].pos().clone();
+          let vel = self.data()[a][t].1[i].vel().norm();
+          iter_data.push(json!({
+            "fitness": self.problem().f(&pos),
+            "vel": vel,
+          }));
+        }
+        attempt_data.push(json!({
+          "global_best_fitness": self.data()[a][t].0,
+          "particles": iter_data
         }));
       }
-      vec_data.push(json!({
-        "iteration": t,
-        "global_best_fitness": self.data()[t].0,
-        "particles": iter_data
-      }));
+      vec_data.push(attempt_data);
+      progress.inc(1);
     }
 
     let serialized = serde_json::to_string(&json!({
       "setting": {
         "type": self.name(),
         "problem": self.problem().name(),
-        "dimensions": self.global_best_pos().len(),
+        "dimensions": self.dimensions(),
       },
       "history": vec_data,
     }))?;

@@ -2,7 +2,6 @@ use crate::function;
 use crate::particle::ParticleTrait;
 use crate::pso::PSOTrait;
 use function::OptimizationProblem;
-use indicatif::{ProgressBar, ProgressStyle};
 use nalgebra::DVector;
 extern crate rand;
 use rand::Rng;
@@ -11,15 +10,16 @@ const K1: f64 = 0.5;
 const K2: f64 = 0.3;
 const KP: f64 = 0.45;
 const KI: f64 = 0.01;
-const E: f64 = 1000.0;
+const E: f64 = 0.1;
 const POPSIZE_SET: usize = 200;
 
 pub struct PPPSO<'a, T: ParticleTrait> {
   name: String,
   problem: &'a OptimizationProblem,
+  dimensions: usize,
   particles: Vec<T>,
   global_best_pos: Option<DVector<f64>>,
-  data: Vec<(f64, Vec<T>)>,
+  data: Vec<Vec<(f64, Vec<T>)>>,
   accumulated_e: isize,
 }
 
@@ -34,18 +34,23 @@ impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PPPSO<'a, T> {
     let mut pso = PPPSO {
       name: name.to_owned(),
       problem,
+      dimensions,
       particles,
       global_best_pos: None,
       data: Vec::new(),
       accumulated_e: 0,
     };
 
-    pso.init(dimensions);
+    pso.init();
     pso
   }
 
   fn name(&self) -> &String {
     &self.name
+  }
+
+  fn dimensions(&self) -> &usize {
+    &self.dimensions
   }
 
   fn particles(&self) -> &Vec<T> {
@@ -59,7 +64,7 @@ impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PPPSO<'a, T> {
   }
 
   fn problem(&self) -> &OptimizationProblem {
-    return &self.problem;
+    &self.problem
   }
 
   fn global_best_pos(&self) -> DVector<f64> {
@@ -74,29 +79,21 @@ impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PPPSO<'a, T> {
     &self.global_best_pos
   }
 
-  fn data(&self) -> &Vec<(f64, Vec<T>)> {
+  fn data(&self) -> &Vec<Vec<(f64, Vec<T>)>> {
     &self.data
   }
 
-  fn init_data(&mut self) {
-    self.data = Vec::new();
+  fn new_data(&mut self) {
+    self.data.push(Vec::new());
   }
 
   fn add_data(&mut self) {
     let gbest = self.problem().f(&self.global_best_pos());
     let particles = self.particles().clone();
-    self.data.push((gbest, particles));
+    self.data.last_mut().unwrap().push((gbest, particles));
   }
 
   fn run(&mut self, iterations: usize) {
-    // Initialize the progress bar.
-    let progress = ProgressBar::new(iterations as u64);
-    progress.set_style(
-      ProgressStyle::default_bar()
-        .template("[{elapsed_precise}] {bar:40.cyan/blue} {percent}% ({eta})")
-        .progress_chars("=> "),
-    );
-
     let mut rng = rand::thread_rng();
 
     for _ in 0..iterations {
@@ -129,7 +126,7 @@ impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PPPSO<'a, T> {
           let r = rng.gen_range(0..self.particles().len());
           let p_r = self.particles()[r].vel().clone();
           let problem = &self.problem().clone();
-          let dim = self.global_best_pos().len();
+          let dim = self.dimensions().clone();
           self.particles[i].init(problem, dim);
           self.particles[i].new_pos(p_r, problem);
         }
@@ -147,7 +144,7 @@ impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PPPSO<'a, T> {
       let popsize_add = (KP * e as f64 + KI * self.accumulated_e as f64).floor() as usize;
 
       for _ in 0..popsize_add {
-        self.particles.push(ParticleTrait::new(&self.problem, self.global_best_pos().len()));
+        self.particles.push(ParticleTrait::new(&self.problem, self.dimensions().clone()));
       }
 
       // Accumulate the `e` value.
@@ -155,12 +152,6 @@ impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PPPSO<'a, T> {
 
       // Save the data for current iteration.
       self.add_data();
-
-      // Increment the progress bar.
-      progress.inc(1);
     }
-
-    // Finish the progress bar.
-    progress.finish();
   }
 }
