@@ -11,7 +11,7 @@ pub struct DefaultPSO<'a, T: ParticleTrait> {
   dimensions: usize,
   particles: Vec<T>,
   global_best_pos: Option<DVector<f64>>,
-  data: Vec<Vec<(f64, Vec<T>)>>,
+  data: Vec<(f64, Vec<T>)>,
 }
 
 impl<'a, T: ParticleTrait> PSOTrait<'a, T> for DefaultPSO<'a, T> {
@@ -74,18 +74,14 @@ impl<'a, T: ParticleTrait> PSOTrait<'a, T> for DefaultPSO<'a, T> {
     &self.global_best_pos
   }
 
-  fn data(&self) -> &Vec<Vec<(f64, Vec<T>)>> {
+  fn data(&self) -> &Vec<(f64, Vec<T>)> {
     &self.data
-  }
-
-  fn new_data(&mut self) {
-    self.data.push(Vec::new());
   }
 
   fn add_data(&mut self) {
     let gbest = self.problem().f(&self.global_best_pos());
     let particles = self.particles().clone();
-    self.data.last_mut().unwrap().push((gbest, particles));
+    self.data.push((gbest, particles));
   }
 
   fn run(&mut self, iterations: usize) {

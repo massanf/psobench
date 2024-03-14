@@ -23,7 +23,6 @@ pub trait PSOTrait<'a, T: ParticleTrait> {
       }
     }
     self.set_global_best_pos(global_best_pos.unwrap());
-    self.new_data();
     self.add_data();
   }
 
@@ -39,8 +38,7 @@ pub trait PSOTrait<'a, T: ParticleTrait> {
   fn set_global_best_pos(&mut self, pos: DVector<f64>);
   fn option_global_best_pos(&self) -> &Option<DVector<f64>>;
 
-  fn data(&self) -> &Vec<Vec<(f64, Vec<T>)>>;
-  fn new_data(&mut self);
+  fn data(&self) -> &Vec<(f64, Vec<T>)>;
   fn add_data(&mut self);
 
   fn run(&mut self, iterations: usize);
@@ -73,35 +71,25 @@ pub trait PSOTrait<'a, T: ParticleTrait> {
 
     // Serialize it to a JSON string
     let mut vec_data = Vec::new();
-    for a in 0..self.data().len() {
-      let mut attempt_data = Vec::new();
-      for t in 0..self.data()[a].len() {
-        let mut iter_data = Vec::new();
-        for i in 0..self.data()[a][t].1.len() {
-          let pos = self.data()[a][t].1[i].pos().clone();
-          let vel = self.data()[a][t].1[i].vel().norm();
-          iter_data.push(json!({
-            "fitness": self.problem().f(&pos),
-            "vel": vel,
-          }));
-        }
-        attempt_data.push(json!({
-          "global_best_fitness": self.data()[a][t].0,
-          "particles": iter_data
+    for t in 0..self.data().len() {
+      let mut iter_data = Vec::new();
+      for i in 0..self.data()[t].1.len() {
+        let pos = self.data()[t].1[i].pos().clone();
+        iter_data.push(json!({
+          "fitness": self.problem().f(&pos),
+          "vel": self.data()[t].1[i].vel().as_slice(),
+          "pos": self.data()[t].1[i].pos().as_slice(),
         }));
       }
-      vec_data.push(attempt_data);
-      progress.inc(1);
+      vec_data.push(json!({
+        "global_best_fitness": self.data()[t].0,
+        "particles": iter_data
+      }));
     }
+    progress.inc(1);
+    println!("{:?}", vec_data);
 
-    let serialized = serde_json::to_string(&json!({
-      "setting": {
-        "type": self.name(),
-        "problem": self.problem().name(),
-        "dimensions": self.dimensions(),
-      },
-      "history": vec_data,
-    }))?;
+    let serialized = serde_json::to_string(&json!(vec_data))?;
 
     fs::write(file_path, serialized)?;
     Ok(())

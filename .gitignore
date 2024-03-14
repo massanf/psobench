@@ -3,3 +3,4 @@ target/
 graphs/
 data/
 Cargo.lock
+out/
