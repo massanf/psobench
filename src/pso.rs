@@ -87,7 +87,6 @@ pub trait PSOTrait<'a, T: ParticleTrait> {
       }));
     }
     progress.inc(1);
-    println!("{:?}", vec_data);
 
     let serialized = serde_json::to_string(&json!(vec_data))?;
 

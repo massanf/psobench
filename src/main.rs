@@ -17,7 +17,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   let problem = problems::f1();
   let dimensions = 2;
   let particle_count = 5;
-  let iterations = 3;
+  let iterations = 100;
 
   // SPSO
   let mut pso: DefaultPSO<'_, DefaultParticle> = DefaultPSO::new("PSO", &problem, dimensions, particle_count);

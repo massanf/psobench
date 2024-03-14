@@ -8,6 +8,7 @@ from typing import List, Dict, Any, Union
 import hashlib
 from datetime import datetime
 import imageio  # type: ignore
+from tqdm import tqdm  # type: ignore
 
 HOME = pathlib.Path(__file__).parent
 
@@ -32,7 +33,8 @@ class Iteration:
         self.particles = particles
         self.global_best_fitness = global_best_fitness
 
-    def visualize(self, filename: pathlib.Path) -> None:
+    def visualize(self, title: str, x_lim: List[float],
+                  y_lim: List[float], filename: pathlib.Path) -> None:
         plt.cla()
         for particle in self.particles:
             assert len(particle.pos) == 2
@@ -40,6 +42,11 @@ class Iteration:
 
         ax = plt.gca()
         ax.set_aspect('equal', adjustable='box')
+
+        ax.set_xlim(x_lim)
+        ax.set_ylim(y_lim)
+        ax.set_title(title)
+
         plt.savefig(filename)
 
 
@@ -64,12 +71,22 @@ class PSO:
         temp_out = HOME / "out" / "frames" / hex_dig
         temp_out.mkdir(parents=True, exist_ok=True)
 
+        # Find lim
+        lim = [float('inf'), float('-inf')]
+        for iteration in self.iterations:
+            for particle in iteration.particles:
+                lim[0] = min(lim[0], particle.pos[0])
+                lim[1] = max(lim[1], particle.pos[0])
+                lim[0] = min(lim[0], particle.pos[1])
+                lim[1] = max(lim[1], particle.pos[1])
+
+        # Generate frames
         frames = []
-        for idx, iteration in enumerate(self.iterations):
-            iteration.visualize(temp_out / f"{idx}.png")
+        for idx, iteration in enumerate(tqdm(self.iterations)):
+            iteration.visualize(f"{idx}", lim, lim, temp_out / f"{idx}.png")
             frames.append(imageio.imread(temp_out / f"{idx}.png"))
 
-        # Save
+        # Save gif
         imageio.mimsave(destination_path, frames)
 
         # Cleanup
@@ -78,41 +95,3 @@ class PSO:
 
 pso = PSO(HOME / "data" / "PSO.json")
 pso.animate(HOME / "graphs" / "test.gif")
-
-
-# def get_global_fitness(data):
-#     return [x["global_best_fitness"] for x in data["history"]]
-
-
-# def get_average_vel(data):
-#     avg_vels = []
-#     for iter in data["history"]:
-#         avg_vels.append(np.average([x["vel"] for x in iter["particles"]]))
-#     return avg_vels
-
-
-# def get_average_fitness(data):
-#     avg_vels = []
-#     for iter in data["history"]:
-#         avg_vels.append(np.average([x["fitness"] for x in iter["particles"]]))
-#     return avg_vels
-
-
-# def plot_all(save_path: pathlib.Path, extractor, title):
-#     fig, ax = plt.subplots(figsize=(6, 4), dpi=200)
-#     for file_path in glob.glob("data/*.json"):
-#         with open(file_path, 'r') as file:
-#             data = json.load(file)
-#             ax.plot(extractor(data), label=data["setting"]["type"])
-#     ax.set_xlim(0)
-#     ax.set_yscale("log")
-#     ax.legend()
-#     ax.set_title(title)
-#     plt.savefig(save_path)
-#     print(f"Graph saved to: {save_path}")
-
-
-# plot_all(pathlib.Path("graphs/average_velocity.png"),
-#          get_average_vel, "Average Velocity")
-# plot_all(pathlib.Path("graphs/average_fitness.png"),
-#          get_average_fitness, "Average Fitness")
