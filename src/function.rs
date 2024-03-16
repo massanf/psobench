@@ -6,6 +6,7 @@ type OptimizationFunction = fn(&DVector<f64>) -> f64;
 
 #[derive(Clone)]
 pub struct OptimizationProblem {
+  #[allow(dead_code)]
   name: String,
   f: OptimizationFunction,
   domain: (f64, f64),
@@ -20,6 +21,7 @@ impl OptimizationProblem {
     }
   }
 
+  #[allow(dead_code)]
   pub fn name(&self) -> &String {
     &self.name
   }

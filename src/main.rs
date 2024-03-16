@@ -14,10 +14,10 @@ use std::path::Path;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
   // Experiment Settings
-  let problem = problems::f1();
-  let dimensions = 2;
-  let particle_count = 5;
-  let iterations = 100;
+  let problem = problems::f3();
+  let dimensions = 30;
+  let particle_count = 30;
+  let iterations = 3000;
 
   // SPSO
   let mut pso: PSO<'_, Particle> = PSO::new("PSO", &problem, dimensions, particle_count);

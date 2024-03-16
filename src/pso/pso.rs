@@ -84,7 +84,7 @@ impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PSO<'a, T> {
       let global_best_pos = self.global_best_pos();
       let mut new_global_best_pos = self.global_best_pos().clone();
       for particle in &mut self.particles {
-        particle.update_vel(&global_best_pos);
+        particle.update_vel(&global_best_pos, &self.problem);
         if particle.update_pos(&self.problem) {
           if self.problem.f(&particle.best_pos()) < self.problem.f(&new_global_best_pos) {
             new_global_best_pos = particle.best_pos().clone();

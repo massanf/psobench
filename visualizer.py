@@ -1,13 +1,9 @@
-# from matplotlib.animation import FuncAnimation  # type: ignore
+from matplotlib.animation import FuncAnimation  # type: ignore
 import matplotlib.pyplot as plt  # type: ignore
-# import numpy as np  # type: ignore
+import numpy as np  # type: ignore
 import pathlib
 import json
-import shutil
 from typing import List, Dict, Any, Union
-import hashlib
-from datetime import datetime
-import imageio  # type: ignore
 from tqdm import tqdm  # type: ignore
 
 HOME = pathlib.Path(__file__).parent
@@ -37,7 +33,7 @@ class Iteration:
                   y_lim: List[float], filename: pathlib.Path) -> None:
         plt.cla()
         for particle in self.particles:
-            assert len(particle.pos) == 2
+            assert len(particle.pos) >= 2
             plt.scatter(particle.pos[0], particle.pos[1])
 
         ax = plt.gca()
@@ -63,35 +59,99 @@ class PSO:
             iterations.append(Iteration(global_best_fitness, particles))
         self.iterations = iterations
 
-    def animate(self, destination_path: pathlib.Path) -> None:
-        # Create a temporary folder for frames output
-        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
-        hash_object = hashlib.sha256(current_time.encode())
-        hex_dig = hash_object.hexdigest()
-        temp_out = HOME / "out" / "frames" / hex_dig
-        temp_out.mkdir(parents=True, exist_ok=True)
+    def global_best_fitness_progress(self) -> List[float]:
+        result = []
+        for iteration in self.iterations:
+            result.append(iteration.global_best_fitness)
+        return result
 
+    def fitness(self) -> List[List[float]]:
+        result: List[List[float]] = []
+        for iteration in self.iterations:
+            iter_result = []
+            for particle in iteration.particles:
+                iter_result.append(particle.fitness)
+            result.append(iter_result)
+        return result
+
+    def speed(self) -> List[List[float]]:
+        result: List[List[float]] = []
+        for iteration in self.iterations:
+            iter_result = []
+            for particle in iteration.particles:
+                iter_result.append(np.sqrt(np.sum(np.array(particle.vel)
+                                                  ** 2)))
+            result.append(iter_result)
+        return result
+
+    def update_plot_animate(self, frame: int) -> None:
+        plt.cla()  # Clear the current axes.
+        self.progressbar.update(1)
+        iteration = self.iterations[frame]
+        for particle in iteration.particles:
+            assert len(particle.pos) >= 2
+            plt.scatter(particle.pos[0], particle.pos[1])
+
+        plt.grid()
+        plt.xlim(self.lim)
+        plt.ylim(self.lim)
+        plt.title(f"Iteration: {frame}" +
+                  f" Best: {self.iterations[frame].global_best_fitness:.3e}")
+        plt.gca().set_aspect('equal', adjustable='box')
+
+    def animate(self, destination_path: pathlib.Path,
+                skip_frames: int = 50) -> None:
         # Find lim
-        lim = [float('inf'), float('-inf')]
+        self.lim = [float('inf'), float('-inf')]
         for iteration in self.iterations:
             for particle in iteration.particles:
-                lim[0] = min(lim[0], particle.pos[0])
-                lim[1] = max(lim[1], particle.pos[0])
-                lim[0] = min(lim[0], particle.pos[1])
-                lim[1] = max(lim[1], particle.pos[1])
+                self.lim[0] = min(self.lim[0],
+                                  particle.pos[0],
+                                  particle.pos[1])
+                self.lim[1] = max(self.lim[1],
+                                  particle.pos[0],
+                                  particle.pos[1])
 
-        # Generate frames
-        frames = []
-        for idx, iteration in enumerate(tqdm(self.iterations)):
-            iteration.visualize(f"{idx}", lim, lim, temp_out / f"{idx}.png")
-            frames.append(imageio.imread(temp_out / f"{idx}.png"))
+        fig, ax = plt.subplots()
+        self.progressbar = tqdm(total=int(len(self.iterations) / skip_frames))
+        frames = range(0, len(self.iterations), skip_frames)
+        ani = FuncAnimation(fig, self.update_plot_animate,
+                            frames=frames)
+        ani.save(destination_path, writer='imagemagick', fps=10)
 
-        # Save gif
-        imageio.mimsave(destination_path, frames)
+    def overview(self, animate: bool) -> None:
+        plt.close()
+        plt.rcdefaults()
+        plot_and_fill(self.fitness())
+        # Set the y-axis limits to automatic
+        plt.gca().autoscale(axis='y', tight=False)
+        plt.savefig(HOME / "graphs" / "fitness_over_time.png")
 
-        # Cleanup
-        shutil.rmtree(temp_out)
+        plt.close()
+        plt.cla()
+        plt.rcdefaults()
+        plot_and_fill(self.speed())
+        plt.savefig(HOME / "graphs" / "speed_over_time.png")
+
+        plt.close()
+        if animate:
+            self.animate(HOME / "graphs" / "test.gif")
+
+
+def plot_and_fill(iterations: List[List[float]]) -> None:
+    t = np.linspace(0, len(iterations), len(iterations))
+    top = []
+    bottom = []
+    avg = []
+    for iteration in iterations:
+        top.append(max(iteration))
+        bottom.append(min(iteration))
+        avg.append(np.average(iteration))
+    plt.fill_between(t, top, bottom, color='skyblue', alpha=0.4)
+    plt.plot(t, avg)
+    plt.yscale("log")
 
 
 pso = PSO(HOME / "data" / "PSO.json")
 pso.animate(HOME / "graphs" / "test.gif")
+pso.overview(False)

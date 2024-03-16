@@ -22,6 +22,16 @@ fn rosenbrock(v: &DVector<f64>) -> f64 {
 }
 
 #[allow(dead_code)]
+fn rastrigin(v: &DVector<f64>) -> f64 {
+  let a = 10.0;
+  let mut sum = a * v.len() as f64;
+  for i in 0..v.len() {
+    sum += v[i] * v[i] - a * (2.0 * std::f64::consts::PI * v[i]).cos();
+  }
+  sum
+}
+
+#[allow(dead_code)]
 pub fn f1() -> OptimizationProblem {
   OptimizationProblem::new("Sphere", sphere, (-1., 1.))
 }
@@ -29,4 +39,9 @@ pub fn f1() -> OptimizationProblem {
 #[allow(dead_code)]
 pub fn f2() -> OptimizationProblem {
   OptimizationProblem::new("Rosenbrock", rosenbrock, (-30., 30.))
+}
+
+#[allow(dead_code)]
+pub fn f3() -> OptimizationProblem {
+  OptimizationProblem::new("Rastrigin", rastrigin, (-5.12, 5.12))
 }
