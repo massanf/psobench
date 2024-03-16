@@ -1,20 +1,20 @@
 extern crate nalgebra as na;
 use crate::function;
-use crate::particle;
+use crate::particle_trait;
 use function::OptimizationProblem;
 use nalgebra::DVector;
-use particle::ParticleTrait;
+use particle_trait::ParticleTrait;
 
 #[derive(Clone)]
-pub struct DefaultParticle {
+pub struct Particle {
   pos: DVector<f64>,
   vel: DVector<f64>,
   best_pos: Option<DVector<f64>>,
 }
 
-impl ParticleTrait for DefaultParticle {
-  fn new(problem: &OptimizationProblem, dimensions: usize) -> DefaultParticle {
-    let mut particle = DefaultParticle {
+impl ParticleTrait for Particle {
+  fn new(problem: &OptimizationProblem, dimensions: usize) -> Particle {
+    let mut particle = Particle {
       pos: DVector::from_element(dimensions, 0.),
       vel: DVector::from_element(dimensions, 0.),
       best_pos: None,

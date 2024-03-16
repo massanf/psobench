@@ -1,9 +1,9 @@
 use crate::function;
-use crate::particle;
+use crate::particle_trait;
 use function::OptimizationProblem;
 use indicatif::{ProgressBar, ProgressStyle};
 use nalgebra::DVector;
-use particle::ParticleTrait;
+use particle_trait::ParticleTrait;
 use serde_json::json;
 use std::fs;
 use std::path::Path;

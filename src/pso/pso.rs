@@ -1,11 +1,11 @@
 use crate::function;
-use crate::particle::ParticleTrait;
-use crate::pso::PSOTrait;
+use crate::particle_trait::ParticleTrait;
+use crate::pso_trait::PSOTrait;
 use function::OptimizationProblem;
 use nalgebra::DVector;
 
 #[derive(Clone)]
-pub struct DefaultPSO<'a, T: ParticleTrait> {
+pub struct PSO<'a, T: ParticleTrait> {
   name: String,
   problem: &'a OptimizationProblem,
   dimensions: usize,
@@ -14,20 +14,15 @@ pub struct DefaultPSO<'a, T: ParticleTrait> {
   data: Vec<(f64, Vec<T>)>,
 }
 
-impl<'a, T: ParticleTrait> PSOTrait<'a, T> for DefaultPSO<'a, T> {
-  fn new(
-    name: &str,
-    problem: &'a OptimizationProblem,
-    dimensions: usize,
-    number_of_particles: usize,
-  ) -> DefaultPSO<'a, T> {
+impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PSO<'a, T> {
+  fn new(name: &str, problem: &'a OptimizationProblem, dimensions: usize, number_of_particles: usize) -> PSO<'a, T> {
     let mut particles: Vec<T> = Vec::new();
 
     for _ in 0..number_of_particles {
       particles.push(ParticleTrait::new(&problem, dimensions));
     }
 
-    let mut pso = DefaultPSO {
+    let mut pso = PSO {
       name: name.to_owned(),
       problem,
       dimensions,
