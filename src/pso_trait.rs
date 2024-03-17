@@ -118,4 +118,12 @@ pub trait PSOTrait<'a, T: ParticleTrait> {
     fs::write(self.out_directory().join("config.json"), serialized)?;
     Ok(())
   }
+
+  fn save_summary(&self) -> Result<(), Box<dyn std::error::Error>> {
+    let serialized = serde_json::to_string(&json!({
+      "final_global_best_fitness": self.data().last().unwrap().0,
+    }))?;
+    fs::write(self.out_directory().join("summary.json"), serialized)?;
+    Ok(())
+  }
 }

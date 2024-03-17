@@ -18,11 +18,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
   // Experiment Settings
   let particle_count = 30;
-  let iterations = 3000;
+  let iterations = 1500;
 
   // PSO
   let steps: usize = 20;
-  let attempts: usize = 10;
+  let attempts: usize = 20;
   for p in 0..steps {
     for g in 0..steps {
       let p = p as f64 / steps as f64 * 5.0;
@@ -33,10 +33,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
           &problem,
           particle_count,
           [("w".to_owned(), 0.8), ("phi_p".to_owned(), p), ("phi_g".to_owned(), g)].iter().cloned().collect(),
-          PathBuf::from(format!("data/PSO_grid/p{}_g{}_a{}", p, g, attempt)),
+          PathBuf::from(format!("data/PSO_grid/p{}_g{}/{}", p, g, attempt)),
         );
         pso.run(iterations);
-        pso.save_data()?;
+        pso.save_summary()?;
         pso.save_config()?;
       }
     }

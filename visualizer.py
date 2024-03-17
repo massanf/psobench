@@ -47,8 +47,26 @@ class Iteration:
 
 
 class PSO:
-    def __init__(self, file_path: pathlib.Path) -> None:
-        with open(file_path, 'r') as file:
+    def __init__(self, experiment_path: pathlib.Path) -> None:
+        self.experiment_path = experiment_path
+        self.full_loaded = False
+
+        # Config
+        with open(experiment_path / "config.json", 'r') as file:
+            config: Dict[str, Any] = json.load(file)
+        self.config = config
+
+        # Config
+        with open(experiment_path / "summary.json", 'r') as file:
+            summary: Dict[str, Any] = json.load(file)
+        self.summary = summary
+
+    def load_full(self) -> None:
+        # Data
+        if not (self.experiment_path / "data.json").exists():
+            raise ValueError("Full data not exported.")
+        self.fully_loaded = True
+        with open(self.experiment_path / "data.json", 'r') as file:
             data: List[Dict[str, Any]] = json.load(file)
         iterations = []
         for iteration_data in data:
@@ -60,12 +78,19 @@ class PSO:
         self.iterations = iterations
 
     def global_best_fitness_progress(self) -> List[float]:
+        assert self.fully_loaded
         result = []
         for iteration in self.iterations:
             result.append(iteration.global_best_fitness)
         return result
 
+    def final_global_best_fitness(self) -> float:
+        if isinstance(self.summary["final_global_best_fitness"], float):
+            return self.summary["final_global_best_fitness"]
+        raise ValueError("Unexpected final_global_best_fitness value")
+
     def fitness(self) -> List[List[float]]:
+        assert self.fully_loaded
         result: List[List[float]] = []
         for iteration in self.iterations:
             iter_result = []
@@ -75,6 +100,7 @@ class PSO:
         return result
 
     def speed(self) -> List[List[float]]:
+        assert self.fully_loaded
         result: List[List[float]] = []
         for iteration in self.iterations:
             iter_result = []
@@ -85,6 +111,7 @@ class PSO:
         return result
 
     def update_plot_animate(self, frame: int) -> None:
+        assert self.fully_loaded
         plt.cla()  # Clear the current axes.
         self.progressbar.update(1)
         iteration = self.iterations[frame]
@@ -101,6 +128,7 @@ class PSO:
 
     def animate(self, destination_path: pathlib.Path,
                 skip_frames: int = 50) -> None:
+        assert self.fully_loaded
         # Find lim
         self.lim = [float('inf'), float('-inf')]
         for iteration in self.iterations:
@@ -120,6 +148,7 @@ class PSO:
         ani.save(destination_path, writer='imagemagick', fps=10)
 
     def overview(self, animate: bool) -> None:
+        assert self.fully_loaded
         plt.close()
         plt.rcdefaults()
         plot_and_fill(self.fitness())
@@ -152,6 +181,28 @@ def plot_and_fill(iterations: List[List[float]]) -> None:
     plt.yscale("log")
 
 
-pso = PSO(HOME / "data" / "PSO.json")
-pso.animate(HOME / "graphs" / "test.gif")
-pso.overview(False)
+data = []
+for exp_path in (HOME / "data" / "PSO_grid").glob("*"):
+    global_bests = []
+    for attempt_path in (exp_path).glob("*"):
+        pso = PSO(attempt_path)
+        global_bests.append(pso.final_global_best_fitness())
+        p = pso.config["method"]["parameters"]["phi_p"]
+        g = pso.config["method"]["parameters"]["phi_g"]
+    data.append((p, g, np.average(global_bests)))
+
+Z = np.zeros((20, 20))
+for x, y, z in data:
+    ix = int(x / 0.25)
+    iy = int(y / 0.25)
+    Z[iy, ix] = z
+
+plt.imshow(Z, cmap='viridis', origin='lower', extent=[0, 5, 0, 5])
+plt.colorbar()
+plt.xlabel("p")
+plt.ylabel("g")
+plt.show()
+
+# pso = PSO(HOME / "data" / "PSO_grid" / "p0_g0")
+# pso.animate(HOME / "graphs" / "test.gif")
+# pso.overview(False)
