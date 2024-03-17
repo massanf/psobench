@@ -77,10 +77,6 @@ impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PPPSO<'a, T> {
     &self.data
   }
 
-  fn new_data(&mut self) {
-    self.data.push(Vec::new());
-  }
-
   fn add_data(&mut self) {
     let gbest = self.problem().f(&self.global_best_pos());
     let particles = self.particles().clone();

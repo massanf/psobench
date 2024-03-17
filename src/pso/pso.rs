@@ -4,6 +4,7 @@ use crate::pso_trait::PSOTrait;
 use function::OptimizationProblem;
 use nalgebra::DVector;
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 #[derive(Clone)]
 pub struct PSO<'a, T: ParticleTrait> {
@@ -13,6 +14,7 @@ pub struct PSO<'a, T: ParticleTrait> {
   global_best_pos: Option<DVector<f64>>,
   data: Vec<(f64, Vec<T>)>,
   parameters: HashMap<String, f64>,
+  out_directory: PathBuf,
 }
 
 impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PSO<'a, T> {
@@ -21,6 +23,7 @@ impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PSO<'a, T> {
     problem: &'a OptimizationProblem,
     number_of_particles: usize,
     parameters: HashMap<String, f64>,
+    out_directory: PathBuf,
   ) -> PSO<'a, T> {
     let mut particles: Vec<T> = Vec::new();
 
@@ -35,6 +38,7 @@ impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PSO<'a, T> {
       global_best_pos: None,
       data: Vec::new(),
       parameters,
+      out_directory,
     };
 
     pso.init();
@@ -61,6 +65,10 @@ impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PSO<'a, T> {
 
   fn parameters(&self) -> &HashMap<String, f64> {
     &self.parameters
+  }
+
+  fn out_directory(&self) -> &PathBuf {
+    &self.out_directory
   }
 
   fn global_best_pos(&self) -> DVector<f64> {
