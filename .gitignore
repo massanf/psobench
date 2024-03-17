@@ -4,3 +4,4 @@ graphs/
 data/
 Cargo.lock
 out/
+.vscode/
