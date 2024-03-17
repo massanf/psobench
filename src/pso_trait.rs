@@ -9,14 +9,14 @@ use std::fs;
 use std::path::Path;
 
 pub trait PSOTrait<'a, T: ParticleTrait> {
-  fn new(name: &str, problem: &'a OptimizationProblem, dimensions: usize, number_of_particles: usize) -> Self
+  fn new(name: &str, problem: &'a OptimizationProblem, number_of_particles: usize) -> Self
   where
     Self: Sized;
 
   fn init(&mut self) {
     let problem = self.problem().clone();
     let mut global_best_pos = None;
-    self.init_particles(&problem, self.dimensions().clone());
+    self.init_particles(&problem);
     for particle in self.particles() {
       if global_best_pos.is_none() || problem.f(&particle.pos()) < problem.f(global_best_pos.as_ref().unwrap()) {
         global_best_pos = Some(particle.pos().clone());
@@ -29,9 +29,8 @@ pub trait PSOTrait<'a, T: ParticleTrait> {
   fn name(&self) -> &String;
 
   fn particles(&self) -> &Vec<T>;
-  fn init_particles(&mut self, problem: &OptimizationProblem, dimensions: usize);
+  fn init_particles(&mut self, problem: &OptimizationProblem);
 
-  fn dimensions(&self) -> &usize;
   fn problem(&self) -> &OptimizationProblem;
 
   fn global_best_pos(&self) -> DVector<f64>;
@@ -90,6 +89,20 @@ pub trait PSOTrait<'a, T: ParticleTrait> {
 
     let serialized = serde_json::to_string(&json!(vec_data))?;
 
+    fs::write(file_path, serialized)?;
+    Ok(())
+  }
+
+  fn save_settings(&self, file_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    let serialized = serde_json::to_string(&json!({
+      "problem": {
+        "name": self.problem().name(),
+        "dim": self.problem().dim(),
+      },
+      "method": {
+        "name": self.name(),
+      },
+    }))?;
     fs::write(file_path, serialized)?;
     Ok(())
   }

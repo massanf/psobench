@@ -10,14 +10,16 @@ pub struct OptimizationProblem {
   name: String,
   f: OptimizationFunction,
   domain: (f64, f64),
+  dim: usize,
 }
 
 impl OptimizationProblem {
-  pub fn new(name: &str, f: OptimizationFunction, domain: (f64, f64)) -> Self {
+  pub fn new(name: &str, f: OptimizationFunction, domain: (f64, f64), dim: usize) -> Self {
     Self {
       name: name.to_owned(),
       f,
       domain,
+      dim,
     }
   }
 
@@ -31,5 +33,9 @@ impl OptimizationProblem {
 
   pub fn domain(&self) -> (f64, f64) {
     self.domain
+  }
+
+  pub fn dim(&self) -> usize {
+    self.dim
   }
 }

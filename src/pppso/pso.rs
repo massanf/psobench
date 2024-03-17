@@ -16,7 +16,6 @@ const POPSIZE_SET: usize = 200;
 pub struct PPPSO<'a, T: ParticleTrait> {
   name: String,
   problem: &'a OptimizationProblem,
-  dimensions: usize,
   particles: Vec<T>,
   global_best_pos: Option<DVector<f64>>,
   data: Vec<Vec<(f64, Vec<T>)>>,
@@ -24,17 +23,16 @@ pub struct PPPSO<'a, T: ParticleTrait> {
 }
 
 impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PPPSO<'a, T> {
-  fn new(name: &str, problem: &'a OptimizationProblem, dimensions: usize, number_of_particles: usize) -> PPPSO<'a, T> {
+  fn new(name: &str, problem: &'a OptimizationProblem, number_of_particles: usize) -> PPPSO<'a, T> {
     let mut particles: Vec<T> = Vec::new();
 
     for _ in 0..number_of_particles {
-      particles.push(ParticleTrait::new(&problem, dimensions));
+      particles.push(ParticleTrait::new(&problem));
     }
 
     let mut pso = PPPSO {
       name: name.to_owned(),
       problem,
-      dimensions,
       particles,
       global_best_pos: None,
       data: Vec::new(),
@@ -49,17 +47,13 @@ impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PPPSO<'a, T> {
     &self.name
   }
 
-  fn dimensions(&self) -> &usize {
-    &self.dimensions
-  }
-
   fn particles(&self) -> &Vec<T> {
     &self.particles
   }
 
-  fn init_particles(&mut self, problem: &OptimizationProblem, dimensions: usize) {
+  fn init_particles(&mut self, problem: &OptimizationProblem) {
     for i in 0..self.particles.len() {
-      self.particles[i].init(problem, dimensions);
+      self.particles[i].init(problem);
     }
   }
 
@@ -126,8 +120,7 @@ impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PPPSO<'a, T> {
           let r = rng.gen_range(0..self.particles().len());
           let p_r = self.particles()[r].vel().clone();
           let problem = &self.problem().clone();
-          let dim = self.dimensions().clone();
-          self.particles[i].init(problem, dim);
+          self.particles[i].init(problem, self.problem().dim());
           self.particles[i].new_pos(p_r, problem);
         }
       }
@@ -144,7 +137,7 @@ impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PPPSO<'a, T> {
       let popsize_add = (KP * e as f64 + KI * self.accumulated_e as f64).floor() as usize;
 
       for _ in 0..popsize_add {
-        self.particles.push(ParticleTrait::new(&self.problem, self.dimensions().clone()));
+        self.particles.push(ParticleTrait::new(&self.problem, self.problem().dim().clone()));
       }
 
       // Accumulate the `e` value.

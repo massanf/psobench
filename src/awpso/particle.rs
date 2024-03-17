@@ -24,13 +24,13 @@ fn sigmoid(x: f64, m: f64) -> f64 {
 }
 
 impl ParticleTrait for AWParticle {
-  fn new(problem: &OptimizationProblem, dimensions: usize) -> AWParticle {
+  fn new(problem: &OptimizationProblem) -> AWParticle {
     let mut particle = AWParticle {
-      pos: DVector::from_element(dimensions, 0.),
-      vel: DVector::from_element(dimensions, 0.),
+      pos: DVector::from_element(problem.dim(), 0.),
+      vel: DVector::from_element(problem.dim(), 0.),
       best_pos: None,
     };
-    particle.init(problem, dimensions);
+    particle.init(problem, problem.dim());
     particle
   }
 

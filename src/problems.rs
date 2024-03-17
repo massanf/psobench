@@ -32,16 +32,16 @@ fn rastrigin(v: &DVector<f64>) -> f64 {
 }
 
 #[allow(dead_code)]
-pub fn f1() -> OptimizationProblem {
-  OptimizationProblem::new("Sphere", sphere, (-1., 1.))
+pub fn f1(dim: usize) -> OptimizationProblem {
+  OptimizationProblem::new("Sphere", sphere, (-1., 1.), dim)
 }
 
 #[allow(dead_code)]
-pub fn f2() -> OptimizationProblem {
-  OptimizationProblem::new("Rosenbrock", rosenbrock, (-30., 30.))
+pub fn f2(dim: usize) -> OptimizationProblem {
+  OptimizationProblem::new("Rosenbrock", rosenbrock, (-30., 30.), dim)
 }
 
 #[allow(dead_code)]
-pub fn f3() -> OptimizationProblem {
-  OptimizationProblem::new("Rastrigin", rastrigin, (-5.12, 5.12))
+pub fn f3(dim: usize) -> OptimizationProblem {
+  OptimizationProblem::new("Rastrigin", rastrigin, (-5.12, 5.12), dim)
 }

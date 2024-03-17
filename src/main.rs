@@ -13,16 +13,18 @@ use pso_trait::PSOTrait;
 use std::path::Path;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+  // Problem Settings
+  let problem = problems::f3(30);
+
   // Experiment Settings
-  let problem = problems::f3();
-  let dimensions = 30;
   let particle_count = 30;
   let iterations = 3000;
 
   // SPSO
-  let mut pso: PSO<'_, Particle> = PSO::new("PSO", &problem, dimensions, particle_count);
+  let mut pso: PSO<'_, Particle> = PSO::new("PSO", &problem, particle_count);
   pso.run(iterations);
   pso.save_history(Path::new("data/PSO.json"))?;
+  pso.save_settings(Path::new("data/PSO_settings.json"))?;
 
   Ok(())
 }

@@ -13,13 +13,13 @@ pub struct Particle {
 }
 
 impl ParticleTrait for Particle {
-  fn new(problem: &OptimizationProblem, dimensions: usize) -> Particle {
+  fn new(problem: &OptimizationProblem) -> Particle {
     let mut particle = Particle {
-      pos: DVector::from_element(dimensions, 0.),
-      vel: DVector::from_element(dimensions, 0.),
+      pos: DVector::from_element(problem.dim(), 0.),
+      vel: DVector::from_element(problem.dim(), 0.),
       best_pos: None,
     };
-    particle.init(problem, dimensions);
+    particle.init(problem);
     particle
   }
 

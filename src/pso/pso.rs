@@ -8,24 +8,22 @@ use nalgebra::DVector;
 pub struct PSO<'a, T: ParticleTrait> {
   name: String,
   problem: &'a OptimizationProblem,
-  dimensions: usize,
   particles: Vec<T>,
   global_best_pos: Option<DVector<f64>>,
   data: Vec<(f64, Vec<T>)>,
 }
 
 impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PSO<'a, T> {
-  fn new(name: &str, problem: &'a OptimizationProblem, dimensions: usize, number_of_particles: usize) -> PSO<'a, T> {
+  fn new(name: &str, problem: &'a OptimizationProblem, number_of_particles: usize) -> PSO<'a, T> {
     let mut particles: Vec<T> = Vec::new();
 
     for _ in 0..number_of_particles {
-      particles.push(ParticleTrait::new(&problem, dimensions));
+      particles.push(ParticleTrait::new(&problem));
     }
 
     let mut pso = PSO {
       name: name.to_owned(),
       problem,
-      dimensions,
       particles,
       global_best_pos: None,
       data: Vec::new(),
@@ -39,17 +37,13 @@ impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PSO<'a, T> {
     &self.name
   }
 
-  fn dimensions(&self) -> &usize {
-    &self.dimensions
-  }
-
   fn particles(&self) -> &Vec<T> {
     &self.particles
   }
 
-  fn init_particles(&mut self, problem: &OptimizationProblem, dimensions: usize) {
+  fn init_particles(&mut self, problem: &OptimizationProblem) {
     for i in 0..self.particles.len() {
-      self.particles[i].init(problem, dimensions);
+      self.particles[i].init(problem);
     }
   }
 

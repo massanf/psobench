@@ -8,15 +8,15 @@ use crate::rand::Rng;
 use crate::utils;
 
 pub trait ParticleTrait: Clone {
-  fn new(problem: &OptimizationProblem, dimensions: usize) -> Self
+  fn new(problem: &OptimizationProblem) -> Self
   where
     Self: Sized;
 
-  fn init(&mut self, problem: &OptimizationProblem, dimensions: usize) {
-    let pos = utils::random_init_pos(dimensions, problem);
+  fn init(&mut self, problem: &OptimizationProblem) {
+    let pos = utils::random_init_pos(problem);
     self.new_pos(pos.clone(), problem);
     self.set_best_pos(pos);
-    self.set_vel(utils::random_init_vel(dimensions, problem));
+    self.set_vel(utils::random_init_vel(problem));
   }
 
   fn pos(&self) -> &DVector<f64>;
