@@ -20,11 +20,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   let particle_count = 30;
   let iterations = 3000;
 
-  // SPSO
-  let mut pso: PSO<'_, Particle> = PSO::new("PSO", &problem, particle_count);
+  // PSO
+  let mut pso: PSO<'_, Particle> = PSO::new(
+    "PSO",
+    &problem,
+    particle_count,
+    [
+      ("w".to_owned(), 0.8),
+      ("phi_p".to_owned(), 1.),
+      ("phi_g".to_owned(), 2.),
+    ]
+    .iter()
+    .cloned()
+    .collect(),
+  );
   pso.run(iterations);
   pso.save_history(Path::new("data/PSO.json"))?;
-  pso.save_settings(Path::new("data/PSO_settings.json"))?;
+  pso.save_settings(Path::new("data/PSO_config.json"))?;
 
   Ok(())
 }

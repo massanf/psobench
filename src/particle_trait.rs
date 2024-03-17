@@ -3,6 +3,7 @@ extern crate nalgebra as na;
 use crate::function;
 use function::OptimizationProblem;
 use nalgebra::DVector;
+use std::collections::HashMap;
 
 use crate::rand::Rng;
 use crate::utils;
@@ -55,16 +56,22 @@ pub trait ParticleTrait: Clone {
   fn vel(&self) -> &DVector<f64>;
   fn set_vel(&mut self, vel: DVector<f64>);
 
-  fn update_vel(&mut self, global_best_pos: &DVector<f64>, problem: &OptimizationProblem) {
-    let w = 0.8;
-    let phi_p = 1.;
-    let phi_g = 2.;
+  fn update_vel(
+    &mut self,
+    global_best_pos: &DVector<f64>,
+    problem: &OptimizationProblem,
+    param: &HashMap<String, f64>,
+  ) {
+    assert!(param.contains_key("w"), "Key 'w' not found.");
+    assert!(param.contains_key("phi_p"), "Key 'phi_p' not found.");
+    assert!(param.contains_key("phi_g"), "Key 'phi_g' not found.");
     let mut rng = rand::thread_rng();
     let r_p: f64 = rng.gen_range(0.0..1.0);
     let r_g: f64 = rng.gen_range(0.0..1.0);
 
-    let mut new_vel =
-      w * self.vel() + phi_p * r_p * (self.best_pos() - self.pos()) + phi_g * r_g * (global_best_pos - self.pos());
+    let mut new_vel = param["w"] * self.vel()
+      + param["phi_p"] * r_p * (self.best_pos() - self.pos())
+      + param["phi_g"] * r_g * (global_best_pos - self.pos());
     for e in new_vel.iter_mut() {
       if *e > problem.domain().1 - problem.domain().0 {
         *e = problem.domain().1 - problem.domain().0;

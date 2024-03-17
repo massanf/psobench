@@ -5,11 +5,17 @@ use indicatif::{ProgressBar, ProgressStyle};
 use nalgebra::DVector;
 use particle_trait::ParticleTrait;
 use serde_json::json;
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
 pub trait PSOTrait<'a, T: ParticleTrait> {
-  fn new(name: &str, problem: &'a OptimizationProblem, number_of_particles: usize) -> Self
+  fn new(
+    name: &str,
+    problem: &'a OptimizationProblem,
+    number_of_particles: usize,
+    parameters: HashMap<String, f64>,
+  ) -> Self
   where
     Self: Sized;
 
@@ -32,6 +38,8 @@ pub trait PSOTrait<'a, T: ParticleTrait> {
   fn init_particles(&mut self, problem: &OptimizationProblem);
 
   fn problem(&self) -> &OptimizationProblem;
+
+  fn parameters(&self) -> &HashMap<String, f64>;
 
   fn global_best_pos(&self) -> DVector<f64>;
   fn set_global_best_pos(&mut self, pos: DVector<f64>);
@@ -101,6 +109,7 @@ pub trait PSOTrait<'a, T: ParticleTrait> {
       },
       "method": {
         "name": self.name(),
+        "parameters": self.parameters(),
       },
     }))?;
     fs::write(file_path, serialized)?;
