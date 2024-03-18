@@ -1,5 +1,10 @@
 use crate::function::OptimizationProblem;
 use nalgebra::DVector;
+use std::sync::Arc;
+
+extern "C" {
+  fn cec17_test_func(x: *const f64, f: *mut f64, nx: usize, mx: usize, func_num: usize);
+}
 
 #[allow(dead_code)]
 fn sphere(v: &DVector<f64>) -> f64 {
@@ -32,16 +37,46 @@ fn rastrigin(v: &DVector<f64>) -> f64 {
 }
 
 #[allow(dead_code)]
+fn cec17_impl(v: &DVector<f64>, func_num: usize) -> f64 {
+  let x = v.clone();
+  let nx = v.len() as usize;
+  let mut result = 0.0f64;
+  unsafe {
+    cec17_test_func(x.as_ptr(), &mut result, nx, 1, func_num);
+  }
+  result
+}
+
+#[allow(dead_code)]
 pub fn f1(dim: usize) -> OptimizationProblem {
-  OptimizationProblem::new("Sphere", sphere, (-1., 1.), dim)
+  OptimizationProblem::new("Sphere".to_owned(), Arc::new(sphere), (-1., 1.), dim)
 }
 
 #[allow(dead_code)]
 pub fn f2(dim: usize) -> OptimizationProblem {
-  OptimizationProblem::new("Rosenbrock", rosenbrock, (-30., 30.), dim)
+  OptimizationProblem::new("Rosenbrock".to_owned(), Arc::new(rosenbrock), (-30., 30.), dim)
 }
 
 #[allow(dead_code)]
 pub fn f3(dim: usize) -> OptimizationProblem {
-  OptimizationProblem::new("Rastrigin", rastrigin, (-5.12, 5.12), dim)
+  OptimizationProblem::new("Rastrigin".to_owned(), Arc::new(rastrigin), (-5.12, 5.12), dim)
+}
+
+#[allow(dead_code)]
+pub fn cec17(func_num: usize, dim: usize) -> OptimizationProblem {
+  assert!(
+    vec![2, 10, 20, 30, 50, 100].contains(&dim),
+    "The dimensions for CEC2017 functions must be 2, 10, 20, 30, 50, or 100."
+  );
+  assert!(
+    func_num >= 1 && func_num <= 30,
+    "CEC2017 contains 30 functions from F1 to F30 except for F2."
+  );
+  assert!(func_num != 2, "CEC2017 F2 has been deprecated.");
+  OptimizationProblem::new(
+    format!("CEC2017_F{}", func_num),
+    Arc::new(move |x: &DVector<f64>| cec17_impl(x, func_num)),
+    (-100., 100.),
+    dim,
+  )
 }

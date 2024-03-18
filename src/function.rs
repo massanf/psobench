@@ -1,8 +1,9 @@
 extern crate nalgebra as na;
+use std::sync::Arc;
 
 use nalgebra::DVector;
 
-type OptimizationFunction = fn(&DVector<f64>) -> f64;
+type OptimizationFunction = Arc<dyn Fn(&DVector<f64>) -> f64>;
 
 #[derive(Clone)]
 pub struct OptimizationProblem {
@@ -14,13 +15,8 @@ pub struct OptimizationProblem {
 }
 
 impl OptimizationProblem {
-  pub fn new(name: &str, f: OptimizationFunction, domain: (f64, f64), dim: usize) -> Self {
-    Self {
-      name: name.to_owned(),
-      f,
-      domain,
-      dim,
-    }
+  pub fn new(name: String, f: OptimizationFunction, domain: (f64, f64), dim: usize) -> Self {
+    Self { name, f, domain, dim }
   }
 
   #[allow(dead_code)]

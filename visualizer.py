@@ -182,7 +182,7 @@ def plot_and_fill(iterations: List[List[float]]) -> None:
 
 
 data = []
-for exp_path in (HOME / "data" / "test" / "Rosenbrock").glob("*"):
+for exp_path in (HOME / "data" / "test" / "CEC2017").glob("*"):
     global_bests = []
     for attempt_path in (exp_path).glob("*"):
         pso = PSO(attempt_path)
