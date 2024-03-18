@@ -1,8 +1,8 @@
-use crate::function;
+use crate::optimization_problem;
 use crate::particle_trait;
 use crate::utils;
-use function::OptimizationProblem;
 use nalgebra::DVector;
+use optimization_problem::OptimizationProblem;
 use particle_trait::ParticleTrait;
 use serde_json::json;
 use std::collections::HashMap;

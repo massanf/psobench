@@ -1,9 +1,9 @@
-use crate::function;
+use crate::optimization_problem;
 use crate::particle_trait::ParticleTrait;
 use crate::pso_trait::PSOTrait;
-use function::OptimizationProblem;
 use indicatif::ProgressBar;
 use nalgebra::DVector;
+use optimization_problem::OptimizationProblem;
 use rand::distributions::{Distribution, Uniform};
 use std::collections::HashMap;
 use std::fs;

@@ -1,8 +1,8 @@
 extern crate nalgebra as na;
-use crate::function;
+use crate::optimization_problem;
 use crate::particle_trait;
-use function::OptimizationProblem;
 use nalgebra::DVector;
+use optimization_problem::OptimizationProblem;
 use particle_trait::ParticleTrait;
 
 #[derive(Clone)]

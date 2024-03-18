@@ -1,8 +1,8 @@
 extern crate nalgebra as na;
 
-use crate::function;
-use function::OptimizationProblem;
+use crate::optimization_problem;
 use nalgebra::DVector;
+use optimization_problem::OptimizationProblem;
 use std::collections::HashMap;
 
 use crate::rand::Rng;

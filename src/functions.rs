@@ -1,4 +1,4 @@
-use crate::function::OptimizationProblem;
+use crate::optimization_problem::OptimizationProblem;
 use nalgebra::DVector;
 use std::sync::Arc;
 

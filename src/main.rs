@@ -1,9 +1,9 @@
 extern crate nalgebra as na;
 extern crate rand;
-mod function;
+mod optimization_problem;
 use std::path::PathBuf;
+mod functions;
 mod particle_trait;
-mod problems;
 mod pso;
 mod pso_trait;
 mod utils;
@@ -12,7 +12,7 @@ use pso::pso::PSO;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
   // Problem Settings
-  let problem = problems::cec17(1, 2);
+  let problem = functions::cec17(1, 2);
 
   // Experiment Settings
   let particle_count = 30;
