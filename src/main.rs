@@ -12,7 +12,7 @@ use pso::pso::PSO;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
   // Problem Settings
-  let problem = functions::cec17(1, 2);
+  let problem = functions::cec17(1, 30);
 
   // Experiment Settings
   let particle_count = 30;

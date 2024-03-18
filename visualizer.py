@@ -85,8 +85,8 @@ class PSO:
         return result
 
     def final_global_best_fitness(self) -> float:
-        if isinstance(self.summary["final_global_best_fitness"], float):
-            return self.summary["final_global_best_fitness"]
+        if isinstance(self.summary["final_global_best_fitness"][-1], float):
+            return self.summary["final_global_best_fitness"][-1]
         raise ValueError("Unexpected final_global_best_fitness value")
 
     def fitness(self) -> List[List[float]]:
@@ -182,7 +182,7 @@ def plot_and_fill(iterations: List[List[float]]) -> None:
 
 
 data = []
-for exp_path in (HOME / "data" / "test" / "CEC2017").glob("*"):
+for exp_path in (HOME / "data" / "test" / "CEC2017_F1").glob("*"):
     global_bests = []
     for attempt_path in (exp_path).glob("*"):
         pso = PSO(attempt_path)
