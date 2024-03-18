@@ -182,7 +182,7 @@ def plot_and_fill(iterations: List[List[float]]) -> None:
 
 
 data = []
-for exp_path in (HOME / "data" / "PSO_grid").glob("*"):
+for exp_path in (HOME / "data" / "test" / "Rosenbrock").glob("*"):
     global_bests = []
     for attempt_path in (exp_path).glob("*"):
         pso = PSO(attempt_path)
@@ -199,8 +199,8 @@ for x, y, z in data:
 
 plt.imshow(Z, cmap='viridis', origin='lower', extent=[0, 5, 0, 5])
 plt.colorbar()
-plt.xlabel("p")
-plt.ylabel("g")
+plt.xlabel("phi_p")
+plt.ylabel("phi_g")
 plt.show()
 
 # pso = PSO(HOME / "data" / "PSO_grid" / "p0_g0")

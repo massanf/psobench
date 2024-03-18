@@ -1,12 +1,12 @@
 use crate::function;
 use crate::particle_trait;
+use crate::utils;
 use function::OptimizationProblem;
 use nalgebra::DVector;
 use particle_trait::ParticleTrait;
 use serde_json::json;
 use std::collections::HashMap;
 use std::fs;
-use std::io;
 use std::path::PathBuf;
 
 pub trait PSOTrait<'a, T: ParticleTrait> {
@@ -32,26 +32,7 @@ pub trait PSOTrait<'a, T: ParticleTrait> {
     self.set_global_best_pos(global_best_pos.unwrap());
     self.add_data();
 
-    // Handle output directory creation / deletion
-    if self.out_directory().exists() {
-      println!(
-        "The directory {:?} already exists. Overwrite? (y/n)",
-        self.out_directory()
-      );
-      let mut user_input = String::new();
-      let _ = io::stdin().read_line(&mut user_input);
-
-      match user_input.trim().to_lowercase().as_str() {
-        "y" => {
-          let _ = fs::remove_dir_all(self.out_directory());
-        }
-        _ => {
-          println!("Cancelled.");
-          std::process::exit(1);
-        }
-      }
-    }
-    let _ = fs::create_dir_all(self.out_directory());
+    utils::create_directory(self.out_directory().to_path_buf());
   }
 
   fn name(&self) -> &String;
