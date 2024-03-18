@@ -182,24 +182,31 @@ def plot_and_fill(iterations: List[List[float]]) -> None:
 
 
 data = []
+X = []
+Y = []
+Z = []
 for exp_path in (HOME / "data" / "test" / "CEC2017_F1").glob("*"):
     global_bests = []
     for attempt_path in (exp_path).glob("*"):
         pso = PSO(attempt_path)
         global_bests.append(pso.final_global_best_fitness())
-        p = pso.config["method"]["parameters"]["phi_p"]
-        g = pso.config["method"]["parameters"]["phi_g"]
-    data.append((p, g, np.average(global_bests)))
+        x = pso.config["method"]["parameters"]["w"]
+        y = pso.config["method"]["parameters"]["phi_g"]
+    X.append(x)
+    Y.append(y)
+    Z.append(np.average(global_bests))
+    data.append((x, y, np.average(global_bests)))
 
-Z = np.zeros((20, 20))
-for x, y, z in data:
-    ix = int(x / 0.25)
-    iy = int(y / 0.25)
-    Z[iy, ix] = z
+# Z = np.zeros((20, 20))
+# for x, y, z in data:
+#     ix = int(x / 0.25)
+#     iy = int(y / 0.25)
+#     Z[iy, ix] = z
 
-plt.imshow(Z, cmap='viridis', origin='lower', extent=[0, 5, 0, 5])
+plt.scatter(X, Y, c=Z)
+# plt.imshow(Z, cmap='viridis', origin='lower', extent=[-2, 2, -4, 4])
 plt.colorbar()
-plt.xlabel("phi_p")
+plt.xlabel("w")
 plt.ylabel("phi_g")
 plt.show()
 

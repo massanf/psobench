@@ -24,8 +24,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     iterations,
     &problem,
     1,
-    vec![("phi_p".to_owned(), (0.0, 5.0)), ("phi_g".to_owned(), (0.0, 5.0))],
-    [("w".to_owned(), 0.8)].iter().cloned().collect(),
+    vec![("w".to_owned(), (-2.0, 2.0)), ("phi_g".to_owned(), (-4.0, 4.0))],
+    [("phi_p".to_owned(), 1.0)].iter().cloned().collect(),
     PathBuf::from("data/test"),
   )?;
 
