@@ -106,7 +106,7 @@ pub trait PSOTrait<'a, T: ParticleTrait> {
       global_best_progress.push(self.data()[t].0);
     }
     let serialized = serde_json::to_string(&json!({
-      "final_global_best_fitness": global_best_progress,
+      "global_best_fitness": global_best_progress,
     }))?;
     fs::write(self.out_directory().join("summary.json"), serialized)?;
     Ok(())

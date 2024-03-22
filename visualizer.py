@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt  # type: ignore
 import numpy as np  # type: ignore
 import pathlib
 import json
-from typing import List, Dict, Any, Union
+from typing import List, Dict, Any, Union, Tuple
 from tqdm import tqdm  # type: ignore
 
 HOME = pathlib.Path(__file__).parent
@@ -78,16 +78,20 @@ class PSO:
         self.iterations = iterations
 
     def global_best_fitness_progress(self) -> List[float]:
-        assert self.fully_loaded
-        result = []
-        for iteration in self.iterations:
-            result.append(iteration.global_best_fitness)
-        return result
+        result = self.summary["global_best_fitness"]
+        if isinstance(result, list) and all(isinstance(i, float)
+                                            for i in result):
+            return result
+        raise ValueError("Incorrect dictionary type.")
 
-    def final_global_best_fitness(self) -> float:
-        if isinstance(self.summary["final_global_best_fitness"][-1], float):
-            return self.summary["final_global_best_fitness"][-1]
-        raise ValueError("Unexpected final_global_best_fitness value")
+    def global_best_fitness(self, idx: int) -> float:
+        progress = self.summary["global_best_fitness"]
+        if idx != -1 and not (idx >= 0 and idx < len(progress)):
+            raise ValueError("Index is out of bounds.")
+        result = progress[idx]
+        if isinstance(result, float):
+            return result
+        raise ValueError("Unexpected `global_best_fitness` value")
 
     def fitness(self) -> List[List[float]]:
         assert self.fully_loaded
@@ -181,35 +185,58 @@ def plot_and_fill(iterations: List[List[float]]) -> None:
     plt.yscale("log")
 
 
-data = []
-X = []
-Y = []
-Z = []
-for exp_path in (HOME / "data" / "test" / "CEC2017_F1").glob("*"):
-    global_bests = []
-    for attempt_path in (exp_path).glob("*"):
-        pso = PSO(attempt_path)
-        global_bests.append(pso.final_global_best_fitness())
-        x = pso.config["method"]["parameters"]["w"]
-        y = pso.config["method"]["parameters"]["phi_g"]
-    X.append(x)
-    Y.append(y)
-    Z.append(np.average(global_bests))
-    data.append((x, y, np.average(global_bests)))
+def get_range_and_step(array: List[float]) -> Tuple[float, float, float, int]:
+    count = len(np.unique(array))
+    mx = np.max(np.array(array))
+    mn = np.min(np.array(array))
+    return (mn, mx, (mx - mn) / (count - 1), count)
 
-# Z = np.zeros((20, 20))
-# for x, y, z in data:
-#     ix = int(x / 0.25)
-#     iy = int(y / 0.25)
-#     Z[iy, ix] = z
 
-plt.scatter(X, Y, c=Z)
-# plt.imshow(Z, cmap='viridis', origin='lower', extent=[-2, 2, -4, 4])
-plt.colorbar()
-plt.xlabel("w")
-plt.ylabel("phi_g")
-plt.show()
+def plot_grid_search(
+        arg1: str,
+        arg2: str,
+        data_path: pathlib.Path,
+        out_path: pathlib.Path
+        ) -> None:
+    data = []
+    X = []
+    Y = []
+    for exp_path in (data_path).glob("*"):
+        global_bests = []
+        for attempt_path in (exp_path).glob("*"):
+            pso = PSO(attempt_path)
+            global_bests.append(pso.global_best_fitness(-1))
+            x = pso.config["method"]["parameters"][arg1]
+            y = pso.config["method"]["parameters"][arg2]
+        X.append(x)
+        Y.append(y)
+        data.append((x, y, np.average(global_bests)))
 
+    x_range_and_step = get_range_and_step(X)
+    y_range_and_step = get_range_and_step(Y)
+
+    Z = np.zeros(np.array((x_range_and_step[3], y_range_and_step[3])))
+    for x, y, z in data:
+        ix = int(round((x - x_range_and_step[0]) / x_range_and_step[2], 3))
+        iy = int(round((y - y_range_and_step[0]) / y_range_and_step[2], 3))
+        Z[iy, ix] = z
+
+    plt.figure(figsize=(6.0, 6.0))
+    plt.imshow(Z, cmap='viridis', origin='lower',
+               extent=[x_range_and_step[0] - x_range_and_step[2] / 2,
+                       x_range_and_step[1] + x_range_and_step[2] / 2,
+                       y_range_and_step[0] - y_range_and_step[2] / 2,
+                       y_range_and_step[1] + y_range_and_step[2] / 2])
+    plt.colorbar()
+    plt.xlabel(arg1)
+    plt.ylabel(arg2)
+    plt.savefig(out_path)
+
+
+plot_grid_search("phi_g", "phi_p",
+                 HOME / "data" / "test2" / "CEC2017_F1",
+                 HOME / "graphs" / "grid_search.png",)
+# plot_grid_search(HOME / "data" / "PSO_grid")
 # pso = PSO(HOME / "data" / "PSO_grid" / "p0_g0")
 # pso.animate(HOME / "graphs" / "test.gif")
 # pso.overview(False)

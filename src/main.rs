@@ -12,21 +12,27 @@ use pso::pso::PSO;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
   // Problem Settings
-  let problem = functions::cec17(1, 30);
+  let mut problem_set = Vec::new();
+  for i in 1..=5 {
+    if i == 2 {
+      continue;
+    }
+    problem_set.push(functions::cec17(i, 30));
+  }
 
   // Experiment Settings
   let particle_count = 30;
-  let iterations = 1500;
+  let iterations = 1000;
 
   // PSO
   utils::grid_search::<'_, Particle, PSO<'_, Particle>>(
     particle_count,
     iterations,
-    &problem,
-    1,
-    vec![("w".to_owned(), (-2.0, 2.0)), ("phi_g".to_owned(), (-4.0, 4.0))],
-    [("phi_p".to_owned(), 1.0)].iter().cloned().collect(),
-    PathBuf::from("data/test"),
+    &problem_set,
+    10,
+    vec![("phi_p".to_owned(), (-4.0, 4.0)), ("phi_g".to_owned(), (-4.0, 4.0))],
+    [("w".to_owned(), 0.8)].iter().cloned().collect(),
+    PathBuf::from("data/test3"),
   )?;
 
   Ok(())

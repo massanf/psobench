@@ -59,7 +59,7 @@ pub fn create_directory(path: PathBuf) {
 pub fn grid_search<'a, U: ParticleTrait, T: PSOTrait<'a, U>>(
   particle_count: usize,
   iterations: usize,
-  problem: &'a OptimizationProblem,
+  problem_set: &'a Vec<OptimizationProblem>,
   attempts: usize,
   search_params: Vec<(String, (f64, f64))>,
   base_params: HashMap<String, f64>,
@@ -68,34 +68,36 @@ pub fn grid_search<'a, U: ParticleTrait, T: PSOTrait<'a, U>>(
   assert!(search_params.len() == 2);
   create_directory(out_directory.clone());
   let steps: usize = 20;
-  let bar = ProgressBar::new((steps * steps * attempts) as u64);
-  for p in 0..steps {
-    for g in 0..steps {
-      let p = p as f64 / steps as f64 * (search_params[0].1 .1 - search_params[0].1 .0) + search_params[0].1 .0;
-      let g = g as f64 / steps as f64 * (search_params[1].1 .1 - search_params[1].1 .0) + search_params[1].1 .0;
-      for attempt in 0..attempts {
-        let mut params = base_params.clone();
-        params.insert(search_params[0].0.clone(), p);
-        params.insert(search_params[1].0.clone(), g);
-        let mut pso: T = T::new(
-          "PSO",
-          &problem,
-          particle_count,
-          params,
-          out_directory.join(format!(
-            "{}/{}={:.2},{}={:.2}/{}",
-            problem.name(),
-            search_params[0].0.clone(),
-            p,
-            search_params[1].0.clone(),
-            g,
-            attempt
-          )),
-        );
-        pso.run(iterations);
-        pso.save_summary()?;
-        pso.save_config()?;
-        bar.inc(1);
+  let bar = ProgressBar::new(((steps + 1) * (steps + 1) * attempts) as u64);
+  for problem in problem_set {
+    for p in 0..=steps {
+      for g in 0..=steps {
+        let p = p as f64 / steps as f64 * (search_params[0].1 .1 - search_params[0].1 .0) + search_params[0].1 .0;
+        let g = g as f64 / steps as f64 * (search_params[1].1 .1 - search_params[1].1 .0) + search_params[1].1 .0;
+        for attempt in 0..attempts {
+          let mut params = base_params.clone();
+          params.insert(search_params[0].0.clone(), p);
+          params.insert(search_params[1].0.clone(), g);
+          let mut pso: T = T::new(
+            "PSO",
+            &problem,
+            particle_count,
+            params,
+            out_directory.join(format!(
+              "{}/{}={:.2},{}={:.2}/{}",
+              problem.name(),
+              search_params[0].0.clone(),
+              p,
+              search_params[1].0.clone(),
+              g,
+              attempt
+            )),
+          );
+          pso.run(iterations);
+          pso.save_summary()?;
+          pso.save_config()?;
+          bar.inc(1);
+        }
       }
     }
   }
