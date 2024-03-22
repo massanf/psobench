@@ -5,6 +5,7 @@ import pathlib
 import json
 from typing import List, Dict, Any, Union, Tuple
 from tqdm import tqdm  # type: ignore
+import matplotlib.colors as colors  # type: ignore
 
 HOME = pathlib.Path(__file__).parent
 
@@ -116,7 +117,7 @@ class PSO:
 
     def update_plot_animate(self, frame: int) -> None:
         assert self.fully_loaded
-        plt.cla()  # Clear the current axes.
+        plt.cla()
         self.progressbar.update(1)
         iteration = self.iterations[frame]
         for particle in iteration.particles:
@@ -196,16 +197,21 @@ def plot_grid_search(
         arg1: str,
         arg2: str,
         data_path: pathlib.Path,
-        out_path: pathlib.Path
+        out_path: pathlib.Path,
+        frame: int = -1
         ) -> None:
+    print(frame)
+    plt.cla()
     data = []
     X = []
     Y = []
+    if not data_path.exists():
+        raise ValueError(f"Path {data_path} does not exist.")
     for exp_path in (data_path).glob("*"):
         global_bests = []
         for attempt_path in (exp_path).glob("*"):
             pso = PSO(attempt_path)
-            global_bests.append(pso.global_best_fitness(-1))
+            global_bests.append(pso.global_best_fitness(frame))
             x = pso.config["method"]["parameters"][arg1]
             y = pso.config["method"]["parameters"][arg2]
         X.append(x)
@@ -221,21 +227,35 @@ def plot_grid_search(
         iy = int(round((y - y_range_and_step[0]) / y_range_and_step[2], 3))
         Z[iy, ix] = z
 
-    plt.figure(figsize=(6.0, 6.0))
+    norm = colors.LogNorm(vmin=100000000, vmax=100000000000)
+
+    # plt.figure(figsize=(6.0, 6.0))
     plt.imshow(Z, cmap='viridis', origin='lower',
+               norm=norm,
                extent=[x_range_and_step[0] - x_range_and_step[2] / 2,
                        x_range_and_step[1] + x_range_and_step[2] / 2,
                        y_range_and_step[0] - y_range_and_step[2] / 2,
                        y_range_and_step[1] + y_range_and_step[2] / 2])
-    plt.colorbar()
     plt.xlabel(arg1)
     plt.ylabel(arg2)
-    plt.savefig(out_path)
+    plt.title(f"Iteration: {frame}")
+    # plt.savefig(out_path)
 
+
+fig, ax = plt.subplots()
+skip_frames = 20
+frames = range(0, 1000, skip_frames)
 
 plot_grid_search("phi_g", "phi_p",
-                 HOME / "data" / "test2" / "CEC2017_F1",
-                 HOME / "graphs" / "grid_search.png",)
+                 HOME / "data" / "test3" / "CEC2017_F1",
+                 HOME / "graphs" / "grid_search.png", 0)
+plt.colorbar()
+
+ani = FuncAnimation(fig, lambda x:  plot_grid_search("phi_g", "phi_p",
+                    HOME / "data" / "test3" / "CEC2017_F1",
+                    HOME / "graphs" / "grid_search.png", x), frames=frames)
+ani.save(HOME / "graphs" / "grid_search.gif", fps=10)
+
 # plot_grid_search(HOME / "data" / "PSO_grid")
 # pso = PSO(HOME / "data" / "PSO_grid" / "p0_g0")
 # pso.animate(HOME / "graphs" / "test.gif")
