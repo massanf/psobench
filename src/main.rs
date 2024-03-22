@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     particle_count,
     iterations,
     &problem_set,
-    2,
+    5,
     vec![("phi_p".to_owned(), (-4.0, 4.0)), ("phi_g".to_owned(), (-4.0, 4.0))],
     [("w".to_owned(), 0.8)].iter().cloned().collect(),
     PathBuf::from("data/base_pso_test"),

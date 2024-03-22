@@ -247,12 +247,12 @@ skip_frames = 20
 frames = range(0, 1000, skip_frames)
 
 plot_grid_search("phi_g", "phi_p",
-                 HOME / "data" / "test3" / "CEC2017_F1",
+                 HOME / "data" / "base_pso_test" / "CEC2017_F1",
                  HOME / "graphs" / "grid_search.png", 0)
 plt.colorbar()
 
 ani = FuncAnimation(fig, lambda x:  plot_grid_search("phi_g", "phi_p",
-                    HOME / "data" / "test3" / "CEC2017_F1",
+                    HOME / "data" / "base_pso_test" / "CEC2017_F1",
                     HOME / "graphs" / "grid_search.png", x), frames=frames)
 ani.save(HOME / "graphs" / "grid_search.gif", fps=10)
 

@@ -68,8 +68,8 @@ pub fn grid_search<'a, U: ParticleTrait, T: PSOTrait<'a, U>>(
   assert!(search_params.len() == 2);
   create_directory(out_directory.clone());
   let steps: usize = 20;
-  let bar = ProgressBar::new(((steps + 1) * (steps + 1) * attempts) as u64);
   for problem in problem_set {
+    let bar = ProgressBar::new(((steps + 1) * (steps + 1) * attempts) as u64);
     for p in 0..=steps {
       for g in 0..=steps {
         let p = p as f64 / steps as f64 * (search_params[0].1 .1 - search_params[0].1 .0) + search_params[0].1 .0;
@@ -100,7 +100,7 @@ pub fn grid_search<'a, U: ParticleTrait, T: PSOTrait<'a, U>>(
         }
       }
     }
+    bar.finish();
   }
-  bar.finish();
   Ok(())
 }
