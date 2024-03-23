@@ -1,5 +1,6 @@
 use crate::optimization_problem;
 use crate::particle_trait::ParticleTrait;
+use crate::pso_trait::OptimizationParam;
 use crate::pso_trait::PSOTrait;
 use indicatif::ProgressBar;
 use nalgebra::DVector;
@@ -56,13 +57,13 @@ pub fn create_directory(path: PathBuf) {
   let _ = fs::create_dir_all(path);
 }
 
+#[allow(dead_code)]
 pub fn grid_search<'a, U: ParticleTrait, T: PSOTrait<'a, U>>(
-  particle_count: usize,
   iterations: usize,
   problem_set: &'a Vec<OptimizationProblem>,
   attempts: usize,
   search_params: Vec<(String, (f64, f64))>,
-  base_params: HashMap<String, f64>,
+  base_params: HashMap<String, OptimizationParam>,
   out_directory: PathBuf,
 ) -> Result<(), Box<dyn std::error::Error>> {
   assert!(search_params.len() == 2);
@@ -76,12 +77,11 @@ pub fn grid_search<'a, U: ParticleTrait, T: PSOTrait<'a, U>>(
         let g = g as f64 / steps as f64 * (search_params[1].1 .1 - search_params[1].1 .0) + search_params[1].1 .0;
         for attempt in 0..attempts {
           let mut params = base_params.clone();
-          params.insert(search_params[0].0.clone(), p);
-          params.insert(search_params[1].0.clone(), g);
+          params.insert(search_params[0].0.clone(), OptimizationParam::Numeric(p));
+          params.insert(search_params[1].0.clone(), OptimizationParam::Numeric(g));
           let mut pso: T = T::new(
             "PSO",
             &problem,
-            particle_count,
             params,
             out_directory.join(format!(
               "{}/{}={:.2},{}={:.2}/{}",

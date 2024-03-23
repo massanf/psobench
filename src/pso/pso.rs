@@ -1,5 +1,6 @@
 use crate::optimization_problem;
 use crate::particle_trait::ParticleTrait;
+use crate::pso_trait::OptimizationParam;
 use crate::pso_trait::PSOTrait;
 use nalgebra::DVector;
 use optimization_problem::OptimizationProblem;
@@ -13,7 +14,7 @@ pub struct PSO<'a, T: ParticleTrait> {
   particles: Vec<T>,
   global_best_pos: Option<DVector<f64>>,
   data: Vec<(f64, Vec<T>)>,
-  parameters: HashMap<String, f64>,
+  parameters: HashMap<String, OptimizationParam>,
   out_directory: PathBuf,
 }
 
@@ -21,11 +22,23 @@ impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PSO<'a, T> {
   fn new(
     name: &str,
     problem: &'a OptimizationProblem,
-    number_of_particles: usize,
-    parameters: HashMap<String, f64>,
+    parameters: HashMap<String, OptimizationParam>,
     out_directory: PathBuf,
   ) -> PSO<'a, T> {
     let mut particles: Vec<T> = Vec::new();
+
+    assert!(
+      parameters.contains_key("particle_count"),
+      "Key 'particle_count' not found."
+    );
+    let number_of_particles: usize;
+    match parameters["particle_count"] {
+      OptimizationParam::Count(val) => number_of_particles = val,
+      _ => {
+        eprintln!("Error: parameter 'particle_count' should be of type OptimizationParam::Count.");
+        std::process::exit(1);
+      }
+    }
 
     for _ in 0..number_of_particles {
       particles.push(ParticleTrait::new(&problem));
@@ -63,7 +76,7 @@ impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PSO<'a, T> {
     &self.problem
   }
 
-  fn parameters(&self) -> &HashMap<String, f64> {
+  fn parameters(&self) -> &HashMap<String, OptimizationParam> {
     &self.parameters
   }
 

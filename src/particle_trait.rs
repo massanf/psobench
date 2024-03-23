@@ -1,12 +1,11 @@
 extern crate nalgebra as na;
-
 use crate::optimization_problem;
+use crate::pso_trait::OptimizationParam;
+use crate::rand::Rng;
+use crate::utils;
 use nalgebra::DVector;
 use optimization_problem::OptimizationProblem;
 use std::collections::HashMap;
-
-use crate::rand::Rng;
-use crate::utils;
 
 pub trait ParticleTrait: Clone {
   fn new(problem: &OptimizationProblem) -> Self
@@ -60,18 +59,44 @@ pub trait ParticleTrait: Clone {
     &mut self,
     global_best_pos: &DVector<f64>,
     problem: &OptimizationProblem,
-    param: &HashMap<String, f64>,
+    param: &HashMap<String, OptimizationParam>,
   ) {
-    assert!(param.contains_key("w"), "Key 'w' not found.");
-    assert!(param.contains_key("phi_p"), "Key 'phi_p' not found.");
-    assert!(param.contains_key("phi_g"), "Key 'phi_g' not found.");
     let mut rng = rand::thread_rng();
     let r_p: f64 = rng.gen_range(0.0..1.0);
     let r_g: f64 = rng.gen_range(0.0..1.0);
 
-    let mut new_vel = param["w"] * self.vel()
-      + param["phi_p"] * r_p * (self.best_pos() - self.pos())
-      + param["phi_g"] * r_g * (global_best_pos - self.pos());
+    assert!(param.contains_key("w"), "Key 'w' not found.");
+    let w: f64;
+    match param["w"] {
+      OptimizationParam::Numeric(val) => w = val,
+      _ => {
+        eprintln!("Error");
+        std::process::exit(1);
+      }
+    }
+
+    assert!(param.contains_key("phi_p"), "Key 'phi_p' not found.");
+    let phi_p: f64;
+    match param["phi_p"] {
+      OptimizationParam::Numeric(val) => phi_p = val,
+      _ => {
+        eprintln!("Error");
+        std::process::exit(1);
+      }
+    }
+
+    assert!(param.contains_key("phi_g"), "Key 'phi_g' not found.");
+    let phi_g: f64;
+    match param["phi_g"] {
+      OptimizationParam::Numeric(val) => phi_g = val,
+      _ => {
+        eprintln!("Error");
+        std::process::exit(1);
+      }
+    }
+
+    let mut new_vel =
+      w * self.vel() + phi_p * r_p * (self.best_pos() - self.pos()) + phi_g * r_g * (global_best_pos - self.pos());
     for e in new_vel.iter_mut() {
       if *e > problem.domain().1 - problem.domain().0 {
         *e = problem.domain().1 - problem.domain().0;

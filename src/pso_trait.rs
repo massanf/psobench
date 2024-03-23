@@ -4,17 +4,23 @@ use crate::utils;
 use nalgebra::DVector;
 use optimization_problem::OptimizationProblem;
 use particle_trait::ParticleTrait;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 
+#[derive(Serialize, Deserialize, Clone)]
+pub enum OptimizationParam {
+  Numeric(f64),
+  Count(usize),
+}
+
 pub trait PSOTrait<'a, T: ParticleTrait> {
   fn new(
     name: &str,
     problem: &'a OptimizationProblem,
-    number_of_particles: usize,
-    parameters: HashMap<String, f64>,
+    parameters: HashMap<String, OptimizationParam>,
     out_directory: PathBuf,
   ) -> Self
   where
@@ -42,7 +48,7 @@ pub trait PSOTrait<'a, T: ParticleTrait> {
 
   fn problem(&self) -> &OptimizationProblem;
 
-  fn parameters(&self) -> &HashMap<String, f64>;
+  fn parameters(&self) -> &HashMap<String, OptimizationParam>;
   fn out_directory(&self) -> &PathBuf;
 
   fn global_best_pos(&self) -> DVector<f64>;

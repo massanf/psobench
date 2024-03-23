@@ -48,7 +48,7 @@ class GridSearch:
                 image[i, j] = z.global_best_fitness(frame)
 
         # print(np.min(image), np.max(image))
-        norm = colors.LogNorm(vmin=10000, vmax=10000000)
+        norm = colors.LogNorm(vmin=0.00000001, vmax=1000)
 
         plt.imshow(image, cmap='viridis', origin='lower',
                    norm=norm,
@@ -74,6 +74,10 @@ class GridSearch:
         ani.save(out_path, fps=10)
 
 
-grid = GridSearch(HOME / "data" / "base_pso_test" / "CEC2017_F4",
-                  "phi_g", "phi_p")
-grid.animate(HOME / "graphs" / "test.gif")
+# grid = GridSearch(HOME / "data" / "base_pso_test" / "CEC2017_F2",
+#                   "phi_g", "phi_p")
+# grid = GridSearch(HOME / "data" / "base_pso_test2" / "Sphere",
+#                   "phi_g", "phi_p")
+pso = PSO(HOME / "data" / "base_pso_test3" / "g_1_d_2")
+pso.load_full()
+pso.animate(HOME / "graphs" / "animation_g_1.gif", 10)
