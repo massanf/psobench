@@ -11,6 +11,7 @@ mod pso_trait;
 mod utils;
 use pso::particle::Particle;
 use pso::pso::PSO;
+use std::sync::Arc;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
   //   // Problem Settings
@@ -25,34 +26,94 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
   // Experiment Settings
   //   let particle_count = 30;
-  let particle_count = 30;
+  //   let particle_count = 30;
   let iterations = 1000;
 
   let out_directory = PathBuf::from("data/base_pso_test4");
 
-  utils::grid_search::<'_, Particle, PSO<'_, Particle>>(
+  //   utils::grid_search::<'_, Particle, PSO<'_, Particle>>(
+  //     iterations,
+  //     &problem,
+  //     2,
+  //     (
+  //       "phi_p".to_owned(),
+  //       utils::Range {
+  //         min: Param::Numeric(-4.0),
+  //         max: Param::Numeric(4.0),
+  //         step: Param::Numeric(0.4),
+  //       },
+  //     ),
+  //     (
+  //       "phi_g".to_owned(),
+  //       utils::Range {
+  //         min: Param::Numeric(-4.0),
+  //         max: Param::Numeric(4.0),
+  //         step: Param::Numeric(0.4),
+  //       },
+  //     ),
+  //     [
+  //       ("w".to_owned(), Param::Numeric(0.8)),
+  //       ("particle_count".to_owned(), Param::Count(particle_count)),
+  //     ]
+  //     .iter()
+  //     .cloned()
+  //     .collect(),
+  //     out_directory,
+  //   )?;
+
+  //   utils::grid_search::<'_, Particle, PSO<'_, Particle>>(
+  //     iterations,
+  //     &problem,
+  //     2,
+  //     (
+  //       "phi_g".to_owned(),
+  //       utils::Range {
+  //         min: Param::Numeric(-4.),
+  //         max: Param::Numeric(4.),
+  //         step: Param::Numeric(0.4),
+  //       },
+  //     ),
+  //     (
+  //       "particle_count".to_owned(),
+  //       utils::Range {
+  //         min: Param::Count(10),
+  //         max: Param::Count(100),
+  //         step: Param::Count(10),
+  //       },
+  //     ),
+  //     [
+  //       ("w".to_owned(), Param::Numeric(0.8)),
+  //       ("phi_p".to_owned(), Param::Numeric(1.0)),
+  //       ("phi_g".to_owned(), Param::Numeric(1.0)),
+  //       //   ("particle_count".to_owned(), Param::Count(particle_count)),
+  //     ]
+  //     .iter()
+  //     .cloned()
+  //     .collect(),
+  //     out_directory,
+  //   )?;
+  utils::grid_search_dim::<Particle, PSO<Particle>>(
     iterations,
-    &problem,
+    Arc::new(functions::f1),
     2,
+    utils::Range {
+      min: Param::Count(5),
+      max: Param::Count(100),
+      step: Param::Count(5),
+    },
     (
-      "phi_p".to_owned(),
+      "particle_count".to_owned(),
       utils::Range {
-        min: Param::Numeric(-4.0),
-        max: Param::Numeric(4.0),
-        step: Param::Numeric(0.4),
-      },
-    ),
-    (
-      "phi_g".to_owned(),
-      utils::Range {
-        min: Param::Numeric(-4.0),
-        max: Param::Numeric(4.0),
-        step: Param::Numeric(0.4),
+        min: Param::Count(10),
+        max: Param::Count(100),
+        step: Param::Count(10),
       },
     ),
     [
       ("w".to_owned(), Param::Numeric(0.8)),
-      ("particle_count".to_owned(), Param::Count(particle_count)),
+      ("phi_p".to_owned(), Param::Numeric(1.0)),
+      ("phi_g".to_owned(), Param::Numeric(1.0)),
+      //   ("particle_count".to_owned(), Param::Count(particle_count)),
     ]
     .iter()
     .cloned()

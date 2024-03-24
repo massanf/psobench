@@ -38,8 +38,8 @@ impl Serialize for Param {
   }
 }
 
-pub trait PSOTrait<'a, T: ParticleTrait> {
-  fn new(name: &str, problem: &'a Problem, parameters: HashMap<String, Param>, out_directory: PathBuf) -> Self
+pub trait PSOTrait<T: ParticleTrait> {
+  fn new(name: &str, problem: Problem, parameters: HashMap<String, Param>, out_directory: PathBuf) -> Self
   where
     Self: Sized;
 

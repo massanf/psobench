@@ -8,9 +8,9 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 #[derive(Clone)]
-pub struct PSO<'a, T: ParticleTrait> {
+pub struct PSO<T: ParticleTrait> {
   name: String,
-  problem: &'a Problem,
+  problem: Problem,
   particles: Vec<T>,
   global_best_pos: Option<DVector<f64>>,
   data: Vec<(f64, Vec<T>)>,
@@ -18,8 +18,8 @@ pub struct PSO<'a, T: ParticleTrait> {
   out_directory: PathBuf,
 }
 
-impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PSO<'a, T> {
-  fn new(name: &str, problem: &'a Problem, parameters: HashMap<String, Param>, out_directory: PathBuf) -> PSO<'a, T> {
+impl<T: ParticleTrait> PSOTrait<T> for PSO<T> {
+  fn new(name: &str, problem: Problem, parameters: HashMap<String, Param>, out_directory: PathBuf) -> PSO<T> {
     let mut particles: Vec<T> = Vec::new();
 
     assert!(
