@@ -4,7 +4,9 @@ use crate::pso_trait::PSOTrait;
 use crate::pso_trait::ParamValue;
 use crate::utils;
 use indicatif::ProgressBar;
+use serde_json::json;
 use std::collections::HashMap;
+use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -28,6 +30,25 @@ fn run_attempts<U: ParticleTrait, T: PSOTrait<U>>(
     pso.save_config()?;
     bar.inc(1);
   }
+  Ok(())
+}
+
+fn save_grid_search_config(
+  problem: Problem,
+  param1: (String, Vec<ParamValue>),
+  param2: (String, Vec<ParamValue>),
+  out_directory: PathBuf,
+) -> Result<(), Box<dyn std::error::Error>> {
+  let serialized = serde_json::to_string(&json!({
+    "problem": {
+      "name": problem.name(),
+      "dim": problem.dim(),
+    },
+    "grid_search": {
+      param1.0: param1.1,
+      param2.0: param2.1,
+  }  }))?;
+  fs::write(out_directory.join("grid_search_config.json"), serialized)?;
   Ok(())
 }
 
@@ -79,8 +100,12 @@ pub fn grid_search_dim<U: ParticleTrait, T: PSOTrait<U>>(
   let out_directory = out_folder.join(problem_type(2).name());
   utils::create_directory(out_directory.clone(), true);
 
+  let mut dim_param: Vec<ParamValue> = Vec::new();
+  for d in &dims {
+    dim_param.push(ParamValue::Int(*d as isize));
+  }
   let bar = ProgressBar::new((dims.len() * param.1.len() * attempts) as u64);
-  for x in param.1 {
+  for x in &param.1 {
     for dim in &dims {
       let problem = problem_type(dim.clone());
       let mut params = base_params.clone();
@@ -96,5 +121,7 @@ pub fn grid_search_dim<U: ParticleTrait, T: PSOTrait<U>>(
       )?;
     }
   }
+
+  save_grid_search_config(problem_type(2), ("dim".to_owned(), dim_param), param, out_directory)?;
   Ok(())
 }

@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt  # type: ignore
-import utils
 from matplotlib.animation import FuncAnimation  # type: ignore
 import numpy as np  # type: ignore
+from typing import Dict, Any
+import json
 from pso import PSO
 from tqdm import tqdm  # type: ignore
 import matplotlib.colors as colors  # type: ignore
@@ -9,29 +10,40 @@ import pathlib
 
 
 class GridSearch:
-    def __init__(self, data_path: pathlib.Path, arg1: str, arg2: str) -> None:
-        self.arg1 = arg1
-        self.arg2 = arg2
-
+    def __init__(self, data_path: pathlib.Path) -> None:
         if not data_path.exists():
             raise ValueError(f"Path {data_path} does not exist.")
 
-        if arg2 == "dim":
-            raise ValueError("`dim` should be arg1.")
+        if not (data_path / "grid_search_config.json").exists():
+            raise ValueError("File grid_search_config.json does"
+                             + f"not exist in {data_path}.")
+
+        with open(data_path / "grid_search_config.json", 'r') as file:
+            self.search_config: Dict[str, Any] = json.load(file)
+
+        self.name = self.search_config["problem"]["name"]
+
+        keys = list(self.search_config["grid_search"].keys())
+        assert len(keys) == 2
+
+        self.arg1 = keys[0]
+        self.arg2 = keys[1]
 
         data = []
         for exp_path in (data_path).glob("*"):
             for attempt_path in (exp_path).glob("*"):
                 pso = PSO(attempt_path)
-                if arg1 == "dim":
+                if self.arg1 == "dim":
                     x = pso.config["problem"]["dim"]
                 else:
-                    x = pso.config["method"]["parameters"][arg1]
-                y = pso.config["method"]["parameters"][arg2]
+                    x = pso.config["method"]["parameters"][self.arg1]
+                if self.arg2 == "dim":
+                    y = pso.config["problem"]["dim"]
+                y = pso.config["method"]["parameters"][self.arg2]
                 data.append((x, y, pso))
 
-        self.x_values = np.unique(sorted([i[0] for i in data]))
-        self.y_values = np.unique(sorted([i[1] for i in data]))
+        self.x_values = self.search_config["grid_search"][self.arg1]
+        self.y_values = self.search_config["grid_search"][self.arg2]
 
         self.psos = [[PSO(attempt_path) for _ in range(len(self.x_values))]
                      for _ in range(len(self.y_values))]
@@ -68,8 +80,7 @@ class GridSearch:
                            self.y_values[0],
                            self.y_values[-1]],
                    aspect="auto")
-        name = self.psos[0][0].config["problem"]["name"]
-        plt.title(f"{name} iter: {frame}")
+        plt.title(f"{self.name} iter: {frame}")
         plt.xlabel(self.arg1)
         plt.ylabel(self.arg2)
         self.progressbar.update(1)
@@ -86,4 +97,6 @@ class GridSearch:
 
         frames = range(0, 1000, skip_frames)
         ani = FuncAnimation(fig, self.plot, frames=frames)
-        ani.save(out_path, fps=10)
+        ani.save(out_path /
+                 f"grid_progress_{self.name}_{self.arg1}_vs_{self.arg2}.gif",
+                 fps=10)
