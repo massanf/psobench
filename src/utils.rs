@@ -133,16 +133,16 @@ pub fn grid_search_dim<U: ParticleTrait, T: PSOTrait<U>>(
   create_directory(out_directory.clone(), true);
 
   let bar = ProgressBar::new((dims.len() * param.1.len() * attempts) as u64);
-  for x1 in param.1 {
+  for x in param.1 {
     for dim in &dims {
       let problem = problem_type(dim.clone());
       let mut params = base_params.clone();
-      params.insert(param.0.clone(), x1.clone());
+      params.insert(param.0.clone(), x.clone());
 
       run_attempts::<U, T>(
         params,
         problem.clone(),
-        out_directory.join(format!("{}={},{}={}", param.0.clone(), x1, "dim", dim)),
+        out_directory.join(format!("{}={},{}={}", param.0.clone(), x, "dim", dim)),
         iterations,
         attempts,
         &bar,

@@ -4,7 +4,7 @@ from gridsearch import GridSearch
 HOME = pathlib.Path(__file__).parent.parent
 
 
-grid = GridSearch(HOME / "data" / "base_pso_test5" / "CEC2017_F1",
+grid = GridSearch(HOME / "data" / "base_pso_test6" / "CEC2017_F1",
                   "dim", "particle_count")
 grid.animate(HOME / "graphs" / "CEC2017_F1.gif")
 
