@@ -6,10 +6,12 @@ mod functions;
 mod particle_trait;
 use crate::pso_trait::ParamValue;
 use std::collections::HashMap;
+mod grid_search;
+use grid_search::grid_search_dim;
 mod pso;
 mod pso_trait;
-mod utils;
 use pso::particle::Particle;
+mod utils;
 use pso::pso::PSO;
 use std::sync::Arc;
 
@@ -42,7 +44,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if func_num == 2 {
       continue;
     }
-    utils::grid_search_dim::<Particle, PSO<Particle>>(
+    grid_search_dim::<Particle, PSO<Particle>>(
       iterations,
       Arc::new(move |d: usize| functions::cec17(func_num, d)),
       3,
