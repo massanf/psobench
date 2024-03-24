@@ -32,12 +32,9 @@ pub fn random_init_vel(problem: &Problem) -> DVector<f64> {
   )
 }
 
-pub fn create_directory(path: PathBuf, clear: bool) {
+pub fn create_directory(path: PathBuf, can_add: bool) {
   // Handle output directory creation / deletion
-  if path.exists() {
-    if !clear {
-      return;
-    }
+  if path.exists() && !can_add {
     println!("The directory {:?} already exists. Overwrite? (y/n)", path);
     let mut user_input = String::new();
     let _ = io::stdin().read_line(&mut user_input);
@@ -52,5 +49,7 @@ pub fn create_directory(path: PathBuf, clear: bool) {
       }
     }
   }
-  let _ = fs::create_dir_all(path);
+  if !path.exists() {
+    let _ = fs::create_dir_all(path);
+  }
 }

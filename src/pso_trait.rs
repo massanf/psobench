@@ -55,7 +55,7 @@ pub trait PSOTrait<T: ParticleTrait> {
     self.set_global_best_pos(global_best_pos.unwrap());
     self.add_data();
 
-    utils::create_directory(self.out_directory().to_path_buf(), true);
+    utils::create_directory(self.out_directory().to_path_buf(), false);
   }
 
   fn name(&self) -> &String;

@@ -25,9 +25,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   let particle_counts = vec![
     ParamValue::Int(2),
     ParamValue::Int(5),
-    // ParamValue::Int(10),
-    // ParamValue::Int(50),
-    // ParamValue::Int(100),
+    ParamValue::Int(10),
+    ParamValue::Int(50),
+    ParamValue::Int(100),
     // ParamValue::Int(200),
     // ParamValue::Int(500),
   ];
