@@ -1,7 +1,7 @@
 use crate::optimization_problem;
 use crate::particle_trait::ParticleTrait;
 use crate::pso_trait::PSOTrait;
-use crate::pso_trait::Param;
+use crate::pso_trait::ParamValue;
 use nalgebra::DVector;
 use optimization_problem::Problem;
 use std::collections::HashMap;
@@ -14,12 +14,12 @@ pub struct PSO<T: ParticleTrait> {
   particles: Vec<T>,
   global_best_pos: Option<DVector<f64>>,
   data: Vec<(f64, Vec<T>)>,
-  parameters: HashMap<String, Param>,
+  parameters: HashMap<String, ParamValue>,
   out_directory: PathBuf,
 }
 
 impl<T: ParticleTrait> PSOTrait<T> for PSO<T> {
-  fn new(name: &str, problem: Problem, parameters: HashMap<String, Param>, out_directory: PathBuf) -> PSO<T> {
+  fn new(name: &str, problem: Problem, parameters: HashMap<String, ParamValue>, out_directory: PathBuf) -> PSO<T> {
     let mut particles: Vec<T> = Vec::new();
 
     assert!(
@@ -28,9 +28,9 @@ impl<T: ParticleTrait> PSOTrait<T> for PSO<T> {
     );
     let number_of_particles: usize;
     match parameters["particle_count"] {
-      Param::Count(val) => number_of_particles = (val as usize).try_into().unwrap(),
+      ParamValue::Int(val) => number_of_particles = (val as usize).try_into().unwrap(),
       _ => {
-        eprintln!("Error: parameter 'particle_count' should be of type Param::Count.");
+        eprintln!("Error: parameter 'particle_count' should be of type Param::Int.");
         std::process::exit(1);
       }
     }
@@ -71,7 +71,7 @@ impl<T: ParticleTrait> PSOTrait<T> for PSO<T> {
     &self.problem
   }
 
-  fn parameters(&self) -> &HashMap<String, Param> {
+  fn parameters(&self) -> &HashMap<String, ParamValue> {
     &self.parameters
   }
 

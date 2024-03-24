@@ -15,10 +15,3 @@ def plot_and_fill(iterations: List[List[float]]) -> None:
     plt.fill_between(t, top, bottom, color='skyblue', alpha=0.4)
     plt.plot(t, avg)
     plt.yscale("log")
-
-
-def get_range_and_step(array: List[float]) -> Tuple[float, float, float, int]:
-    count = len(np.unique(array))
-    mx = np.max(np.array(array))
-    mn = np.min(np.array(array))
-    return (mn, mx, (mx - mn) / (count - 1), count)

@@ -12,34 +12,34 @@ use std::fs;
 use std::path::PathBuf;
 
 #[derive(Clone)]
-pub enum Param {
-  Numeric(f64),
-  Count(isize),
+pub enum ParamValue {
+  Float(f64),
+  Int(isize),
 }
 
-impl fmt::Display for Param {
+impl fmt::Display for ParamValue {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
-      Param::Numeric(n) => write!(f, "{:.2}", n),
-      Param::Count(c) => write!(f, "{}", c),
+      ParamValue::Float(n) => write!(f, "{:.2}", n),
+      ParamValue::Int(c) => write!(f, "{}", c),
     }
   }
 }
 
-impl Serialize for Param {
+impl Serialize for ParamValue {
   fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
   where
     S: Serializer,
   {
     match *self {
-      Param::Numeric(ref n) => serializer.serialize_f64(*n),
-      Param::Count(ref c) => serializer.serialize_u64(*c as u64),
+      ParamValue::Float(ref n) => serializer.serialize_f64(*n),
+      ParamValue::Int(ref c) => serializer.serialize_u64(*c as u64),
     }
   }
 }
 
 pub trait PSOTrait<T: ParticleTrait> {
-  fn new(name: &str, problem: Problem, parameters: HashMap<String, Param>, out_directory: PathBuf) -> Self
+  fn new(name: &str, problem: Problem, parameters: HashMap<String, ParamValue>, out_directory: PathBuf) -> Self
   where
     Self: Sized;
 
@@ -55,7 +55,7 @@ pub trait PSOTrait<T: ParticleTrait> {
     self.set_global_best_pos(global_best_pos.unwrap());
     self.add_data();
 
-    utils::create_directory(self.out_directory().to_path_buf());
+    utils::create_directory(self.out_directory().to_path_buf(), true);
   }
 
   fn name(&self) -> &String;
@@ -65,7 +65,7 @@ pub trait PSOTrait<T: ParticleTrait> {
 
   fn problem(&self) -> &Problem;
 
-  fn parameters(&self) -> &HashMap<String, Param>;
+  fn parameters(&self) -> &HashMap<String, ParamValue>;
   fn out_directory(&self) -> &PathBuf;
 
   fn global_best_pos(&self) -> DVector<f64>;

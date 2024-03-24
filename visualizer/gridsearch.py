@@ -30,16 +30,22 @@ class GridSearch:
                 y = pso.config["method"]["parameters"][arg2]
                 data.append((x, y, pso))
 
-        self.x_r_and_s = utils.get_range_and_step([i[0] for i in data])
-        self.y_r_and_s = utils.get_range_and_step([i[1] for i in data])
+        self.x_values = np.unique(sorted([i[0] for i in data]))
+        self.y_values = np.unique(sorted([i[1] for i in data]))
 
-        self.psos = [[PSO(attempt_path) for _ in range(self.x_r_and_s[3])]
-                     for _ in range(self.y_r_and_s[3])]
+        self.psos = [[PSO(attempt_path) for _ in range(len(self.x_values))]
+                     for _ in range(len(self.y_values))]
 
+        self.max_fitness = float("-inf")
+        self.min_fitness = float("inf")
         for x, y, z in data:
-            ix = int(round((x - self.x_r_and_s[0]) / self.x_r_and_s[2], 3))
-            iy = int(round((y - self.y_r_and_s[0]) / self.y_r_and_s[2], 3))
+            ix = np.searchsorted(self.x_values, x)
+            iy = np.searchsorted(self.y_values, y)
             self.psos[iy][ix] = z
+            self.max_fitness = max(self.max_fitness,
+                                   np.max(z.global_best_fitness_progress()))
+            self.min_fitness = min(self.min_fitness,
+                                   np.min(z.global_best_fitness_progress()))
 
     def plot(
             self,
@@ -47,22 +53,23 @@ class GridSearch:
             ) -> None:
         plt.cla()
 
-        image = np.zeros((self.y_r_and_s[3], self.x_r_and_s[3]))
+        image = np.zeros((len(self.y_values), len(self.x_values)))
         for (i, row) in enumerate(self.psos):
             for (j, z) in enumerate(row):
                 image[i, j] = z.global_best_fitness(frame)
 
         # print(np.min(image), np.max(image))
-        norm = colors.LogNorm(vmin=0.00000001, vmax=1000)
+        norm = colors.LogNorm(vmin=self.min_fitness, vmax=self.max_fitness)
 
         plt.imshow(image, cmap='viridis', origin='lower',
                    norm=norm,
-                   extent=[self.x_r_and_s[0] - self.x_r_and_s[2] / 2,
-                           self.x_r_and_s[1] + self.x_r_and_s[2] / 2,
-                           self.y_r_and_s[0] - self.y_r_and_s[2] / 2,
-                           self.y_r_and_s[1] + self.y_r_and_s[2] / 2],
+                   extent=[self.x_values[0],
+                           self.x_values[-1],
+                           self.y_values[0],
+                           self.y_values[-1]],
                    aspect="auto")
-        plt.title(f"Iteration: {frame}")
+        name = self.psos[0][0].config["problem"]["name"]
+        plt.title(f"{name} iter: {frame}")
         plt.xlabel(self.arg1)
         plt.ylabel(self.arg2)
         self.progressbar.update(1)

@@ -4,9 +4,9 @@ from gridsearch import GridSearch
 HOME = pathlib.Path(__file__).parent.parent
 
 
-grid = GridSearch(HOME / "data" / "base_pso_test4" / "Sphere",
+grid = GridSearch(HOME / "data" / "base_pso_test5" / "CEC2017_F1",
                   "dim", "particle_count")
-grid.animate(HOME / "graphs" / "progress.gif")
+grid.animate(HOME / "graphs" / "CEC2017_F1.gif")
 
 # pso = PSO(HOME / "data" / "base_pso_test3" / "g_1_d_2")
 # pso.load_full()
