@@ -1,7 +1,7 @@
 use crate::function;
 use crate::particle::ParticleTrait;
 use crate::pso::PSOTrait;
-use function::OptimizationProblem;
+use function::Problem;
 use nalgebra::DVector;
 extern crate rand;
 use rand::Rng;
@@ -15,7 +15,7 @@ const POPSIZE_SET: usize = 200;
 
 pub struct PPPSO<'a, T: ParticleTrait> {
   name: String,
-  problem: &'a OptimizationProblem,
+  problem: &'a Problem,
   particles: Vec<T>,
   global_best_pos: Option<DVector<f64>>,
   data: Vec<Vec<(f64, Vec<T>)>>,
@@ -23,7 +23,7 @@ pub struct PPPSO<'a, T: ParticleTrait> {
 }
 
 impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PPPSO<'a, T> {
-  fn new(name: &str, problem: &'a OptimizationProblem, number_of_particles: usize) -> PPPSO<'a, T> {
+  fn new(name: &str, problem: &'a Problem, number_of_particles: usize) -> PPPSO<'a, T> {
     let mut particles: Vec<T> = Vec::new();
 
     for _ in 0..number_of_particles {
@@ -51,13 +51,13 @@ impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PPPSO<'a, T> {
     &self.particles
   }
 
-  fn init_particles(&mut self, problem: &OptimizationProblem) {
+  fn init_particles(&mut self, problem: &Problem) {
     for i in 0..self.particles.len() {
       self.particles[i].init(problem);
     }
   }
 
-  fn problem(&self) -> &OptimizationProblem {
+  fn problem(&self) -> &Problem {
     &self.problem
   }
 

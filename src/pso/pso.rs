@@ -1,30 +1,25 @@
 use crate::optimization_problem;
 use crate::particle_trait::ParticleTrait;
-use crate::pso_trait::OptimizationParam;
 use crate::pso_trait::PSOTrait;
+use crate::pso_trait::Param;
 use nalgebra::DVector;
-use optimization_problem::OptimizationProblem;
+use optimization_problem::Problem;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
 #[derive(Clone)]
 pub struct PSO<'a, T: ParticleTrait> {
   name: String,
-  problem: &'a OptimizationProblem,
+  problem: &'a Problem,
   particles: Vec<T>,
   global_best_pos: Option<DVector<f64>>,
   data: Vec<(f64, Vec<T>)>,
-  parameters: HashMap<String, OptimizationParam>,
+  parameters: HashMap<String, Param>,
   out_directory: PathBuf,
 }
 
 impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PSO<'a, T> {
-  fn new(
-    name: &str,
-    problem: &'a OptimizationProblem,
-    parameters: HashMap<String, OptimizationParam>,
-    out_directory: PathBuf,
-  ) -> PSO<'a, T> {
+  fn new(name: &str, problem: &'a Problem, parameters: HashMap<String, Param>, out_directory: PathBuf) -> PSO<'a, T> {
     let mut particles: Vec<T> = Vec::new();
 
     assert!(
@@ -33,9 +28,9 @@ impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PSO<'a, T> {
     );
     let number_of_particles: usize;
     match parameters["particle_count"] {
-      OptimizationParam::Count(val) => number_of_particles = val,
+      Param::Count(val) => number_of_particles = (val as usize).try_into().unwrap(),
       _ => {
-        eprintln!("Error: parameter 'particle_count' should be of type OptimizationParam::Count.");
+        eprintln!("Error: parameter 'particle_count' should be of type Param::Count.");
         std::process::exit(1);
       }
     }
@@ -66,17 +61,17 @@ impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PSO<'a, T> {
     &self.particles
   }
 
-  fn init_particles(&mut self, problem: &OptimizationProblem) {
+  fn init_particles(&mut self, problem: &Problem) {
     for i in 0..self.particles.len() {
       self.particles[i].init(problem);
     }
   }
 
-  fn problem(&self) -> &OptimizationProblem {
+  fn problem(&self) -> &Problem {
     &self.problem
   }
 
-  fn parameters(&self) -> &HashMap<String, OptimizationParam> {
+  fn parameters(&self) -> &HashMap<String, Param> {
     &self.parameters
   }
 

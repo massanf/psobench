@@ -1,18 +1,18 @@
 extern crate nalgebra as na;
 use crate::optimization_problem;
-use crate::pso_trait::OptimizationParam;
+use crate::pso_trait::Param;
 use crate::rand::Rng;
 use crate::utils;
 use nalgebra::DVector;
-use optimization_problem::OptimizationProblem;
+use optimization_problem::Problem;
 use std::collections::HashMap;
 
 pub trait ParticleTrait: Clone {
-  fn new(problem: &OptimizationProblem) -> Self
+  fn new(problem: &Problem) -> Self
   where
     Self: Sized;
 
-  fn init(&mut self, problem: &OptimizationProblem) {
+  fn init(&mut self, problem: &Problem) {
     let pos = utils::random_init_pos(problem);
     self.new_pos(pos.clone(), problem);
     self.set_best_pos(pos);
@@ -21,12 +21,12 @@ pub trait ParticleTrait: Clone {
 
   fn pos(&self) -> &DVector<f64>;
   fn set_pos(&mut self, pos: DVector<f64>);
-  fn new_pos(&mut self, pos: DVector<f64>, problem: &OptimizationProblem) -> bool {
+  fn new_pos(&mut self, pos: DVector<f64>, problem: &Problem) -> bool {
     self.set_pos(pos);
     self.eval(problem)
   }
 
-  fn update_pos(&mut self, problem: &OptimizationProblem) -> bool {
+  fn update_pos(&mut self, problem: &Problem) -> bool {
     let mut new_pos = self.pos().clone();
     let mut new_vel = self.vel().clone();
     for (i, e) in new_pos.iter_mut().enumerate() {
@@ -55,12 +55,7 @@ pub trait ParticleTrait: Clone {
   fn vel(&self) -> &DVector<f64>;
   fn set_vel(&mut self, vel: DVector<f64>);
 
-  fn update_vel(
-    &mut self,
-    global_best_pos: &DVector<f64>,
-    problem: &OptimizationProblem,
-    param: &HashMap<String, OptimizationParam>,
-  ) {
+  fn update_vel(&mut self, global_best_pos: &DVector<f64>, problem: &Problem, param: &HashMap<String, Param>) {
     let mut rng = rand::thread_rng();
     let r_p: f64 = rng.gen_range(0.0..1.0);
     let r_g: f64 = rng.gen_range(0.0..1.0);
@@ -68,7 +63,7 @@ pub trait ParticleTrait: Clone {
     assert!(param.contains_key("w"), "Key 'w' not found.");
     let w: f64;
     match param["w"] {
-      OptimizationParam::Numeric(val) => w = val,
+      Param::Numeric(val) => w = val,
       _ => {
         eprintln!("Error");
         std::process::exit(1);
@@ -78,7 +73,7 @@ pub trait ParticleTrait: Clone {
     assert!(param.contains_key("phi_p"), "Key 'phi_p' not found.");
     let phi_p: f64;
     match param["phi_p"] {
-      OptimizationParam::Numeric(val) => phi_p = val,
+      Param::Numeric(val) => phi_p = val,
       _ => {
         eprintln!("Error");
         std::process::exit(1);
@@ -88,7 +83,7 @@ pub trait ParticleTrait: Clone {
     assert!(param.contains_key("phi_g"), "Key 'phi_g' not found.");
     let phi_g: f64;
     match param["phi_g"] {
-      OptimizationParam::Numeric(val) => phi_g = val,
+      Param::Numeric(val) => phi_g = val,
       _ => {
         eprintln!("Error");
         std::process::exit(1);
@@ -107,7 +102,7 @@ pub trait ParticleTrait: Clone {
     self.set_vel(new_vel);
   }
 
-  fn eval(&mut self, problem: &OptimizationProblem) -> bool {
+  fn eval(&mut self, problem: &Problem) -> bool {
     // This function returns whether the personal best was updated.
     if self.option_best_pos().is_none() || problem.f(&self.pos()) < problem.f(&self.best_pos()) {
       self.set_best_pos(self.pos().clone());

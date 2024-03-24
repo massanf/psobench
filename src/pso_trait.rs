@@ -2,27 +2,44 @@ use crate::optimization_problem;
 use crate::particle_trait;
 use crate::utils;
 use nalgebra::DVector;
-use optimization_problem::OptimizationProblem;
+use optimization_problem::Problem;
 use particle_trait::ParticleTrait;
-use serde::{Deserialize, Serialize};
+use serde::ser::{Serialize, Serializer};
 use serde_json::json;
 use std::collections::HashMap;
+use std::fmt;
 use std::fs;
 use std::path::PathBuf;
 
-#[derive(Serialize, Deserialize, Clone)]
-pub enum OptimizationParam {
+#[derive(Clone)]
+pub enum Param {
   Numeric(f64),
-  Count(usize),
+  Count(isize),
+}
+
+impl fmt::Display for Param {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    match self {
+      Param::Numeric(n) => write!(f, "{:.2}", n),
+      Param::Count(c) => write!(f, "{}", c),
+    }
+  }
+}
+
+impl Serialize for Param {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: Serializer,
+  {
+    match *self {
+      Param::Numeric(ref n) => serializer.serialize_f64(*n),
+      Param::Count(ref c) => serializer.serialize_u64(*c as u64),
+    }
+  }
 }
 
 pub trait PSOTrait<'a, T: ParticleTrait> {
-  fn new(
-    name: &str,
-    problem: &'a OptimizationProblem,
-    parameters: HashMap<String, OptimizationParam>,
-    out_directory: PathBuf,
-  ) -> Self
+  fn new(name: &str, problem: &'a Problem, parameters: HashMap<String, Param>, out_directory: PathBuf) -> Self
   where
     Self: Sized;
 
@@ -44,11 +61,11 @@ pub trait PSOTrait<'a, T: ParticleTrait> {
   fn name(&self) -> &String;
 
   fn particles(&self) -> &Vec<T>;
-  fn init_particles(&mut self, problem: &OptimizationProblem);
+  fn init_particles(&mut self, problem: &Problem);
 
-  fn problem(&self) -> &OptimizationProblem;
+  fn problem(&self) -> &Problem;
 
-  fn parameters(&self) -> &HashMap<String, OptimizationParam>;
+  fn parameters(&self) -> &HashMap<String, Param>;
   fn out_directory(&self) -> &PathBuf;
 
   fn global_best_pos(&self) -> DVector<f64>;

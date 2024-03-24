@@ -1,4 +1,4 @@
-use crate::optimization_problem::OptimizationProblem;
+use crate::optimization_problem::Problem;
 use nalgebra::DVector;
 use std::sync::Arc;
 
@@ -48,22 +48,22 @@ fn cec17_impl(v: &DVector<f64>, func_num: usize) -> f64 {
 }
 
 #[allow(dead_code)]
-pub fn f1(dim: usize) -> OptimizationProblem {
-  OptimizationProblem::new("Sphere".to_owned(), Arc::new(sphere), (-1., 1.), dim)
+pub fn f1(dim: usize) -> Problem {
+  Problem::new("Sphere".to_owned(), Arc::new(sphere), (-1., 1.), dim)
 }
 
 #[allow(dead_code)]
-pub fn f2(dim: usize) -> OptimizationProblem {
-  OptimizationProblem::new("Rosenbrock".to_owned(), Arc::new(rosenbrock), (-30., 30.), dim)
+pub fn f2(dim: usize) -> Problem {
+  Problem::new("Rosenbrock".to_owned(), Arc::new(rosenbrock), (-30., 30.), dim)
 }
 
 #[allow(dead_code)]
-pub fn f3(dim: usize) -> OptimizationProblem {
-  OptimizationProblem::new("Rastrigin".to_owned(), Arc::new(rastrigin), (-5.12, 5.12), dim)
+pub fn f3(dim: usize) -> Problem {
+  Problem::new("Rastrigin".to_owned(), Arc::new(rastrigin), (-5.12, 5.12), dim)
 }
 
 #[allow(dead_code)]
-pub fn cec17(func_num: usize, dim: usize) -> OptimizationProblem {
+pub fn cec17(func_num: usize, dim: usize) -> Problem {
   assert!(
     vec![2, 10, 20, 30, 50, 100].contains(&dim),
     "The dimensions for CEC2017 functions must be 2, 10, 20, 30, 50, or 100."
@@ -73,7 +73,7 @@ pub fn cec17(func_num: usize, dim: usize) -> OptimizationProblem {
     "CEC2017 contains 30 functions from F1 to F30 except for F2."
   );
   assert!(func_num != 2, "CEC2017 F2 has been deprecated.");
-  OptimizationProblem::new(
+  Problem::new(
     format!("CEC2017_F{}", func_num),
     Arc::new(move |x: &DVector<f64>| cec17_impl(x, func_num)),
     (-100., 100.),

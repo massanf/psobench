@@ -74,10 +74,9 @@ class GridSearch:
         ani.save(out_path, fps=10)
 
 
-# grid = GridSearch(HOME / "data" / "base_pso_test" / "CEC2017_F2",
-#                   "phi_g", "phi_p")
-# grid = GridSearch(HOME / "data" / "base_pso_test2" / "Sphere",
-#                   "phi_g", "phi_p")
-pso = PSO(HOME / "data" / "base_pso_test3" / "g_1_d_2")
-pso.load_full()
-pso.animate(HOME / "graphs" / "animation_g_1.gif", 10)
+grid = GridSearch(HOME / "data" / "base_pso_test4" / "Sphere",
+                  "phi_g", "phi_p")
+grid.animate(HOME / "graphs" / "progress.gif")
+# pso = PSO(HOME / "data" / "base_pso_test3" / "g_1_d_2")
+# pso.load_full()
+# pso.animate(HOME / "graphs" / "animation_g_1.gif", 10)

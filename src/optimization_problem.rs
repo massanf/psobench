@@ -6,7 +6,7 @@ use nalgebra::DVector;
 type OptimizationFunction = Arc<dyn Fn(&DVector<f64>) -> f64>;
 
 #[derive(Clone)]
-pub struct OptimizationProblem {
+pub struct Problem {
   #[allow(dead_code)]
   name: String,
   f: OptimizationFunction,
@@ -14,7 +14,7 @@ pub struct OptimizationProblem {
   dim: usize,
 }
 
-impl OptimizationProblem {
+impl Problem {
   pub fn new(name: String, f: OptimizationFunction, domain: (f64, f64), dim: usize) -> Self {
     Self { name, f, domain, dim }
   }
