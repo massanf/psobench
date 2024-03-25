@@ -71,22 +71,22 @@ pub fn grid_search<U: ParticleTrait, T: PSOTrait<U>>(
       .progress_chars("#>-"),
   );
   bar.set_message(format!("{}...   ", problem.name()));
-  for x1 in &param1.1 {
-    for x2 in &param2.1 {
+  let _ = &param1.1.clone().into_par_iter().for_each(|x1| {
+    let _ = &param2.1.clone().into_par_iter().for_each(|x2| {
       let mut params: HashMap<String, ParamValue> = base_params.clone();
       params.insert(param1.0.clone(), x1.clone());
       params.insert(param2.0.clone(), x2.clone());
 
-      run_attempts::<U, T>(
+      let _ = run_attempts::<U, T>(
         params,
         problem.clone(),
         out_directory.join(format!("{}={},{}={}", param1.0, x1, param2.0, x2)),
         iterations,
         attempts,
         &bar,
-      )?;
-    }
-  }
+      );
+    });
+  });
 
   bar.finish_with_message(format!("{} done!", problem.name()));
   Ok(())
@@ -95,7 +95,7 @@ pub fn grid_search<U: ParticleTrait, T: PSOTrait<U>>(
 #[allow(dead_code)]
 pub fn grid_search_dim<U: ParticleTrait, T: PSOTrait<U>>(
   iterations: usize,
-  problem_type: Arc<dyn Fn(usize) -> Problem>,
+  problem_type: Arc<dyn Fn(usize) -> Problem + Sync + Send>,
   attempts: usize,
   dims: Vec<usize>,
   param: (String, Vec<ParamValue>),
@@ -118,22 +118,21 @@ pub fn grid_search_dim<U: ParticleTrait, T: PSOTrait<U>>(
       .progress_chars("#>-"),
   );
   bar.set_message(format!("{}...   ", problem_type(2).name()));
-  for x in &param.1 {
-    for dim in &dims {
+  let _ = &param.1.clone().into_par_iter().for_each(|x| {
+    let _ = &dims.clone().into_par_iter().for_each(|dim| {
       let problem = problem_type(dim.clone());
       let mut params = base_params.clone();
       params.insert(param.0.clone(), x.clone());
-
-      run_attempts::<U, T>(
+      let _ = run_attempts::<U, T>(
         params,
         problem.clone(),
         out_directory.join(format!("{}={},{}={}", param.0.clone(), x, "dim", dim)),
         iterations,
         attempts,
         &bar,
-      )?;
-    }
-  }
+      );
+    });
+  });
   bar.finish_with_message(format!("{} done!", problem_type(2).name()));
 
   save_grid_search_config(problem_type(2), ("dim".to_owned(), dim_param), param, out_directory)?;

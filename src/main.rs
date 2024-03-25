@@ -18,7 +18,7 @@ use std::sync::Arc;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
   // Experiment Settings
   let iterations = 1000;
-  let out_directory = PathBuf::from("data/base_pso_all2");
+  let out_directory = PathBuf::from("data/base_pso_all");
 
   // Test particle_count vs. dimensions for CEC2017
   let cec17_dims = vec![2, 10, 20, 30, 50, 100];
