@@ -70,7 +70,6 @@ class GridSearch:
             for (j, z) in enumerate(row):
                 image[i, j] = z.global_best_fitness(frame)
 
-        # print(np.min(image), np.max(image))
         norm = colors.LogNorm(vmin=self.min_fitness, vmax=self.max_fitness)
 
         plt.imshow(image, cmap='viridis', origin='lower',

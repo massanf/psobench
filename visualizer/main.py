@@ -3,7 +3,7 @@ from gridsearch import GridSearch
 
 HOME = pathlib.Path(__file__).parent.parent
 
-search_parent = HOME / "data" / "base_pso_test7"
+search_parent = HOME / "data" / "base_pso_all2"
 
 graph_grandparent = HOME / "graphs" / search_parent.name
 graph_grandparent.mkdir(parents=True, exist_ok=True)

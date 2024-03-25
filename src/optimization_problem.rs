@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use nalgebra::DVector;
 
-type OptimizationFunction = Arc<dyn Fn(&DVector<f64>) -> f64>;
+type OptimizationFunction = Arc<dyn Fn(&DVector<f64>) -> f64 + Sync + Send>;
 
 #[derive(Clone)]
 pub struct Problem {

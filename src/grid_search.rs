@@ -3,6 +3,7 @@ use crate::particle_trait::ParticleTrait;
 use crate::pso_trait::{PSOTrait, ParamValue};
 use crate::utils;
 use indicatif::{ProgressBar, ProgressStyle};
+use rayon::prelude::*;
 use serde_json::json;
 use std::{collections::HashMap, fs, path::PathBuf, sync::Arc};
 
@@ -14,7 +15,7 @@ fn run_attempts<U: ParticleTrait, T: PSOTrait<U>>(
   attempts: usize,
   bar: &indicatif::ProgressBar,
 ) -> Result<(), Box<dyn std::error::Error>> {
-  for attempt in 0..attempts {
+  (0..attempts).into_par_iter().for_each(|attempt| {
     let mut pso: T = T::new(
       "PSO",
       problem.clone(),
@@ -22,10 +23,10 @@ fn run_attempts<U: ParticleTrait, T: PSOTrait<U>>(
       out_directory.join(format!("{}", attempt)),
     );
     pso.run(iterations);
-    pso.save_summary()?;
-    pso.save_config()?;
+    let _ = pso.save_summary();
+    let _ = pso.save_config();
     bar.inc(1);
-  }
+  });
   Ok(())
 }
 
@@ -112,7 +113,7 @@ pub fn grid_search_dim<U: ParticleTrait, T: PSOTrait<U>>(
   let bar = ProgressBar::new((dims.len() * param.1.len() * attempts) as u64);
   bar.set_style(
     ProgressStyle::default_bar()
-      .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {msg}")
+      .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} {msg}")
       .unwrap()
       .progress_chars("#>-"),
   );

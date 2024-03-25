@@ -114,8 +114,8 @@ void oszfunc(double *, double *, int);
 void cf_cal(double *, double *, int, double *, double *, double *, double *,
             int);
 
-double *OShift, *M, *y, *z, *x_bound;
-int ini_flag, n_flag, func_flag, *SS;
+_Thread_local double *OShift, *M, *y, *z, *x_bound;
+_Thread_local int ini_flag, n_flag, func_flag, *SS;
 
 void cec17_test_func(double *x, double *f, int nx, int mx, int func_num) {
   int cf_num = 10, i, j;
