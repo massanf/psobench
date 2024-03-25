@@ -40,7 +40,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   .cloned()
   .collect();
 
-  for func_num in 1..=2 {
+  for func_num in 1..=30 {
     if func_num == 2 {
       continue;
     }

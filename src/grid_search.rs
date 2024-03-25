@@ -70,7 +70,7 @@ pub fn grid_search<U: ParticleTrait, T: PSOTrait<U>>(
       .unwrap()
       .progress_chars("#>-"),
   );
-  bar.set_message(format!("{}...", problem.name()));
+  bar.set_message(format!("{}...   ", problem.name()));
   for x1 in &param1.1 {
     for x2 in &param2.1 {
       let mut params: HashMap<String, ParamValue> = base_params.clone();
@@ -117,7 +117,7 @@ pub fn grid_search_dim<U: ParticleTrait, T: PSOTrait<U>>(
       .unwrap()
       .progress_chars("#>-"),
   );
-  bar.set_message(format!("{}...", problem_type(2).name()));
+  bar.set_message(format!("{}...   ", problem_type(2).name()));
   for x in &param.1 {
     for dim in &dims {
       let problem = problem_type(dim.clone());
