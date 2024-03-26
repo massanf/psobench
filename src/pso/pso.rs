@@ -61,6 +61,10 @@ impl<T: ParticleTrait> PSOTrait<T> for PSO<T> {
     &self.particles
   }
 
+  fn particles_mut(&mut self) -> &mut Vec<T> {
+    &mut self.particles
+  }
+
   fn init_particles(&mut self, problem: &Problem) {
     for i in 0..self.particles.len() {
       self.particles[i].init(problem);
@@ -103,14 +107,14 @@ impl<T: ParticleTrait> PSOTrait<T> for PSO<T> {
 
   fn run(&mut self, iterations: usize) {
     for _ in 0..iterations {
-      let global_best_pos = self.global_best_pos();
       let mut new_global_best_pos = self.global_best_pos().clone();
-      let params = self.parameters().clone();
-      for particle in &mut self.particles {
-        particle.update_vel(&global_best_pos, &self.problem, &params);
-        if particle.update_pos(&self.problem) {
-          if self.problem.f(&particle.best_pos()) < self.problem.f(&new_global_best_pos) {
-            new_global_best_pos = particle.best_pos().clone();
+      for idx in 0..self.particles().len() {
+        let vel = self.calculate_vel(idx);
+        let problem = &self.problem().clone();
+        self.particles_mut()[idx].set_vel(vel);
+        if self.particles_mut()[idx].update_pos(problem) {
+          if self.problem.f(&self.particles()[idx].best_pos()) < self.problem.f(&new_global_best_pos) {
+            new_global_best_pos = self.particles()[idx].best_pos().clone();
           }
         }
       }

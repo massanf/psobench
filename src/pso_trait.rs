@@ -1,5 +1,6 @@
 use crate::optimization_problem;
 use crate::particle_trait;
+use crate::rand::Rng;
 use crate::utils;
 use nalgebra::DVector;
 use optimization_problem::Problem;
@@ -61,7 +62,59 @@ pub trait PSOTrait<T: ParticleTrait> {
   fn name(&self) -> &String;
 
   fn particles(&self) -> &Vec<T>;
+  fn particles_mut(&mut self) -> &mut Vec<T>;
   fn init_particles(&mut self, problem: &Problem);
+
+  fn calculate_vel(&self, idx: usize) -> DVector<f64> {
+    assert!(idx < self.particles().len());
+
+    let mut rng = rand::thread_rng();
+    let r_p: f64 = rng.gen_range(0.0..1.0);
+    let r_g: f64 = rng.gen_range(0.0..1.0);
+
+    assert!(self.parameters().contains_key("w"), "Key 'w' not found.");
+    let w: f64;
+    match self.parameters()["w"] {
+      ParamValue::Float(val) => w = val,
+      _ => {
+        eprintln!("Error");
+        std::process::exit(1);
+      }
+    }
+
+    assert!(self.parameters().contains_key("phi_p"), "Key 'phi_p' not found.");
+    let phi_p: f64;
+    match self.parameters()["phi_p"] {
+      ParamValue::Float(val) => phi_p = val,
+      _ => {
+        eprintln!("Error");
+        std::process::exit(1);
+      }
+    }
+
+    assert!(self.parameters().contains_key("phi_g"), "Key 'phi_g' not found.");
+    let phi_g: f64;
+    match self.parameters()["phi_g"] {
+      ParamValue::Float(val) => phi_g = val,
+      _ => {
+        eprintln!("Error");
+        std::process::exit(1);
+      }
+    }
+
+    let mut new_vel = w * self.particles()[idx].vel()
+      + phi_p * r_p * (self.particles()[idx].best_pos() - self.particles()[idx].pos())
+      + phi_g * r_g * (self.global_best_pos() - self.particles()[idx].pos());
+    for e in new_vel.iter_mut() {
+      if *e > self.problem().domain().1 - self.problem().domain().0 {
+        *e = self.problem().domain().1 - self.problem().domain().0;
+      } else if *e < self.problem().domain().0 - self.problem().domain().1 {
+        *e = self.problem().domain().0 - self.problem().domain().1;
+      }
+    }
+
+    new_vel
+  }
 
   fn problem(&self) -> &Problem;
 

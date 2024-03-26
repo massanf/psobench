@@ -55,53 +55,6 @@ pub trait ParticleTrait: Clone {
   fn vel(&self) -> &DVector<f64>;
   fn set_vel(&mut self, vel: DVector<f64>);
 
-  fn update_vel(&mut self, global_best_pos: &DVector<f64>, problem: &Problem, param: &HashMap<String, ParamValue>) {
-    let mut rng = rand::thread_rng();
-    let r_p: f64 = rng.gen_range(0.0..1.0);
-    let r_g: f64 = rng.gen_range(0.0..1.0);
-
-    assert!(param.contains_key("w"), "Key 'w' not found.");
-    let w: f64;
-    match param["w"] {
-      ParamValue::Float(val) => w = val,
-      _ => {
-        eprintln!("Error");
-        std::process::exit(1);
-      }
-    }
-
-    assert!(param.contains_key("phi_p"), "Key 'phi_p' not found.");
-    let phi_p: f64;
-    match param["phi_p"] {
-      ParamValue::Float(val) => phi_p = val,
-      _ => {
-        eprintln!("Error");
-        std::process::exit(1);
-      }
-    }
-
-    assert!(param.contains_key("phi_g"), "Key 'phi_g' not found.");
-    let phi_g: f64;
-    match param["phi_g"] {
-      ParamValue::Float(val) => phi_g = val,
-      _ => {
-        eprintln!("Error");
-        std::process::exit(1);
-      }
-    }
-
-    let mut new_vel =
-      w * self.vel() + phi_p * r_p * (self.best_pos() - self.pos()) + phi_g * r_g * (global_best_pos - self.pos());
-    for e in new_vel.iter_mut() {
-      if *e > problem.domain().1 - problem.domain().0 {
-        *e = problem.domain().1 - problem.domain().0;
-      } else if *e < problem.domain().0 - problem.domain().1 {
-        *e = problem.domain().0 - problem.domain().1;
-      }
-    }
-    self.set_vel(new_vel);
-  }
-
   fn eval(&mut self, problem: &Problem) -> bool {
     // This function returns whether the personal best was updated.
     if self.option_best_pos().is_none() || problem.f(&self.pos()) < problem.f(&self.best_pos()) {
