@@ -24,7 +24,7 @@ fn run_attempts<U: ParticleTrait, T: PSOTrait<U>>(
     );
     pso.run(iterations);
     let _ = pso.save_summary();
-    let _ = pso.save_config();
+    let _ = pso.save_config(&params);
     bar.inc(1);
   });
   Ok(())

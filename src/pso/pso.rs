@@ -2,6 +2,7 @@ use crate::optimization_problem;
 use crate::particle_trait::ParticleTrait;
 use crate::pso_trait::PSOTrait;
 use crate::pso_trait::ParamValue;
+use crate::rand::Rng;
 use nalgebra::DVector;
 use optimization_problem::Problem;
 use std::collections::HashMap;
@@ -14,8 +15,10 @@ pub struct PSO<T: ParticleTrait> {
   particles: Vec<T>,
   global_best_pos: Option<DVector<f64>>,
   data: Vec<(f64, Vec<T>)>,
-  parameters: HashMap<String, ParamValue>,
   out_directory: PathBuf,
+  w: f64,
+  phi_p: f64,
+  phi_g: f64,
 }
 
 impl<T: ParticleTrait> PSOTrait<T> for PSO<T> {
@@ -35,6 +38,36 @@ impl<T: ParticleTrait> PSOTrait<T> for PSO<T> {
       }
     }
 
+    assert!(parameters.contains_key("w"), "Key 'w' not found.");
+    let w: f64;
+    match parameters["w"] {
+      ParamValue::Float(val) => w = val,
+      _ => {
+        eprintln!("Error");
+        std::process::exit(1);
+      }
+    }
+
+    assert!(parameters.contains_key("phi_p"), "Key 'phi_p' not found.");
+    let phi_p: f64;
+    match parameters["phi_p"] {
+      ParamValue::Float(val) => phi_p = val,
+      _ => {
+        eprintln!("Error");
+        std::process::exit(1);
+      }
+    }
+
+    assert!(parameters.contains_key("phi_g"), "Key 'phi_g' not found.");
+    let phi_g: f64;
+    match parameters["phi_g"] {
+      ParamValue::Float(val) => phi_g = val,
+      _ => {
+        eprintln!("Error");
+        std::process::exit(1);
+      }
+    }
+
     for _ in 0..number_of_particles {
       particles.push(ParticleTrait::new(&problem));
     }
@@ -45,8 +78,10 @@ impl<T: ParticleTrait> PSOTrait<T> for PSO<T> {
       particles,
       global_best_pos: None,
       data: Vec::new(),
-      parameters,
       out_directory,
+      w,
+      phi_p,
+      phi_g,
     };
 
     pso.init();
@@ -71,12 +106,29 @@ impl<T: ParticleTrait> PSOTrait<T> for PSO<T> {
     }
   }
 
-  fn problem(&self) -> &Problem {
-    &self.problem
+  fn calculate_vel(&self, idx: usize) -> DVector<f64> {
+    assert!(idx < self.particles().len());
+
+    let mut rng = rand::thread_rng();
+    let r_p: f64 = rng.gen_range(0.0..1.0);
+    let r_g: f64 = rng.gen_range(0.0..1.0);
+
+    let mut new_vel = self.w * self.particles()[idx].vel()
+      + self.phi_p * r_p * (self.particles()[idx].best_pos() - self.particles()[idx].pos())
+      + self.phi_g * r_g * (self.global_best_pos() - self.particles()[idx].pos());
+    for e in new_vel.iter_mut() {
+      if *e > self.problem().domain().1 - self.problem().domain().0 {
+        *e = self.problem().domain().1 - self.problem().domain().0;
+      } else if *e < self.problem().domain().0 - self.problem().domain().1 {
+        *e = self.problem().domain().0 - self.problem().domain().1;
+      }
+    }
+
+    new_vel
   }
 
-  fn parameters(&self) -> &HashMap<String, ParamValue> {
-    &self.parameters
+  fn problem(&self) -> &Problem {
+    &self.problem
   }
 
   fn out_directory(&self) -> &PathBuf {

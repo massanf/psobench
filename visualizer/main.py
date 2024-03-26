@@ -15,6 +15,7 @@ HOME = pathlib.Path(__file__).parent.parent
 #     grid = GridSearch(search)
 #     grid.animate(graph_parent)
 
-pso = PSO(HOME / "data" / "test")
+pso = PSO(HOME / "data" / "gsa")
 pso.load_full()
-pso.animate(HOME / "graphs" / "animation_g_1.gif", 10)
+pso.overview(False, HOME / "graphs" / "gsa")
+pso.animate(HOME / "graphs" / "animation_g_1.gif", 2)
