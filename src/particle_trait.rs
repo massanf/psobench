@@ -1,11 +1,8 @@
 extern crate nalgebra as na;
 use crate::optimization_problem;
-use crate::pso_trait::ParamValue;
-use crate::rand::Rng;
 use crate::utils;
 use nalgebra::DVector;
 use optimization_problem::Problem;
-use std::collections::HashMap;
 
 pub trait ParticleTrait: Clone {
   fn new(problem: &Problem) -> Self

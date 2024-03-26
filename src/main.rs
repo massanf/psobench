@@ -11,10 +11,10 @@ mod gsa;
 mod pso;
 mod pso_trait;
 use crate::pso_trait::PSOTrait;
-// use gsa::gsa::GSA;
-// use gsa::particle::GSAParticle;
-use pso::particle::Particle;
-use pso::pso::PSO;
+use gsa::gsa::GSA;
+use gsa::particle::GSAParticle;
+// use pso::particle::Particle;
+// use pso::pso::PSO;
 mod utils;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -30,8 +30,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   .cloned()
   .collect();
 
-  let mut gsa: PSO<Particle> = PSO::new(
-    "PSO",
+  let mut gsa: GSA<GSAParticle> = GSA::new(
+    "GSA",
     functions::f1(30),
     base_params.clone(),
     PathBuf::from("data/test"),
