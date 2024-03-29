@@ -1,11 +1,11 @@
-use crate::optimization_problem;
 use crate::particle_trait::ParticleTrait;
+use crate::problem;
 use crate::pso_trait::PSOTrait;
 use crate::pso_trait::ParamValue;
 use crate::rand::Rng;
 use crate::utils;
 use nalgebra::DVector;
-use optimization_problem::Problem;
+use problem::Problem;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -27,8 +27,6 @@ pub struct GSA<T: ParticleTrait> {
 
 impl<T: ParticleTrait> PSOTrait<T> for GSA<T> {
   fn new(name: &str, problem: Problem, parameters: HashMap<String, ParamValue>, out_directory: PathBuf) -> GSA<T> {
-    let mut particles: Vec<T> = Vec::new();
-
     assert!(
       parameters.contains_key("particle_count"),
       "Key 'particle_count' not found."
@@ -72,14 +70,10 @@ impl<T: ParticleTrait> PSOTrait<T> for GSA<T> {
       }
     }
 
-    for _ in 0..number_of_particles {
-      particles.push(ParticleTrait::new(&problem));
-    }
-
     let mut gsa = GSA {
       name: name.to_owned(),
       problem,
-      particles,
+      particles: Vec::new(),
       global_best_pos: None,
       global_worst_pos: None,
       m: None,
@@ -91,16 +85,21 @@ impl<T: ParticleTrait> PSOTrait<T> for GSA<T> {
       epsilon,
     };
 
-    gsa.init();
+    gsa.init(number_of_particles);
     gsa
   }
 
-  fn init(&mut self) {
-    let problem = self.problem().clone();
+  fn init(&mut self, number_of_particles: usize) {
+    let problem = &mut self.problem();
+    let mut particles: Vec<T> = Vec::new();
+    for _ in 0..number_of_particles {
+      particles.push(ParticleTrait::new(problem));
+    }
+
     let mut global_best_pos = None;
     let mut global_worst_pos = None;
-    self.init_particles(&problem);
-    for particle in self.particles() {
+
+    for particle in particles.clone() {
       if global_best_pos.is_none() || problem.f(&particle.pos()) < problem.f(global_best_pos.as_ref().unwrap()) {
         global_best_pos = Some(particle.pos().clone());
       }
@@ -108,11 +107,13 @@ impl<T: ParticleTrait> PSOTrait<T> for GSA<T> {
         global_worst_pos = Some(particle.pos().clone());
       }
     }
+
+    self.particles = particles;
     self.global_best_pos = Some(global_best_pos.unwrap());
     self.global_worst_pos = Some(global_worst_pos.unwrap());
     self.add_data();
 
-    utils::create_directory(self.out_directory().to_path_buf(), false);
+    utils::create_directory(self.out_directory().to_path_buf(), true, false);
   }
 
   fn name(&self) -> &String {
@@ -127,16 +128,10 @@ impl<T: ParticleTrait> PSOTrait<T> for GSA<T> {
     &mut self.particles
   }
 
-  fn init_particles(&mut self, problem: &Problem) {
-    for i in 0..self.particles.len() {
-      self.particles[i].init(problem);
-    }
-  }
-
-  fn calculate_vel(&self, idx: usize) -> DVector<f64> {
+  fn calculate_vel(&mut self, idx: usize) -> DVector<f64> {
     assert!(idx < self.particles().len());
 
-    let m = self.m.as_ref().unwrap();
+    let m = self.m.as_ref().unwrap().clone();
     let mut f: DVector<f64> = DVector::from_element(self.problem().dim(), 0.);
     for j in 0..self.particles().len() {
       if idx == j {
@@ -170,8 +165,8 @@ impl<T: ParticleTrait> PSOTrait<T> for GSA<T> {
     new_vel
   }
 
-  fn problem(&self) -> &Problem {
-    &self.problem
+  fn problem(&mut self) -> &mut Problem {
+    &mut self.problem
   }
 
   fn out_directory(&self) -> &PathBuf {
@@ -180,10 +175,6 @@ impl<T: ParticleTrait> PSOTrait<T> for GSA<T> {
 
   fn global_best_pos(&self) -> DVector<f64> {
     self.global_best_pos.clone().unwrap()
-  }
-
-  fn set_global_best_pos(&mut self, pos: DVector<f64>) {
-    self.global_best_pos = Some(pos);
   }
 
   fn option_global_best_pos(&self) -> &Option<DVector<f64>> {
@@ -195,7 +186,8 @@ impl<T: ParticleTrait> PSOTrait<T> for GSA<T> {
   }
 
   fn add_data(&mut self) {
-    let gbest = self.problem().f(&self.global_best_pos());
+    let global_best_pos = self.global_best_pos().clone();
+    let gbest = self.problem().f(&global_best_pos);
     let particles = self.particles().clone();
     self.data.push((gbest, particles));
   }
@@ -207,13 +199,13 @@ impl<T: ParticleTrait> PSOTrait<T> for GSA<T> {
       // Calculate M
       let mut m_unscaled = Vec::new();
       let mut m_sum = 0.;
-      let best = self.global_best_pos.as_ref().unwrap();
-      let worst = self.global_worst_pos.as_ref().unwrap();
-      assert!(self.problem().f(best) != self.problem().f(worst));
+      let best = self.global_best_pos.as_ref().unwrap().clone();
+      let worst = self.global_worst_pos.as_ref().unwrap().clone();
+      assert!(self.problem().f(&best) != self.problem().f(&worst));
       for idx in 0..self.particles().len() {
-        let p = &self.particles()[idx];
-        let numerator = self.problem().f(p.pos()) - self.problem().f(worst);
-        let denominator = self.problem().f(best) - self.problem().f(worst);
+        let p = self.particles()[idx].clone();
+        let numerator = self.problem().f(p.pos()) - self.problem().f(&worst);
+        let denominator = self.problem().f(&best) - self.problem().f(&worst);
         assert!(numerator <= 0.);
         assert!(denominator < 0.);
         let m_i = numerator / denominator;
@@ -239,13 +231,14 @@ impl<T: ParticleTrait> PSOTrait<T> for GSA<T> {
       let mut new_global_best_pos = self.global_best_pos.clone().unwrap();
       let mut new_global_worst_pos = self.global_worst_pos.clone().unwrap();
       for idx in 0..self.particles().len() {
-        let problem = &self.problem().clone();
+        let problem = &mut self.problem().clone();
         self.particles_mut()[idx].set_vel(vels[idx].clone());
         let _ = self.particles_mut()[idx].update_pos(problem);
-        if self.problem().f(&self.particles()[idx].pos()) < self.problem().f(&new_global_best_pos) {
+        let pos = self.particles()[idx].pos().clone();
+        if self.problem().f(&pos) < self.problem().f(&new_global_best_pos) {
           new_global_best_pos = self.particles()[idx].pos().clone();
         }
-        if self.problem().f(&self.particles()[idx].pos()) > self.problem().f(&new_global_worst_pos) {
+        if self.problem().f(&pos) > self.problem().f(&new_global_worst_pos) {
           new_global_worst_pos = self.particles()[idx].pos().clone();
         }
       }

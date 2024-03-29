@@ -1,9 +1,8 @@
-use crate::optimization_problem;
 use crate::particle_trait;
-use crate::utils;
+use crate::problem;
 use nalgebra::DVector;
-use optimization_problem::Problem;
 use particle_trait::ParticleTrait;
+use problem::Problem;
 use serde::ser::{Serialize, Serializer};
 use serde_json::json;
 use std::collections::HashMap;
@@ -43,35 +42,20 @@ pub trait PSOTrait<T: ParticleTrait> {
   where
     Self: Sized;
 
-  fn init(&mut self) {
-    let problem = self.problem().clone();
-    let mut global_best_pos = None;
-    self.init_particles(&problem);
-    for particle in self.particles() {
-      if global_best_pos.is_none() || problem.f(&particle.pos()) < problem.f(global_best_pos.as_ref().unwrap()) {
-        global_best_pos = Some(particle.pos().clone());
-      }
-    }
-    self.set_global_best_pos(global_best_pos.unwrap());
-    self.add_data();
-
-    utils::create_directory(self.out_directory().to_path_buf(), false);
-  }
+  fn init(&mut self, number_of_particles: usize);
 
   fn name(&self) -> &String;
 
   fn particles(&self) -> &Vec<T>;
   fn particles_mut(&mut self) -> &mut Vec<T>;
-  fn init_particles(&mut self, problem: &Problem);
 
-  fn calculate_vel(&self, idx: usize) -> DVector<f64>;
+  fn calculate_vel(&mut self, idx: usize) -> DVector<f64>;
 
-  fn problem(&self) -> &Problem;
+  fn problem(&mut self) -> &mut Problem;
 
   fn out_directory(&self) -> &PathBuf;
 
   fn global_best_pos(&self) -> DVector<f64>;
-  fn set_global_best_pos(&mut self, pos: DVector<f64>);
   fn option_global_best_pos(&self) -> &Option<DVector<f64>>;
 
   fn data(&self) -> &Vec<(f64, Vec<T>)>;
@@ -80,20 +64,20 @@ pub trait PSOTrait<T: ParticleTrait> {
   fn run(&mut self, iterations: usize);
   fn experiment(&mut self, trials: usize, iterations: usize) {
     for _ in 0..trials {
-      self.init();
       self.run(iterations);
     }
   }
 
-  fn save_data(&self) -> Result<(), Box<dyn std::error::Error>> {
+  fn save_data(&mut self) -> Result<(), Box<dyn std::error::Error>> {
     // Serialize it to a JSON string
     let mut vec_data = Vec::new();
+    let problem = self.problem().clone();
     for t in 0..self.data().len() {
       let mut iter_data = Vec::new();
       for i in 0..self.data()[t].1.len() {
         let pos = self.data()[t].1[i].pos().clone();
         iter_data.push(json!({
-          "fitness": self.problem().f(&pos),
+          "fitness": problem.clone().f(&pos),
           "vel": self.data()[t].1[i].vel().as_slice(),
           "pos": self.data()[t].1[i].pos().as_slice(),
         }));
@@ -110,7 +94,7 @@ pub trait PSOTrait<T: ParticleTrait> {
     Ok(())
   }
 
-  fn save_config(&self, parameters: &HashMap<String, ParamValue>) -> Result<(), Box<dyn std::error::Error>> {
+  fn save_config(&mut self, parameters: &HashMap<String, ParamValue>) -> Result<(), Box<dyn std::error::Error>> {
     let serialized = serde_json::to_string(&json!({
       "problem": {
         "name": self.problem().name(),

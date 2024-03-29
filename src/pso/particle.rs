@@ -1,9 +1,9 @@
 extern crate nalgebra as na;
-use crate::optimization_problem;
 use crate::particle_trait;
+use crate::problem;
 use nalgebra::DVector;
-use optimization_problem::Problem;
 use particle_trait::ParticleTrait;
+use problem::Problem;
 
 #[derive(Clone)]
 pub struct Particle {
@@ -13,7 +13,7 @@ pub struct Particle {
 }
 
 impl ParticleTrait for Particle {
-  fn new(problem: &Problem) -> Particle {
+  fn new(problem: &mut Problem) -> Particle {
     let mut particle = Particle {
       pos: DVector::from_element(problem.dim(), 0.),
       vel: DVector::from_element(problem.dim(), 0.),

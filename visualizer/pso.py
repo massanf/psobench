@@ -3,7 +3,9 @@ from matplotlib.animation import FuncAnimation  # type: ignore
 import matplotlib.pyplot as plt  # type: ignore
 from tqdm import tqdm  # type: ignore
 import utils
+import math
 import numpy as np
+import os
 import json
 from particle import Particle
 from iteration import Iteration
@@ -85,7 +87,7 @@ class PSO:
         iteration = self.iterations[frame]
         for particle in iteration.particles:
             assert len(particle.pos) >= 2
-            plt.scatter(particle.pos[0], particle.pos[1])
+            plt.scatter(particle.pos[0], particle.pos[1], c='c')
 
         plt.grid()
         plt.xlim(self.lim)
@@ -95,7 +97,7 @@ class PSO:
         plt.gca().set_aspect('equal', adjustable='box')
 
     def animate(self, destination_path: pathlib.Path,
-                skip_frames: int = 50) -> None:
+                skip_frames: int = 50, start=0, end=-1) -> None:
         assert self.fully_loaded
         # Find lim
         self.lim = [float('inf'), float('-inf')]
@@ -109,14 +111,18 @@ class PSO:
                                   particle.pos[1])
 
         fig, ax = plt.subplots()
-        self.progressbar = tqdm(total=int(len(self.iterations) / skip_frames))
-        frames = range(0, len(self.iterations), skip_frames)
+        if end == -1:
+            end = len(self.iterations)
+        frames = range(start, end, skip_frames)
+        self.progressbar = tqdm(total=math.ceil((end - start) / skip_frames) + 1)
         ani = FuncAnimation(fig, self.update_plot_animate,
                             frames=frames)
         ani.save(destination_path, writer='imagemagick', fps=10)
 
     def overview(self, animate: bool, out_directory: pathlib.Path) -> None:
         assert self.fully_loaded
+        if not out_directory.exists():
+            os.mkdir(out_directory)
         plt.close()
         plt.rcdefaults()
         utils.plot_and_fill(self.fitness())

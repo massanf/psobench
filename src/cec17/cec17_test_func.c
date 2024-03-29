@@ -161,14 +161,14 @@ void cec17_test_func(double *x, double *f, int nx, int mx, int func_num) {
       if (M == NULL)
         printf("\nError: there is insufficient memory available!\n");
       for (i = 0; i < nx * nx; i++) {
-        fscanf(fpt, "%lf", &M[i]);
+        (void)!fscanf(fpt, "%lf", &M[i]);
       }
     } else {
       M = (double *)malloc(cf_num * nx * nx * sizeof(double));
       if (M == NULL)
         printf("\nError: there is insufficient memory available!\n");
       for (i = 0; i < cf_num * nx * nx; i++) {
-        fscanf(fpt, "%lf", &M[i]);
+        (void)!fscanf(fpt, "%lf", &M[i]);
       }
     }
     fclose(fpt);
@@ -185,7 +185,7 @@ void cec17_test_func(double *x, double *f, int nx, int mx, int func_num) {
       if (OShift == NULL)
         printf("\nError: there is insufficient memory available!\n");
       for (i = 0; i < nx; i++) {
-        fscanf(fpt, "%lf", &OShift[i]);
+        (void)!fscanf(fpt, "%lf", &OShift[i]);
       }
     } else {
       OShift = (double *)malloc(nx * cf_num * sizeof(double));
@@ -193,12 +193,12 @@ void cec17_test_func(double *x, double *f, int nx, int mx, int func_num) {
         printf("\nError: there is insufficient memory available!\n");
       for (i = 0; i < cf_num - 1; i++) {
         for (j = 0; j < nx; j++) {
-          fscanf(fpt, "%lf", &OShift[i * nx + j]);
+          (void)!fscanf(fpt, "%lf", &OShift[i * nx + j]);
         }
-        fscanf(fpt, "%*[^\n]%*c");
+        (void)!fscanf(fpt, "%*[^\n]%*c");
       }
       for (j = 0; j < nx; j++) {
-        fscanf(fpt, "%lf", &OShift[(cf_num - 1) * nx + j]);
+        (void)!fscanf(fpt, "%lf", &OShift[(cf_num - 1) * nx + j]);
       }
     }
     fclose(fpt);
@@ -215,7 +215,7 @@ void cec17_test_func(double *x, double *f, int nx, int mx, int func_num) {
       if (SS == NULL)
         printf("\nError: there is insufficient memory available!\n");
       for (i = 0; i < nx; i++) {
-        fscanf(fpt, "%d", &SS[i]);
+        (void)!fscanf(fpt, "%d", &SS[i]);
       }
       fclose(fpt);
     } else if (func_num == 29 || func_num == 30) {
@@ -228,7 +228,7 @@ void cec17_test_func(double *x, double *f, int nx, int mx, int func_num) {
       if (SS == NULL)
         printf("\nError: there is insufficient memory available!\n");
       for (i = 0; i < nx * cf_num; i++) {
-        fscanf(fpt, "%d", &SS[i]);
+        (void)!fscanf(fpt, "%d", &SS[i]);
       }
       fclose(fpt);
     }
@@ -571,6 +571,7 @@ void weierstrass_func(double *x, double *f, int nx, double *Os, double *Mr,
 {
   int i, j, k_max;
   double sum, sum2, a, b;
+  sum2 = 0.0;
   a = 0.5;
   b = 3.0;
   k_max = 20;
@@ -1526,6 +1527,7 @@ void asyfunc(double *x, double *xasy, int nx, double beta) {
 void oszfunc(double *x, double *xosz, int nx) {
   int i, sx;
   double c1, c2, xx;
+  xx = 0.0;
   for (i = 0; i < nx; i++) {
     if (i == 0 || i == nx - 1) {
       if (x[i] != 0)

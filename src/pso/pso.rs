@@ -1,10 +1,11 @@
-use crate::optimization_problem;
 use crate::particle_trait::ParticleTrait;
+use crate::problem;
 use crate::pso_trait::PSOTrait;
 use crate::pso_trait::ParamValue;
 use crate::rand::Rng;
+use crate::utils;
 use nalgebra::DVector;
-use optimization_problem::Problem;
+use problem::Problem;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -23,8 +24,6 @@ pub struct PSO<T: ParticleTrait> {
 
 impl<T: ParticleTrait> PSOTrait<T> for PSO<T> {
   fn new(name: &str, problem: Problem, parameters: HashMap<String, ParamValue>, out_directory: PathBuf) -> PSO<T> {
-    let mut particles: Vec<T> = Vec::new();
-
     assert!(
       parameters.contains_key("particle_count"),
       "Key 'particle_count' not found."
@@ -68,14 +67,10 @@ impl<T: ParticleTrait> PSOTrait<T> for PSO<T> {
       }
     }
 
-    for _ in 0..number_of_particles {
-      particles.push(ParticleTrait::new(&problem));
-    }
-
     let mut pso = PSO {
       name: name.to_owned(),
       problem,
-      particles,
+      particles: Vec::new(),
       global_best_pos: None,
       data: Vec::new(),
       out_directory,
@@ -84,8 +79,28 @@ impl<T: ParticleTrait> PSOTrait<T> for PSO<T> {
       phi_g,
     };
 
-    pso.init();
+    pso.init(number_of_particles);
     pso
+  }
+
+  fn init(&mut self, number_of_particles: usize) {
+    let problem = &mut self.problem();
+    let mut particles: Vec<T> = Vec::new();
+    for _ in 0..number_of_particles {
+      particles.push(ParticleTrait::new(problem));
+    }
+    let mut global_best_pos = None;
+    for particle in particles.clone() {
+      if global_best_pos.is_none() || problem.f(&particle.pos()) < problem.f(global_best_pos.as_ref().unwrap()) {
+        global_best_pos = Some(particle.pos().clone());
+      }
+    }
+
+    self.particles = particles;
+    self.global_best_pos = Some(global_best_pos.unwrap());
+    self.add_data();
+
+    utils::create_directory(self.out_directory().to_path_buf(), false, true);
   }
 
   fn name(&self) -> &String {
@@ -100,13 +115,7 @@ impl<T: ParticleTrait> PSOTrait<T> for PSO<T> {
     &mut self.particles
   }
 
-  fn init_particles(&mut self, problem: &Problem) {
-    for i in 0..self.particles.len() {
-      self.particles[i].init(problem);
-    }
-  }
-
-  fn calculate_vel(&self, idx: usize) -> DVector<f64> {
+  fn calculate_vel(&mut self, idx: usize) -> DVector<f64> {
     assert!(idx < self.particles().len());
 
     let mut rng = rand::thread_rng();
@@ -127,8 +136,8 @@ impl<T: ParticleTrait> PSOTrait<T> for PSO<T> {
     new_vel
   }
 
-  fn problem(&self) -> &Problem {
-    &self.problem
+  fn problem(&mut self) -> &mut Problem {
+    &mut self.problem
   }
 
   fn out_directory(&self) -> &PathBuf {
@@ -137,10 +146,6 @@ impl<T: ParticleTrait> PSOTrait<T> for PSO<T> {
 
   fn global_best_pos(&self) -> DVector<f64> {
     self.global_best_pos.clone().unwrap()
-  }
-
-  fn set_global_best_pos(&mut self, pos: DVector<f64>) {
-    self.global_best_pos = Some(pos);
   }
 
   fn option_global_best_pos(&self) -> &Option<DVector<f64>> {
@@ -152,7 +157,8 @@ impl<T: ParticleTrait> PSOTrait<T> for PSO<T> {
   }
 
   fn add_data(&mut self) {
-    let gbest = self.problem().f(&self.global_best_pos());
+    let data = &self.global_best_pos().clone();
+    let gbest = self.problem().f(data);
     let particles = self.particles().clone();
     self.data.push((gbest, particles));
   }
@@ -162,7 +168,7 @@ impl<T: ParticleTrait> PSOTrait<T> for PSO<T> {
       let mut new_global_best_pos = self.global_best_pos().clone();
       for idx in 0..self.particles().len() {
         let vel = self.calculate_vel(idx);
-        let problem = &self.problem().clone();
+        let problem = &mut self.problem().clone();
         self.particles_mut()[idx].set_vel(vel);
         if self.particles_mut()[idx].update_pos(problem) {
           if self.problem.f(&self.particles()[idx].best_pos()) < self.problem.f(&new_global_best_pos) {

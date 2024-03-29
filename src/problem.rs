@@ -12,18 +12,27 @@ pub struct Problem {
   f: OptimizationFunction,
   domain: (f64, f64),
   dim: usize,
+  cnt: usize,
 }
 
 impl Problem {
   pub fn new(name: String, f: OptimizationFunction, domain: (f64, f64), dim: usize) -> Self {
-    Self { name, f, domain, dim }
+    Self {
+      name,
+      f,
+      domain,
+      dim,
+      cnt: 0,
+    }
   }
 
   #[allow(dead_code)]
   pub fn name(&self) -> &String {
     &self.name
   }
-  pub fn f(&self, x: &DVector<f64>) -> f64 {
+  pub fn f(&mut self, x: &DVector<f64>) -> f64 {
+    self.cnt += 1;
+    // println!("{}", self.cnt);
     (self.f)(x)
   }
 

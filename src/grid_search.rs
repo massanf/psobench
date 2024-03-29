@@ -1,5 +1,5 @@
-use crate::optimization_problem::Problem;
 use crate::particle_trait::ParticleTrait;
+use crate::problem::Problem;
 use crate::pso_trait::{PSOTrait, ParamValue};
 use crate::utils;
 use indicatif::{ProgressBar, ProgressStyle};
@@ -59,9 +59,9 @@ pub fn grid_search<U: ParticleTrait, T: PSOTrait<U>>(
   base_params: HashMap<String, ParamValue>,
   out_folder: PathBuf,
 ) -> Result<(), Box<dyn std::error::Error>> {
-  utils::create_directory(out_folder.clone(), true);
+  utils::create_directory(out_folder.clone(), true, false);
   let out_directory = out_folder.join(problem.name());
-  utils::create_directory(out_directory.clone(), false);
+  utils::create_directory(out_directory.clone(), false, true);
 
   let bar = ProgressBar::new(((param1.1.len()) * (param2.1.len()) * attempts) as u64);
   bar.set_style(
@@ -89,6 +89,7 @@ pub fn grid_search<U: ParticleTrait, T: PSOTrait<U>>(
   });
 
   bar.finish_with_message(format!("{} done!", problem.name()));
+  save_grid_search_config(problem, param1, param2, out_directory)?;
   Ok(())
 }
 
@@ -102,9 +103,9 @@ pub fn grid_search_dim<U: ParticleTrait, T: PSOTrait<U>>(
   base_params: HashMap<String, ParamValue>,
   out_folder: PathBuf,
 ) -> Result<(), Box<dyn std::error::Error>> {
-  utils::create_directory(out_folder.clone(), true);
+  utils::create_directory(out_folder.clone(), false, true);
   let out_directory = out_folder.join(problem_type(2).name());
-  utils::create_directory(out_directory.clone(), false);
+  utils::create_directory(out_directory.clone(), true, false);
 
   let mut dim_param: Vec<ParamValue> = Vec::new();
   for d in &dims {
