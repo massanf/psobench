@@ -52,7 +52,7 @@ fn run_grid_search() -> Result<(), Box<dyn std::error::Error>> {
   .cloned()
   .collect();
 
-  let mut gsa: GSA<GSAParticle> = GSA::new("GSA", functions::f1(5), params.clone(), PathBuf::from("data/gsa"));
+  let mut gsa: GSA<GSAParticle> = GSA::new("GSA", functions::f1(5), params.clone(), PathBuf::from("data/bad"));
   gsa.run(iterations);
   gsa.save_summary()?;
   gsa.save_config(&params)?;
@@ -100,7 +100,7 @@ fn run_grid_search() -> Result<(), Box<dyn std::error::Error>> {
     grid_search::grid_search::<GSAParticle, GSA<GSAParticle>>(
       iterations,
       functions::cec17(func_num, 30),
-      1,
+      5,
       ("g0".to_owned(), g.clone()),
       ("alpha".to_owned(), alpha.clone()),
       base_params.clone(),

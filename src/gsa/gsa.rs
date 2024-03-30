@@ -227,6 +227,9 @@ impl<T: ParticleTrait> PSOTrait<T> for GSA<T> {
       // Reset values for good measure.
       self.m = None;
 
+      // Clear memory.
+      self.problem().clear_memo();
+
       // Update the position, best and worst.
       let mut new_global_best_pos = self.global_best_pos.clone().unwrap();
       let mut new_global_worst_pos = self.global_worst_pos.clone().unwrap();
@@ -247,7 +250,6 @@ impl<T: ParticleTrait> PSOTrait<T> for GSA<T> {
 
       // Save the data for current iteration.
       self.add_data();
-      self.problem().clear_memo();
     }
   }
 }
