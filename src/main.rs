@@ -87,26 +87,26 @@ fn run_grid_search() -> Result<(), Box<dyn std::error::Error>> {
 
   let base_params: HashMap<String, ParamValue> = [
     ("particle_count".to_owned(), ParamValue::Int(30)),
-    ("epsilon".to_owned(), ParamValue::Float(0.)),
+    ("epsilon".to_owned(), ParamValue::Float(0.001)),
   ]
   .iter()
   .cloned()
   .collect();
 
-  // for func_num in 1..=30 {
-  //   if func_num == 2 {
-  //     continue;
-  // }
-  grid_search::grid_search::<GSAParticle, GSA<GSAParticle>>(
-    iterations,
-    functions::cec17(1, 30),
-    100,
-    ("g0".to_owned(), g.clone()),
-    ("alpha".to_owned(), alpha.clone()),
-    base_params.clone(),
-    out_directory.clone(),
-  )?;
-  // }
+  for func_num in 1..=30 {
+    if func_num == 2 {
+      continue;
+    }
+    grid_search::grid_search::<GSAParticle, GSA<GSAParticle>>(
+      iterations,
+      functions::cec17(func_num, 30),
+      1,
+      ("g0".to_owned(), g.clone()),
+      ("alpha".to_owned(), alpha.clone()),
+      base_params.clone(),
+      out_directory.clone(),
+    )?;
+  }
   Ok(())
 }
 

@@ -75,6 +75,10 @@ impl Problem {
     ans
   }
 
+  pub fn clear_memo(&mut self) {
+    self.memo.clear();
+  }
+
   pub fn domain(&self) -> (f64, f64) {
     self.domain
   }

@@ -138,7 +138,7 @@ impl<T: ParticleTrait> PSOTrait<T> for GSA<T> {
         continue;
       }
       let r = self.particles()[j].pos() - self.particles()[idx].pos();
-      assert!(r.norm() + self.epsilon != 0.);
+      // assert!(r.norm() + self.epsilon != 0.);
       f += self.g * (m[idx] * m[j]) / (r.norm() + self.epsilon) * r;
     }
 
@@ -247,6 +247,7 @@ impl<T: ParticleTrait> PSOTrait<T> for GSA<T> {
 
       // Save the data for current iteration.
       self.add_data();
+      self.problem().clear_memo();
     }
   }
 }
