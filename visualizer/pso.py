@@ -59,16 +59,6 @@ class PSO:
             return result
         raise ValueError("Unexpected `global_best_fitness` value")
 
-    def fitness(self) -> List[List[float]]:
-        assert self.fully_loaded
-        result: List[List[float]] = []
-        for iteration in self.iterations:
-            iter_result = []
-            for particle in iteration.particles:
-                iter_result.append(particle.fitness)
-            result.append(iter_result)
-        return result
-
     def speed(self) -> List[List[float]]:
         assert self.fully_loaded
         result: List[List[float]] = []
@@ -119,22 +109,32 @@ class PSO:
                             frames=frames)
         ani.save(destination_path, writer='imagemagick', fps=10)
 
+    def plot_global_best_fitness_progress(self, out_directory: pathlib.Path) -> None:
+        if not out_directory.exists():
+            os.mkdir(out_directory)
+        plt.close()
+        plt.cla()
+        plt.rcdefaults()
+        plt.plot(self.global_best_fitness_progress())
+        plt.gca().autoscale(axis='y', tight=False)
+        plt.savefig(out_directory / "fitness_over_time.png")
+        plt.close()
+
     def overview(self, animate: bool, out_directory: pathlib.Path) -> None:
         assert self.fully_loaded
         if not out_directory.exists():
             os.mkdir(out_directory)
-        plt.close()
         plt.rcdefaults()
         utils.plot_and_fill(self.fitness())
-        # Set the y-axis limits to automatic
         plt.gca().autoscale(axis='y', tight=False)
         plt.savefig(out_directory / "fitness_over_time.png")
-
         plt.close()
+
         plt.cla()
         plt.rcdefaults()
         utils.plot_and_fill(self.speed())
         plt.savefig(out_directory / "speed_over_time.png")
+        plt.close()
 
         plt.close()
         if animate:

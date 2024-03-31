@@ -66,29 +66,30 @@ fn run_grid_search() -> Result<(), Box<dyn std::error::Error>> {
   let iterations = 1000;
   let out_directory = PathBuf::from("data/gsa/grid_search");
 
-  let g: Vec<ParamValue> = vec![
-    ParamValue::Float(0.1),
-    ParamValue::Float(0.2),
-    ParamValue::Float(0.5),
+  let g0: Vec<ParamValue> = vec![
     ParamValue::Float(1.0),
-    ParamValue::Float(2.0),
     ParamValue::Float(5.0),
     ParamValue::Float(10.0),
-    ParamValue::Float(20.0),
     ParamValue::Float(50.0),
     ParamValue::Float(100.0),
+    ParamValue::Float(500.0),
+    ParamValue::Float(1000.0),
+    ParamValue::Float(5000.0),
+    ParamValue::Float(10000.0),
+    ParamValue::Float(50000.0),
   ];
   let alpha: Vec<ParamValue> = vec![
     ParamValue::Float(0.1),
-    ParamValue::Float(0.2),
     ParamValue::Float(0.5),
     ParamValue::Float(1.0),
-    ParamValue::Float(2.0),
     ParamValue::Float(5.0),
     ParamValue::Float(10.0),
-    ParamValue::Float(20.0),
     ParamValue::Float(50.0),
     ParamValue::Float(100.0),
+    ParamValue::Float(500.0),
+    ParamValue::Float(1000.0),
+    ParamValue::Float(5000.0),
+    ParamValue::Float(10000.0),
   ];
 
   let base_params: HashMap<String, ParamValue> = [
@@ -103,11 +104,12 @@ fn run_grid_search() -> Result<(), Box<dyn std::error::Error>> {
     if func_num == 2 {
       continue;
     }
+
     grid_search::grid_search::<GSAParticle, GSA<GSAParticle>>(
       iterations,
       functions::cec17(func_num, 30),
       5,
-      ("g0".to_owned(), g.clone()),
+      ("g0".to_owned(), g0.clone()),
       ("alpha".to_owned(), alpha.clone()),
       base_params.clone(),
       out_directory.clone(),
@@ -117,9 +119,9 @@ fn run_grid_search() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-  // run_grid_search()?;
+  run_grid_search()?;
   // run_pso();
-  let _ = run_gsa();
+  // let _ = run_gsa();
   // let _ = run_pso();
   Ok(())
 }

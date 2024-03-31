@@ -66,7 +66,10 @@ pub fn create_directory(path: PathBuf, addable: bool, ask_clear: bool) {
             let _ = fs::remove_dir_all(path.clone());
             let _ = fs::create_dir_all(path);
           }
-          _ => {}
+          _ => {
+            eprintln!("Cancelled.");
+            std::process::exit(1);
+          }
         }
       }
       (false, false) => {}

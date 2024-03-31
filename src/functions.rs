@@ -74,7 +74,7 @@ pub fn cec17(func_num: usize, dim: usize) -> Problem {
   );
   assert!(func_num != 2, "CEC2017 F2 has been deprecated.");
   Problem::new(
-    format!("CEC2017_F{}", func_num),
+    format!("CEC2017_F{:02}", func_num),
     Arc::new(move |x: &DVector<f64>| cec17_impl(x, func_num)),
     (-100., 100.),
     dim,

@@ -25,3 +25,4 @@ class Iteration:
         ax.set_title(title)
 
         plt.savefig(filename)
+        plt.close()
