@@ -66,12 +66,13 @@ impl Problem {
   }
 
   pub fn f(&mut self, x: &DVector<f64>) -> f64 {
-    if self.memo.contains_key(&HashableDVectorF64ForMemo(x.clone())) {
-      return self.memo[&HashableDVectorF64ForMemo(x.clone())];
+    let hash = &HashableDVectorF64ForMemo(x.clone());
+    if self.memo.contains_key(hash) {
+      return self.memo[hash];
     }
     let ans = (self.f)(x);
     self.cnt += 1;
-    self.memo.insert(HashableDVectorF64ForMemo(x.clone()), ans);
+    self.memo.insert(hash.clone(), ans);
     ans
   }
 

@@ -26,6 +26,8 @@ pub trait ParticleTrait: Clone {
   fn update_pos(&mut self, problem: &mut Problem) {
     let mut new_pos = self.pos().clone();
     let mut new_vel = self.vel().clone();
+
+    // Check wall.
     for (i, e) in new_pos.iter_mut().enumerate() {
       if self.pos()[i] + self.vel()[i] < problem.domain().0 {
         *e = 2. * problem.domain().0 - self.vel()[i] - self.pos()[i];

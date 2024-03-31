@@ -44,7 +44,7 @@ fn run_gsa() -> Result<(), Box<dyn std::error::Error>> {
   // Experiment Settings
   let iterations = 1000;
   let params: HashMap<String, ParamValue> = [
-    ("g0".to_owned(), ParamValue::Float(10.0)),
+    ("g0".to_owned(), ParamValue::Float(1.0)),
     ("alpha".to_owned(), ParamValue::Float(10.0)),
     ("epsilon".to_owned(), ParamValue::Float(0.001)),
     ("particle_count".to_owned(), ParamValue::Int(30)),
@@ -53,7 +53,7 @@ fn run_gsa() -> Result<(), Box<dyn std::error::Error>> {
   .cloned()
   .collect();
 
-  let mut gsa: GSA<GSAParticle> = GSA::new("GSA", functions::f1(10), params.clone(), PathBuf::from("data/test"));
+  let mut gsa: GSA<GSAParticle> = GSA::new("GSA", functions::f1(10), params.clone(), PathBuf::from("data/test/gsa"));
   gsa.run(iterations);
   gsa.save_summary()?;
   gsa.save_data()?;
@@ -64,7 +64,7 @@ fn run_gsa() -> Result<(), Box<dyn std::error::Error>> {
 #[allow(dead_code)]
 fn run_grid_search() -> Result<(), Box<dyn std::error::Error>> {
   let iterations = 1000;
-  let out_directory = PathBuf::from("data/base_gsa_all");
+  let out_directory = PathBuf::from("data/gsa/grid_search");
 
   let g: Vec<ParamValue> = vec![
     ParamValue::Float(0.1),
@@ -119,7 +119,7 @@ fn run_grid_search() -> Result<(), Box<dyn std::error::Error>> {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
   // run_grid_search()?;
   // run_pso();
-  // let _ = run_gsa();
-  let _ = run_pso();
+  let _ = run_gsa();
+  // let _ = run_pso();
   Ok(())
 }

@@ -17,6 +17,7 @@ pub struct GSA<T: ParticleTrait> {
   global_best_pos: Option<DVector<f64>>,
   global_worst_pos: Option<DVector<f64>>,
   m: Option<Vec<f64>>,
+  influences: Vec<bool>,
   g: f64,
   data: Vec<(f64, Vec<T>)>,
   out_directory: PathBuf,
@@ -77,6 +78,7 @@ impl<T: ParticleTrait> PSOTrait<T> for GSA<T> {
       global_best_pos: None,
       global_worst_pos: None,
       m: None,
+      influences: vec![false; number_of_particles],
       g: 100.,
       data: Vec::new(),
       out_directory,
@@ -139,7 +141,13 @@ impl<T: ParticleTrait> PSOTrait<T> for GSA<T> {
       }
       let r = self.particles()[j].pos() - self.particles()[idx].pos();
       // assert!(r.norm() + self.epsilon != 0.);
-      f += self.g * (m[idx] * m[j]) / (r.norm() + self.epsilon) * r;
+      let influences;
+      if self.influences[j] {
+        influences = 1.;
+      } else {
+        influences = 0.;
+      }
+      f += self.g * (m[idx] * m[j] * influences) / (r.norm() + self.epsilon) * r;
     }
 
     if m[idx] == 0. {
@@ -216,6 +224,29 @@ impl<T: ParticleTrait> PSOTrait<T> for GSA<T> {
       for idx in 0..self.particles().len() {
         m.push(m_unscaled[idx] / m_sum);
       }
+
+      // Only use k largest values. Set others to 0.
+      let mut m_sorted = m.clone();
+      m_sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+      let particle_count = self.particles().len();
+      let mut k = (-(particle_count as f64) / (iterations as f64) * iter as f64 + particle_count as f64) as usize;
+      k = std::cmp::max(k, 1);
+      k = std::cmp::min(k, particle_count);
+
+      for i in 0..particle_count {
+        let loc;
+        match m_sorted.binary_search_by(|v| v.partial_cmp(&m[i]).expect("Couldnm't compare values")) {
+          Ok(val) => loc = val - 1,
+          Err(val) => loc = val - 1,
+        }
+        if (particle_count - loc) > k {
+          self.influences[i] = false;
+        } else {
+          self.influences[i] = true;
+        }
+      }
+      // println!("{:?}", m_sorted);
       self.m = Some(m);
 
       // Calculate vels.
@@ -235,9 +266,10 @@ impl<T: ParticleTrait> PSOTrait<T> for GSA<T> {
       let mut new_global_worst_pos = self.global_worst_pos.clone().unwrap();
       for idx in 0..self.particles().len() {
         let problem = &mut self.problem().clone();
-        self.particles_mut()[idx].set_vel(vels[idx].clone());
-        let _ = self.particles_mut()[idx].update_pos(problem);
-        let pos = self.particles()[idx].pos().clone();
+        let particle = &mut self.particles_mut()[idx];
+        particle.set_vel(vels[idx].clone());
+        let _ = particle.update_pos(problem);
+        let pos = particle.pos().clone();
         if self.problem().f(&pos) < self.problem().f(&new_global_best_pos) {
           new_global_best_pos = self.particles()[idx].pos().clone();
         }
