@@ -165,15 +165,16 @@ impl<T: ParticleTrait> PSOTrait<T> for PSO<T> {
 
   fn run(&mut self, iterations: usize) {
     for _ in 0..iterations {
+      self.problem().clear_memo();
+
       let mut new_global_best_pos = self.global_best_pos().clone();
       for idx in 0..self.particles().len() {
         let vel = self.calculate_vel(idx);
         let problem = &mut self.problem().clone();
         self.particles_mut()[idx].set_vel(vel);
-        if self.particles_mut()[idx].update_pos(problem) {
-          if self.problem.f(&self.particles()[idx].best_pos()) < self.problem.f(&new_global_best_pos) {
-            new_global_best_pos = self.particles()[idx].best_pos().clone();
-          }
+        self.particles_mut()[idx].update_pos(problem);
+        if self.problem.f(&self.particles()[idx].best_pos()) < self.problem.f(&new_global_best_pos) {
+          new_global_best_pos = self.particles()[idx].best_pos().clone();
         }
       }
       self.global_best_pos = Some(new_global_best_pos);

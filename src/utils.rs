@@ -50,6 +50,7 @@ pub fn create_directory(path: PathBuf, addable: bool, ask_clear: bool) {
         match user_input.trim().to_lowercase().as_str() {
           "y" => {
             let _ = fs::remove_dir_all(path.clone());
+            let _ = fs::create_dir_all(path);
           }
           _ => {}
         }
@@ -63,6 +64,7 @@ pub fn create_directory(path: PathBuf, addable: bool, ask_clear: bool) {
         match user_input.trim().to_lowercase().as_str() {
           "y" => {
             let _ = fs::remove_dir_all(path.clone());
+            let _ = fs::create_dir_all(path);
           }
           _ => {}
         }

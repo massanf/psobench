@@ -86,4 +86,8 @@ impl Problem {
   pub fn dim(&self) -> usize {
     self.dim
   }
+
+  pub fn cnt(&self) -> usize {
+    self.cnt
+  }
 }

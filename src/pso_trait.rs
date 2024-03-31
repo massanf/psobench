@@ -109,13 +109,14 @@ pub trait PSOTrait<T: ParticleTrait> {
     Ok(())
   }
 
-  fn save_summary(&self) -> Result<(), Box<dyn std::error::Error>> {
+  fn save_summary(&mut self) -> Result<(), Box<dyn std::error::Error>> {
     let mut global_best_progress = Vec::new();
     for t in 0..self.data().len() {
       global_best_progress.push(self.data()[t].0);
     }
     let serialized = serde_json::to_string(&json!({
       "global_best_fitness": global_best_progress,
+      "evaluation_count": self.problem().cnt(),
     }))?;
     fs::write(self.out_directory().join("summary.json"), serialized)?;
     Ok(())
