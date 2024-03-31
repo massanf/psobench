@@ -50,7 +50,13 @@ class PSO:
             return result
         raise ValueError("Incorrect dictionary type.")
 
-    def global_best_fitness(self, idx: int) -> float:
+    def evaluation_count(self) -> int:
+        result = self.summary["evaluation_count"]
+        if isinstance(result, int):
+            return result
+        raise ValueError("Incorrect dictionary type.")
+
+    def global_best_fitness(self, idx: int=-1) -> float:
         progress = self.summary["global_best_fitness"]
         if idx != -1 and not (idx >= 0 and idx < len(progress)):
             raise ValueError("Index is out of bounds.")

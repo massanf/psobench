@@ -1,10 +1,13 @@
 import matplotlib.pyplot as plt  # type: ignore
+import os
+import matplotlib
 from matplotlib.animation import FuncAnimation  # type: ignore
 import numpy as np  # type: ignore
 from typing import Dict, Any
 import json
 from pso import PSO
 from tqdm import tqdm  # type: ignore
+from matplotlib.ticker import LogLocator
 import matplotlib.colors as colors  # type: ignore
 from typing import List, Tuple
 import pathlib
@@ -32,6 +35,9 @@ class GridSearch:
 
         data = []
         for exp_path in (data_path).glob("*"):
+            if not os.path.isdir(exp_path):
+                continue
+            attempts = len([name for name in os.listdir(exp_path) if os.path.isdir(os.path.join(exp_path, name))])
             for attempt_path in (exp_path).glob("*"):
                 pso = PSO(attempt_path)
                 if self.arg1 == "dim":
@@ -46,7 +52,7 @@ class GridSearch:
         self.x_values = self.search_config["grid_search"][self.arg1]
         self.y_values = self.search_config["grid_search"][self.arg2]
 
-        self.psos = [[PSO(attempt_path) for _ in range(len(self.x_values))]
+        self.psos = [[[PSO(attempt_path) for _ in range(attempts)] for _ in range(len(self.x_values))]
                      for _ in range(len(self.y_values))]
 
         self.max_fitness = float("-inf")
@@ -54,7 +60,7 @@ class GridSearch:
         for x, y, z in data:
             ix = np.searchsorted(self.x_values, x)
             iy = np.searchsorted(self.y_values, y)
-            self.psos[iy][ix] = z
+            self.psos[iy][ix].append(z)
             self.max_fitness = max(self.max_fitness,
                                    np.max(z.global_best_fitness_progress()))
             if self.min_fitness > np.min(z.global_best_fitness_progress()):
@@ -67,12 +73,7 @@ class GridSearch:
             ) -> None:
         plt.cla()
 
-        image = np.zeros((len(self.y_values), len(self.x_values)))
-        for (i, row) in enumerate(self.psos):
-            for (j, z) in enumerate(row):
-                image[i, j] = z.global_best_fitness(frame)
-
-        norm = colors.LogNorm(vmin=self.min_fitness, vmax=self.max_fitness)
+        image, norm = self.create_image(True, frame)
 
         plt.imshow(image, cmap='viridis', origin='lower',
                    norm=norm,
@@ -86,22 +87,29 @@ class GridSearch:
         plt.ylabel(self.arg2)
         self.progressbar.update(1)
 
-    def create_image(self, frame: int = -1) -> Tuple[List[List[float]], Any]:
+    def create_image(self, use_all_range: bool, frame: int = -1) -> Tuple[List[List[float]], Any]:
         image = np.zeros((len(self.y_values), len(self.x_values)))
         for (i, row) in enumerate(self.psos):
             for (j, z) in enumerate(row):
-                image[i, j] = z.global_best_fitness(frame)
-
-        norm = colors.LogNorm(vmin=self.min_fitness, vmax=self.max_fitness)
+                fitnesses = []
+                for attempt in z:
+                    fitnesses.append(attempt.global_best_fitness(frame))
+                image[i, j] = np.average(fitnesses)
+        if use_all_range:
+            norm = colors.LogNorm(vmin=self.min_fitness, vmax=self.max_fitness)
+        else:
+            norm = colors.LogNorm()
         return (image, norm)
 
     def plot(
             self,
             path: pathlib.Path,
+            log_1: bool,
+            log_2: bool,
             frame: int = -1,
         ) -> None:
         plt.close()
-        image, norm = self.create_image(frame)
+        image, norm = self.create_image(False, frame)
         
         font = {'family' : 'DejaVu Sans',
                 'size'   : 30}
@@ -120,8 +128,10 @@ class GridSearch:
                           self.y_values[-1]],
                   aspect='auto')
         newax = fig.add_axes(ax.get_position())
-        newax.set_yscale('log')
-        newax.set_xscale('log')
+        if log_1:
+            newax.set_yscale('log')
+        if log_2:
+            newax.set_xscale('log')
         newax.set_xlim((self.x_values[0], self.x_values[-1]))
         newax.set_ylim((self.y_values[0], self.y_values[-1]))
         newax.patch.set_facecolor('none')
@@ -132,9 +142,6 @@ class GridSearch:
 
         plt.savefig(path / "grid_search.png", bbox_inches='tight')
         plt.close()
-
-    def best_pso(self) -> PSO:
-        return self.best_pso
 
     def animate(self, out_path: pathlib.Path) -> None:
         plt.rcParams.update({'figure.max_open_warning': 0})

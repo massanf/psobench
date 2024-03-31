@@ -1,4 +1,3 @@
-import math
 import pathlib
 import matplotlib.pyplot as plt  # type: ignore
 from gridsearch import GridSearch
@@ -9,7 +8,7 @@ DATA = HOME / "data"
 GRAPHS = HOME / "graphs"
 
 class GridSearches:
-    def __init__(self, path: pathlib.Path):
+    def __init__(self, path: pathlib.Path, log_1: bool, log_2: bool):
         self.path = path
 
         self.data = DATA / path
@@ -25,11 +24,11 @@ class GridSearches:
             graph_dir = self.graphs / function_dir.name
             graph_dir.mkdir(parents=True, exist_ok=True)
             grid = GridSearch(function_dir)
-            grid.plot(graph_dir)
+            grid.plot(graph_dir, log_1, log_2)
 
         self.graph_paths = sorted(self.graph_paths, key=lambda path: path.name)
 
-    def cec17_summary(self):
+    def collage(self, filename: str):
         n_rows = 5
         n_cols = 6
 
@@ -38,17 +37,23 @@ class GridSearches:
 
         for i, ax in enumerate(axs):
             if i < len(self.graph_paths):
-                img = mpimg.imread(self.graph_paths[i] / "grid_search.png")
+                img = mpimg.imread(self.graph_paths[i] / filename)
                 ax.imshow(img)
             ax.axis('off')
 
         plt.subplots_adjust(wspace=0.1, hspace=0.1)
-        plt.savefig(self.graphs / 'grid_searches.png', bbox_inches='tight', pad_inches=0.1)
+        plt.savefig(self.graphs / filename, bbox_inches='tight', pad_inches=0.1)
 
 gsa_path = pathlib.Path("gsa") / "grid_search"
-gsa = GridSearches(gsa_path)
-gsa.cec17_summary()
+gsa = GridSearches(gsa_path, True, True)
+gsa.collage("grid_search.png")
 
+pso_path = pathlib.Path("pso") / "grid_search"
+pso = GridSearches(pso_path, False, False)
+pso.collage("grid_search.png")
+
+
+# gsa.collage("count_vs_best_fitness.png")
 # NAME = pathlib.Path("test") / "gsa"
 # DATA = HOME / "data" / NAME
 # GRAPHS = HOME / "graphs" / NAME
