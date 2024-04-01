@@ -1,5 +1,8 @@
 import pathlib
+from tqdm import tqdm
+from matplotlib.ticker import LogLocator, LogFormatterMathtext
 import matplotlib.pyplot as plt  # type: ignore
+from typing import Any
 from gridsearch import GridSearch
 import matplotlib.image as mpimg
 
@@ -8,7 +11,7 @@ DATA = HOME / "data"
 GRAPHS = HOME / "graphs"
 
 class GridSearches:
-    def __init__(self, path: pathlib.Path, log_1: bool, log_2: bool):
+    def __init__(self, path: pathlib.Path):
         self.path = path
 
         self.data = DATA / path
@@ -20,15 +23,18 @@ class GridSearches:
             self.data_paths.append(function_dir)
             self.graph_paths.append(self.graphs / function_dir.name)
 
+        self.graph_paths = sorted(self.graph_paths, key=lambda path: path.name)
+
+    def draw_heatmap(self, log_1: bool, log_2: bool):
         for idx, function_dir in enumerate(self.data_paths):
             graph_dir = self.graphs / function_dir.name
             graph_dir.mkdir(parents=True, exist_ok=True)
             grid = GridSearch(function_dir)
-            grid.plot(graph_dir, log_1, log_2)
+            grid.draw_heatmap(graph_dir, log_1, log_2)
+            grid.plot_best_global_progress(graph_dir)
 
-        self.graph_paths = sorted(self.graph_paths, key=lambda path: path.name)
-
-    def collage(self, filename: str):
+    def heatmap_collage(self, filename: str, log_1: bool, log_2: bool):
+        self.draw_heatmap(log_1, log_2)
         n_rows = 5
         n_cols = 6
 
@@ -44,14 +50,35 @@ class GridSearches:
         plt.subplots_adjust(wspace=0.1, hspace=0.1)
         plt.savefig(self.graphs / filename, bbox_inches='tight', pad_inches=0.1)
 
+    def plot_best_global_progress(self, axs) -> Any:
+        axs = axs.flatten()
+        for i, ax in enumerate(tqdm(axs)):
+            if i >= len(self.data_paths):
+                axs[i].set_visible(False)
+                continue
+            grid = GridSearch(self.data_paths[i])
+            axs[i].yaxis.set_major_locator(LogLocator(base=10.0, subs=(1.0,), numticks=3))
+            axs[i].yaxis.set_major_formatter(LogFormatterMathtext(base=10.0, labelOnlyBase=False))
+            axs[i].plot(grid.best_global_progress(), label=self.path.parent.name)
+            axs[i].set_title(grid.name)
+            axs[i].legend()
+        return axs
+
+
 gsa_path = pathlib.Path("gsa") / "grid_search"
-gsa = GridSearches(gsa_path, True, True)
-gsa.collage("grid_search.png")
+gsa = GridSearches(gsa_path)
+# gsa.heatmap_collage("grid_search.png", True, True)
 
 pso_path = pathlib.Path("pso") / "grid_search"
-pso = GridSearches(pso_path, False, False)
-pso.collage("grid_search.png")
+pso = GridSearches(pso_path)
+# pso.heatmap_collage("grid_search.png", False, False)
 
+
+fig, axs = plt.subplots(5, 6, figsize=(12, 10), dpi=300)
+axs = gsa.plot_best_global_progress(axs)
+axs = pso.plot_best_global_progress(axs)
+plt.tight_layout()
+plt.savefig(GRAPHS / "progress_comparison.png")
 
 # gsa.collage("count_vs_best_fitness.png")
 # NAME = pathlib.Path("test") / "gsa"

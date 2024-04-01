@@ -7,6 +7,7 @@ from typing import Dict, Any
 import json
 from pso import PSO
 from tqdm import tqdm  # type: ignore
+from matplotlib.ticker import ScalarFormatter
 from matplotlib.ticker import LogLocator
 import matplotlib.colors as colors  # type: ignore
 from typing import List, Tuple
@@ -67,7 +68,46 @@ class GridSearch:
                 self.best_pso = z
                 self.min_fitness = np.min(z.global_best_fitness_progress())
 
-    def plot_for_animate(
+    def best_global_progress(self):
+        best = float("inf")
+        for row in self.psos:
+            for psos in row:
+                final_values = []
+                for attempt in psos:
+                    final_values.append(attempt.global_best_fitness(-1))
+                avg = np.average(final_values)
+                if avg < best:
+                    best = avg
+                    best_psos = psos
+        data = []
+        for pso in psos:
+            data.append(pso.global_best_fitness_progress())
+        return [sum(group) / len(group) for group in zip(*data)]
+ 
+
+    def plot_best_global_progress(self, path: pathlib.Path):
+        plt.close()
+        plt.cla()
+        plt.yscale('log')
+        plt.title(f"{self.name}")
+        plt.plot(self.best_global_progress())
+        plt.savefig(path / "best_global_progress.png", bbox_inches='tight')
+
+    def create_image(self, use_all_range: bool, frame: int = -1) -> Tuple[List[List[float]], Any]:
+        image = np.zeros((len(self.y_values), len(self.x_values)))
+        for (i, row) in enumerate(self.psos):
+            for (j, z) in enumerate(row):
+                fitnesses = []
+                for attempt in z:
+                    fitnesses.append(attempt.global_best_fitness(frame))
+                image[i, j] = np.average(fitnesses)
+        if use_all_range:
+            norm = colors.LogNorm(vmin=self.min_fitness, vmax=self.max_fitness)
+        else:
+            norm = colors.LogNorm()
+        return (image, norm)
+
+    def draw_heatmap_for_animate(
             self,
             frame: int = -1
             ) -> None:
@@ -87,21 +127,7 @@ class GridSearch:
         plt.ylabel(self.arg2)
         self.progressbar.update(1)
 
-    def create_image(self, use_all_range: bool, frame: int = -1) -> Tuple[List[List[float]], Any]:
-        image = np.zeros((len(self.y_values), len(self.x_values)))
-        for (i, row) in enumerate(self.psos):
-            for (j, z) in enumerate(row):
-                fitnesses = []
-                for attempt in z:
-                    fitnesses.append(attempt.global_best_fitness(frame))
-                image[i, j] = np.average(fitnesses)
-        if use_all_range:
-            norm = colors.LogNorm(vmin=self.min_fitness, vmax=self.max_fitness)
-        else:
-            norm = colors.LogNorm()
-        return (image, norm)
-
-    def plot(
+    def draw_heatmap(
             self,
             path: pathlib.Path,
             log_1: bool,
@@ -111,12 +137,8 @@ class GridSearch:
         plt.close()
         image, norm = self.create_image(False, frame)
         
-        font = {'family' : 'DejaVu Sans',
-                'size'   : 30}
-        plt.rc('font', **font)
-
         # Doing finicky stuff because the axes have to be log.
-        fig, ax = plt.subplots(1, 1, figsize=(5, 5), dpi=100)
+        fig, ax = plt.subplots(1, 1, figsize=(2, 2), dpi=100)
 
         ax.set_title(f"{self.name}")
         ax.axis('off')
@@ -152,7 +174,7 @@ class GridSearch:
              / skip_frames) + 2))
         self.progressbar.set_description(self.name)
 
-        self.plot(0)
+        self.draw_heatmap(0)
         plt.colorbar()
 
         frames = range(0, 1000, skip_frames)
