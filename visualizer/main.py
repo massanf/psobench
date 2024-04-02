@@ -67,25 +67,25 @@ class GridSearches:
         return axs
 
 
-gsa_path = pathlib.Path("gsa") / "grid_search"
-gsa = GridSearches(gsa_path)
-# gsa.heatmap_collage("grid_search.png", True, True)
+# gsa_path = pathlib.Path("gsa") / "grid_search"
+# gsa = GridSearches(gsa_path)
+# # gsa.heatmap_collage("grid_search.png", True, True)
 
-pso_path = pathlib.Path("pso") / "grid_search"
-pso = GridSearches(pso_path)
-# pso.heatmap_collage("grid_search.png", False, False)
+# pso_path = pathlib.Path("pso") / "grid_search"
+# pso = GridSearches(pso_path)
+# # pso.heatmap_collage("grid_search.png", False, False)
 
 
-fig, axs = plt.subplots(5, 6, figsize=(12, 10), dpi=300)
-axs = gsa.plot_best_global_progress(axs)
-axs = pso.plot_best_global_progress(axs)
-plt.tight_layout()
-plt.savefig(GRAPHS / "progress_comparison.png")
+# fig, axs = plt.subplots(5, 6, figsize=(12, 10), dpi=300)
+# axs = gsa.plot_best_global_progress(axs)
+# axs = pso.plot_best_global_progress(axs)
+# plt.tight_layout()
+# plt.savefig(GRAPHS / "progress_comparison.png")
 
-# NAME = pathlib.Path("test") / "gsa"
-# DATA = HOME / "data" / NAME
-# GRAPHS = HOME / "graphs" / NAME
-# pso = PSO(DATA)
-# pso.load_full()
-# pso.overview(False, GRAPHS)
-# pso.animate(GRAPHS / "animation.mp4", 10, 0, 1000)
+NAME = pathlib.Path("test") / "pso"
+DATA = HOME / "data" / NAME
+GRAPHS = HOME / "graphs" / NAME
+pso = PSO(DATA)
+pso.load_full()
+pso.overview(False, GRAPHS)
+pso.animate(GRAPHS / "animation.gif", 1, 0, 500)

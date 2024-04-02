@@ -6,11 +6,14 @@ mod functions;
 mod particle_trait;
 use crate::pso_trait::ParamValue;
 use std::collections::HashMap;
+mod cfo;
 mod grid_search;
 mod gsa;
 mod pso;
 mod pso_trait;
 use crate::pso_trait::PSOTrait;
+use cfo::cfo::CFO;
+use cfo::particle::CFOParticle;
 use gsa::gsa::GSA;
 use gsa::particle::GSAParticle;
 use pso::particle::Particle;
@@ -25,13 +28,18 @@ fn run_pso() -> Result<(), Box<dyn std::error::Error>> {
     ("w".to_owned(), ParamValue::Float(0.8)),
     ("phi_p".to_owned(), ParamValue::Float(1.0)),
     ("phi_g".to_owned(), ParamValue::Float(1.0)),
-    ("particle_count".to_owned(), ParamValue::Int(30)),
+    ("particle_count".to_owned(), ParamValue::Int(50)),
   ]
   .iter()
   .cloned()
   .collect();
 
-  let mut pso: PSO<Particle> = PSO::new("PSO", functions::f1(10), params.clone(), PathBuf::from("data/test"));
+  let mut pso: PSO<Particle> = PSO::new(
+    "PSO",
+    functions::cec17(1, 10),
+    params.clone(),
+    PathBuf::from("data/test/pso"),
+  );
   pso.run(iterations);
   pso.save_summary()?;
   pso.save_data()?;
@@ -62,6 +70,33 @@ fn run_gsa() -> Result<(), Box<dyn std::error::Error>> {
   gsa.save_summary()?;
   gsa.save_data()?;
   gsa.save_config(&params)?;
+  Ok(())
+}
+
+#[allow(dead_code)]
+fn run_cfo() -> Result<(), Box<dyn std::error::Error>> {
+  // Experiment Settings
+  let iterations = 1000;
+  let params: HashMap<String, ParamValue> = [
+    ("particle_count".to_owned(), ParamValue::Int(50)),
+    ("g".to_owned(), ParamValue::Float(2.0)),
+    ("alpha".to_owned(), ParamValue::Float(2.0)),
+    ("beta".to_owned(), ParamValue::Float(2.0)),
+  ]
+  .iter()
+  .cloned()
+  .collect();
+
+  let mut cfo: CFO<CFOParticle> = CFO::new(
+    "CFO",
+    functions::cec17(1, 30),
+    params.clone(),
+    PathBuf::from("data/test/cfo"),
+  );
+  cfo.run(iterations);
+  cfo.save_summary()?;
+  cfo.save_data()?;
+  cfo.save_config(&params)?;
   Ok(())
 }
 
@@ -167,9 +202,9 @@ fn run_grid_search_pso() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-  run_grid_search_gsa()?;
-  // run_pso();
+  // run_grid_search_gsa()?;
+  // run_cfo()?;
   // run_gsa()?;
-  // let _ = run_pso();
+  run_pso()?;
   Ok(())
 }

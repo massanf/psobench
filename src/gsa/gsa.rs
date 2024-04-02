@@ -66,7 +66,7 @@ impl<T: ParticleTrait> PSOTrait<T> for GSA<T> {
       global_best_pos: None,
       m: None,
       influences: vec![false; number_of_particles],
-      g: 100.,
+      g: g0,
       data: Vec::new(),
       out_directory,
       g0,
