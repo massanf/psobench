@@ -65,6 +65,16 @@ class PSO:
             return result
         raise ValueError("Unexpected `global_best_fitness` value")
 
+    def fitness(self) -> List[List[float]]:
+        assert self.fully_loaded
+        result: List[List[float]] = []
+        for iteration in self.iterations:
+            iter_result = []
+            for particle in iteration.particles:
+                iter_result.append(particle.fitness)
+            result.append(iter_result)
+        return result
+
     def speed(self) -> List[List[float]]:
         assert self.fully_loaded
         result: List[List[float]] = []

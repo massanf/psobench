@@ -1,4 +1,5 @@
 import pathlib
+from pso import PSO
 from tqdm import tqdm
 from matplotlib.ticker import LogLocator, LogFormatterMathtext
 import matplotlib.pyplot as plt  # type: ignore
@@ -23,6 +24,7 @@ class GridSearches:
             self.data_paths.append(function_dir)
             self.graph_paths.append(self.graphs / function_dir.name)
 
+        self.data_paths = sorted(self.data_paths, key=lambda path: path.name)
         self.graph_paths = sorted(self.graph_paths, key=lambda path: path.name)
 
     def draw_heatmap(self, log_1: bool, log_2: bool):
@@ -57,7 +59,7 @@ class GridSearches:
                 axs[i].set_visible(False)
                 continue
             grid = GridSearch(self.data_paths[i])
-            axs[i].yaxis.set_major_locator(LogLocator(base=10.0, subs=(1.0,), numticks=3))
+            axs[i].yaxis.set_major_locator(LogLocator(base=10.0))
             axs[i].yaxis.set_major_formatter(LogFormatterMathtext(base=10.0, labelOnlyBase=False))
             axs[i].plot(grid.best_global_progress(), label=self.path.parent.name)
             axs[i].set_title(grid.name)
@@ -80,11 +82,10 @@ axs = pso.plot_best_global_progress(axs)
 plt.tight_layout()
 plt.savefig(GRAPHS / "progress_comparison.png")
 
-# gsa.collage("count_vs_best_fitness.png")
 # NAME = pathlib.Path("test") / "gsa"
 # DATA = HOME / "data" / NAME
 # GRAPHS = HOME / "graphs" / NAME
 # pso = PSO(DATA)
 # pso.load_full()
 # pso.overview(False, GRAPHS)
-# pso.animate(GRAPHS / "animation.mp4", 1, 0, 200)
+# pso.animate(GRAPHS / "animation.mp4", 10, 0, 1000)

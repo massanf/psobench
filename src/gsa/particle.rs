@@ -28,11 +28,16 @@ impl ParticleTrait for GSAParticle {
     let pos = utils::random_init_pos(problem);
     self.new_pos(pos.clone(), problem);
     self.set_best_pos(pos);
-    self.set_vel(utils::random_init_vel(problem));
+    let vel = DVector::from_element(problem.dim(), 0.);
+    self.set_vel(vel);
   }
 
   fn pos(&self) -> &DVector<f64> {
     &self.pos
+  }
+
+  fn update_pos(&mut self, problem: &mut Problem) {
+    self.new_pos(self.pos().clone() + self.vel().clone(), problem);
   }
 
   fn set_pos(&mut self, pos: DVector<f64>) {

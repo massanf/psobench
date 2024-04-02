@@ -9,6 +9,7 @@ use std::{collections::HashMap, fs, path::PathBuf, sync::Arc};
 
 fn run_attempts<U: ParticleTrait, T: PSOTrait<U>>(
   params: HashMap<String, ParamValue>,
+  name: String,
   problem: Problem,
   out_directory: PathBuf,
   iterations: usize,
@@ -17,7 +18,7 @@ fn run_attempts<U: ParticleTrait, T: PSOTrait<U>>(
 ) -> Result<(), Box<dyn std::error::Error>> {
   (0..attempts).into_par_iter().for_each(|attempt| {
     let mut pso: T = T::new(
-      "PSO",
+      &name,
       problem.clone(),
       params.clone(),
       out_directory.join(format!("{}", attempt)),
@@ -51,6 +52,7 @@ fn save_grid_search_config(
 
 #[allow(dead_code)]
 pub fn grid_search<U: ParticleTrait, T: PSOTrait<U>>(
+  name: String,
   iterations: usize,
   problem: Problem,
   attempts: usize,
@@ -79,6 +81,7 @@ pub fn grid_search<U: ParticleTrait, T: PSOTrait<U>>(
 
       let _ = run_attempts::<U, T>(
         params,
+        name.clone(),
         problem.clone(),
         out_directory.join(format!("{}={},{}={}", param1.0, x1, param2.0, x2)),
         iterations,
@@ -95,6 +98,7 @@ pub fn grid_search<U: ParticleTrait, T: PSOTrait<U>>(
 
 #[allow(dead_code)]
 pub fn grid_search_dim<U: ParticleTrait, T: PSOTrait<U>>(
+  name: String,
   iterations: usize,
   problem_type: Arc<dyn Fn(usize) -> Problem + Sync + Send>,
   attempts: usize,
@@ -126,6 +130,7 @@ pub fn grid_search_dim<U: ParticleTrait, T: PSOTrait<U>>(
       params.insert(param.0.clone(), x.clone());
       let _ = run_attempts::<U, T>(
         params,
+        name.clone(),
         problem.clone(),
         out_directory.join(format!("{}={},{}={}", param.0.clone(), x, "dim", dim)),
         iterations,

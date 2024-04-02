@@ -44,16 +44,20 @@ fn run_gsa() -> Result<(), Box<dyn std::error::Error>> {
   // Experiment Settings
   let iterations = 1000;
   let params: HashMap<String, ParamValue> = [
-    ("g0".to_owned(), ParamValue::Float(1.0)),
-    ("alpha".to_owned(), ParamValue::Float(10.0)),
-    ("epsilon".to_owned(), ParamValue::Float(0.001)),
-    ("particle_count".to_owned(), ParamValue::Int(30)),
+    ("g0".to_owned(), ParamValue::Float(100.0)),
+    ("alpha".to_owned(), ParamValue::Float(20.0)),
+    ("particle_count".to_owned(), ParamValue::Int(50)),
   ]
   .iter()
   .cloned()
   .collect();
 
-  let mut gsa: GSA<GSAParticle> = GSA::new("GSA", functions::f1(10), params.clone(), PathBuf::from("data/test/gsa"));
+  let mut gsa: GSA<GSAParticle> = GSA::new(
+    "GSA",
+    functions::cec17(1, 30),
+    params.clone(),
+    PathBuf::from("data/test/gsa"),
+  );
   gsa.run(iterations);
   gsa.save_summary()?;
   gsa.save_data()?;
@@ -67,38 +71,25 @@ fn run_grid_search_gsa() -> Result<(), Box<dyn std::error::Error>> {
   let out_directory = PathBuf::from("data/gsa/grid_search");
 
   let g0: Vec<ParamValue> = vec![
-    ParamValue::Float(1.0),
-    ParamValue::Float(5.0),
     ParamValue::Float(10.0),
     ParamValue::Float(50.0),
     ParamValue::Float(100.0),
     ParamValue::Float(500.0),
     ParamValue::Float(1000.0),
     ParamValue::Float(5000.0),
-    ParamValue::Float(10000.0),
-    ParamValue::Float(50000.0),
   ];
   let alpha: Vec<ParamValue> = vec![
-    ParamValue::Float(0.1),
-    ParamValue::Float(0.5),
     ParamValue::Float(1.0),
+    ParamValue::Float(2.0),
     ParamValue::Float(5.0),
     ParamValue::Float(10.0),
+    ParamValue::Float(20.0),
     ParamValue::Float(50.0),
     ParamValue::Float(100.0),
-    ParamValue::Float(500.0),
-    ParamValue::Float(1000.0),
-    ParamValue::Float(5000.0),
-    ParamValue::Float(10000.0),
   ];
 
-  let base_params: HashMap<String, ParamValue> = [
-    ("particle_count".to_owned(), ParamValue::Int(30)),
-    ("epsilon".to_owned(), ParamValue::Float(0.001)),
-  ]
-  .iter()
-  .cloned()
-  .collect();
+  let base_params: HashMap<String, ParamValue> =
+    [("particle_count".to_owned(), ParamValue::Int(30))].iter().cloned().collect();
 
   for func_num in 1..=30 {
     if func_num == 2 {
@@ -106,6 +97,7 @@ fn run_grid_search_gsa() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     grid_search::grid_search::<GSAParticle, GSA<GSAParticle>>(
+      "GSA".to_owned(),
       iterations,
       functions::cec17(func_num, 30),
       5,
@@ -161,9 +153,10 @@ fn run_grid_search_pso() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     grid_search::grid_search::<Particle, PSO<Particle>>(
+      "PSO".to_owned(),
       iterations,
       functions::cec17(func_num, 30),
-      5,
+      1,
       ("phi_p".to_owned(), phi_p.clone()),
       ("phi_g".to_owned(), phi_g.clone()),
       base_params.clone(),
@@ -174,9 +167,9 @@ fn run_grid_search_pso() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-  run_grid_search_pso()?;
+  run_grid_search_gsa()?;
   // run_pso();
-  // let _ = run_gsa();
+  // run_gsa()?;
   // let _ = run_pso();
   Ok(())
 }
