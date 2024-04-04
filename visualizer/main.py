@@ -66,23 +66,23 @@ class GridSearches:
             axs[i].legend()
         return axs
 
+# dim = 30
 
-# gsa_path = pathlib.Path("gsa") / "grid_search"
+# gsa_path = pathlib.Path(f"gsa_{dim}") / "grid_search"
 # gsa = GridSearches(gsa_path)
 # # gsa.heatmap_collage("grid_search.png", True, True)
 
-# pso_path = pathlib.Path("pso") / "grid_search"
+# pso_path = pathlib.Path(f"pso_{dim}") / "grid_search"
 # pso = GridSearches(pso_path)
 # # pso.heatmap_collage("grid_search.png", False, False)
-
 
 # fig, axs = plt.subplots(5, 6, figsize=(12, 10), dpi=300)
 # axs = gsa.plot_best_global_progress(axs)
 # axs = pso.plot_best_global_progress(axs)
 # plt.tight_layout()
-# plt.savefig(GRAPHS / "progress_comparison.png")
+# plt.savefig(GRAPHS / f"progress_comparison_{dim}.png")
 
-NAME = pathlib.Path("test") / "pso"
+NAME = pathlib.Path("test") / "gsa"
 DATA = HOME / "data" / NAME
 GRAPHS = HOME / "graphs" / NAME
 pso = PSO(DATA)

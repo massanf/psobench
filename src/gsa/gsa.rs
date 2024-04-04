@@ -1,3 +1,4 @@
+use crate::particle_trait::Mass;
 use crate::particle_trait::ParticleTrait;
 use crate::problem;
 use crate::pso_trait::PSOTrait;
@@ -15,7 +16,6 @@ pub struct GSA<T: ParticleTrait> {
   problem: Problem,
   particles: Vec<T>,
   global_best_pos: Option<DVector<f64>>,
-  m: Option<Vec<f64>>,
   influences: Vec<bool>,
   g: f64,
   data: Vec<(f64, Vec<T>)>,
@@ -24,7 +24,7 @@ pub struct GSA<T: ParticleTrait> {
   alpha: f64,
 }
 
-impl<T: ParticleTrait> PSOTrait<T> for GSA<T> {
+impl<T: ParticleTrait + Mass> PSOTrait<T> for GSA<T> {
   fn new(name: &str, problem: Problem, parameters: HashMap<String, ParamValue>, out_directory: PathBuf) -> GSA<T> {
     assert!(
       parameters.contains_key("particle_count"),
@@ -64,7 +64,6 @@ impl<T: ParticleTrait> PSOTrait<T> for GSA<T> {
       problem,
       particles: Vec::new(),
       global_best_pos: None,
-      m: None,
       influences: vec![false; number_of_particles],
       g: g0,
       data: Vec::new(),
@@ -118,7 +117,6 @@ impl<T: ParticleTrait> PSOTrait<T> for GSA<T> {
   fn calculate_vel(&mut self, idx: usize) -> DVector<f64> {
     assert!(idx < self.particles().len());
 
-    let m = self.m.as_ref().unwrap().clone();
     let mut a: DVector<f64> = DVector::from_element(self.problem().dim(), 0.);
 
     let mut rng = rand::thread_rng();
@@ -128,7 +126,7 @@ impl<T: ParticleTrait> PSOTrait<T> for GSA<T> {
         continue;
       }
       let r = self.particles()[j].pos() - self.particles()[idx].pos();
-      let mut a_delta = self.g * m[j] / (r.norm() + std::f64::EPSILON) * r;
+      let mut a_delta = self.g * self.particles()[j].mass() / (r.norm() + std::f64::EPSILON) * r;
 
       for e in a_delta.iter_mut() {
         let rand: f64 = rng.gen_range(0.0..1.0);
@@ -235,16 +233,15 @@ impl<T: ParticleTrait> PSOTrait<T> for GSA<T> {
           }
         }
       }
-      self.m = Some(m);
+      for (idx, particle) in self.particles_mut().iter_mut().enumerate() {
+        particle.set_mass(m[idx]);
+      }
 
       // Calculate vels.
       let mut vels = Vec::new();
       for idx in 0..self.particles().len() {
         vels.push(self.calculate_vel(idx));
       }
-
-      // Reset values for good measure.
-      self.m = None;
 
       // Clear memory.
       self.problem().clear_memo();

@@ -1,5 +1,6 @@
 extern crate nalgebra as na;
 use crate::particle_trait;
+use crate::particle_trait::Mass;
 use crate::problem;
 use crate::utils;
 use nalgebra::DVector;
@@ -10,6 +11,7 @@ use problem::Problem;
 pub struct GSAParticle {
   pos: DVector<f64>,
   vel: DVector<f64>,
+  mass: f64,
   best_pos: Option<DVector<f64>>,
 }
 
@@ -18,6 +20,7 @@ impl ParticleTrait for GSAParticle {
     let mut particle = GSAParticle {
       pos: DVector::from_element(problem.dim(), 0.),
       vel: DVector::from_element(problem.dim(), 0.),
+      mass: 0.,
       best_pos: None,
     };
     particle.init(problem);
@@ -62,5 +65,15 @@ impl ParticleTrait for GSAParticle {
 
   fn set_vel(&mut self, vel: DVector<f64>) {
     self.vel = vel;
+  }
+}
+
+impl Mass for GSAParticle {
+  fn set_mass(&mut self, mass: f64) {
+    self.mass = mass;
+  }
+
+  fn mass(&self) -> f64 {
+    self.mass
   }
 }

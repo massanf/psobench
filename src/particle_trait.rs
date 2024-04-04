@@ -61,3 +61,8 @@ pub trait ParticleTrait: Clone {
     }
   }
 }
+
+pub trait Mass {
+  fn set_mass(&mut self, mass: f64);
+  fn mass(&self) -> f64;
+}
