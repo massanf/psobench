@@ -36,7 +36,9 @@ impl Serialize for ParamValue {
   }
 }
 
-pub trait PSOTrait<T: Position + Velocity>: Name + OptimizationProblem + Particles<T> + DataExporter<T> {
+pub trait ParticleOptimizer<T: Position + Velocity>:
+  Name + OptimizationProblem + Particles<T> + DataExporter<T>
+{
   fn new(name: &str, problem: Problem, parameters: HashMap<String, ParamValue>, out_directory: PathBuf) -> Self
   where
     Self: Sized;

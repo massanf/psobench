@@ -5,15 +5,15 @@ use nalgebra::DVector;
 use problem::Problem;
 
 #[derive(Clone)]
-pub struct Particle {
+pub struct PSOParticle {
   pos: DVector<f64>,
   vel: DVector<f64>,
   best_pos: Option<DVector<f64>>,
 }
 
-impl Particle {
-  pub fn new(problem: &mut Problem) -> Particle {
-    let mut particle = Particle {
+impl PSOParticle {
+  pub fn new(problem: &mut Problem) -> PSOParticle {
+    let mut particle = PSOParticle {
       pos: DVector::from_element(problem.dim(), 0.),
       vel: DVector::from_element(problem.dim(), 0.),
       best_pos: None,
@@ -25,7 +25,7 @@ impl Particle {
   }
 }
 
-impl Position for Particle {
+impl Position for PSOParticle {
   fn pos(&self) -> &DVector<f64> {
     &self.pos
   }
@@ -35,7 +35,7 @@ impl Position for Particle {
   }
 }
 
-impl BestPosition for Particle {
+impl BestPosition for PSOParticle {
   fn best_pos(&self) -> DVector<f64> {
     self.best_pos.clone().unwrap()
   }
@@ -49,7 +49,7 @@ impl BestPosition for Particle {
   }
 }
 
-impl Velocity for Particle {
+impl Velocity for PSOParticle {
   fn vel(&self) -> &DVector<f64> {
     &self.vel
   }

@@ -11,10 +11,10 @@ mod grid_search;
 mod gsa;
 mod pso;
 mod pso_trait;
-use crate::pso_trait::PSOTrait;
+use crate::pso_trait::ParticleOptimizer;
 use gsa::gsa::GSA;
 use gsa::particle::GSAParticle;
-use pso::particle::Particle;
+use pso::particle::PSOParticle;
 use pso::pso::PSO;
 mod utils;
 
@@ -32,7 +32,7 @@ fn run_pso() -> Result<(), Box<dyn std::error::Error>> {
   .cloned()
   .collect();
 
-  let mut pso: PSO<Particle> = PSO::new(
+  let mut pso: PSO<PSOParticle> = PSO::new(
     "PSO",
     functions::cec17(1, 10),
     params.clone(),
@@ -58,7 +58,12 @@ fn run_gsa() -> Result<(), Box<dyn std::error::Error>> {
   .cloned()
   .collect();
 
-  let mut gsa: GSA<GSAParticle> = GSA::new("GSA", functions::cec17(1, 30), params.clone(), PathBuf::from("data/test/gsa"));
+  let mut gsa: GSA<GSAParticle> = GSA::new(
+    "GSA",
+    functions::cec17(1, 30),
+    params.clone(),
+    PathBuf::from("data/test/gsa"),
+  );
   gsa.run(iterations);
   gsa.save_summary()?;
   gsa.save_data()?;
@@ -153,7 +158,7 @@ fn run_grid_search_pso() -> Result<(), Box<dyn std::error::Error>> {
       continue;
     }
 
-    grid_search::grid_search::<Particle, PSO<Particle>>(
+    grid_search::grid_search::<PSOParticle, PSO<PSOParticle>>(
       "PSO".to_owned(),
       iterations,
       functions::cec17(func_num, 100),

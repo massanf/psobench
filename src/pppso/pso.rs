@@ -1,6 +1,6 @@
 use crate::function;
 use crate::particle::ParticleTrait;
-use crate::pso::PSOTrait;
+use crate::pso::ParticleOptimizer;
 use function::Problem;
 use nalgebra::DVector;
 extern crate rand;
@@ -22,7 +22,7 @@ pub struct PPPSO<'a, T: ParticleTrait> {
   accumulated_e: isize,
 }
 
-impl<'a, T: ParticleTrait> PSOTrait<'a, T> for PPPSO<'a, T> {
+impl<'a, T: ParticleTrait> ParticleOptimizer<'a, T> for PPPSO<'a, T> {
   fn new(name: &str, problem: &'a Problem, number_of_particles: usize) -> PPPSO<'a, T> {
     let mut particles: Vec<T> = Vec::new();
 

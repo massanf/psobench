@@ -1,34 +1,36 @@
 use crate::particle_trait::{BestPosition, Position, Velocity};
 use crate::problem;
-use crate::pso_trait::{Data, DataExporter, GlobalBestPos, Name, OptimizationProblem, PSOTrait, ParamValue, Particles};
+use crate::pso_trait::{
+  Data, DataExporter, GlobalBestPos, Name, OptimizationProblem, ParamValue, ParticleOptimizer, Particles,
+};
 use crate::rand::Rng;
 use crate::utils;
-use crate::Particle;
+use crate::PSOParticle;
 use nalgebra::DVector;
 use problem::Problem;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
 #[derive(Clone)]
-pub struct PSO<Particle> {
+pub struct PSO<PSOParticle> {
   name: String,
   problem: Problem,
-  particles: Vec<Particle>,
+  particles: Vec<PSOParticle>,
   global_best_pos: Option<DVector<f64>>,
-  data: Vec<(f64, Vec<Particle>)>,
+  data: Vec<(f64, Vec<PSOParticle>)>,
   out_directory: PathBuf,
   w: f64,
   phi_p: f64,
   phi_g: f64,
 }
 
-impl PSOTrait<Particle> for PSO<Particle> {
+impl ParticleOptimizer<PSOParticle> for PSO<PSOParticle> {
   fn new(
     name: &str,
     problem: Problem,
     parameters: HashMap<String, ParamValue>,
     out_directory: PathBuf,
-  ) -> PSO<Particle> {
+  ) -> PSO<PSOParticle> {
     assert!(
       parameters.contains_key("particle_count"),
       "Key 'particle_count' not found."
@@ -90,9 +92,9 @@ impl PSOTrait<Particle> for PSO<Particle> {
 
   fn init(&mut self, number_of_particles: usize) {
     let problem = &mut self.problem();
-    let mut particles: Vec<Particle> = Vec::new();
+    let mut particles: Vec<PSOParticle> = Vec::new();
     for _ in 0..number_of_particles {
-      particles.push(Particle::new(problem));
+      particles.push(PSOParticle::new(problem));
     }
     let mut global_best_pos = None;
     for particle in particles.clone() {

@@ -1,7 +1,7 @@
 use crate::particle_trait::Mass;
 use crate::particle_trait::{Position, Velocity};
 use crate::problem;
-use crate::pso_trait::{Particles, Data, DataExporter, GlobalBestPos, Name, OptimizationProblem, PSOTrait, ParamValue};
+use crate::pso_trait::{Particles, Data, DataExporter, GlobalBestPos, Name, OptimizationProblem, ParticleOptimizer, ParamValue};
 use crate::rand::Rng;
 use crate::utils;
 use crate::GSAParticle;
@@ -24,7 +24,7 @@ pub struct GSA<GSAParticle> {
   alpha: f64,
 }
 
-impl PSOTrait<GSAParticle> for GSA<GSAParticle> {
+impl ParticleOptimizer<GSAParticle> for GSA<GSAParticle> {
   fn new(
     name: &str,
     problem: Problem,

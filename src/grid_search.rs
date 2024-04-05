@@ -1,14 +1,14 @@
 use crate::particle_trait::{Position, Velocity};
 use crate::problem::Problem;
 use crate::pso_trait::DataExporter;
-use crate::pso_trait::{PSOTrait, ParamValue};
+use crate::pso_trait::{ParamValue, ParticleOptimizer};
 use crate::utils;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use serde_json::json;
 use std::{collections::HashMap, fs, path::PathBuf, sync::Arc};
 
-fn run_attempts<U: Position + Velocity, T: PSOTrait<U> + DataExporter<U>>(
+fn run_attempts<U: Position + Velocity, T: ParticleOptimizer<U> + DataExporter<U>>(
   params: HashMap<String, ParamValue>,
   name: String,
   problem: Problem,
@@ -52,7 +52,7 @@ fn save_grid_search_config(
 }
 
 #[allow(dead_code)]
-pub fn grid_search<U: Position + Velocity, T: PSOTrait<U> + DataExporter<U>>(
+pub fn grid_search<U: Position + Velocity, T: ParticleOptimizer<U> + DataExporter<U>>(
   name: String,
   iterations: usize,
   problem: Problem,
@@ -98,7 +98,7 @@ pub fn grid_search<U: Position + Velocity, T: PSOTrait<U> + DataExporter<U>>(
 }
 
 #[allow(dead_code)]
-pub fn grid_search_dim<U: Position + Velocity, T: PSOTrait<U> + DataExporter<U>>(
+pub fn grid_search_dim<U: Position + Velocity, T: ParticleOptimizer<U> + DataExporter<U>>(
   name: String,
   iterations: usize,
   problem_type: Arc<dyn Fn(usize) -> Problem + Sync + Send>,
