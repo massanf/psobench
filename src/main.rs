@@ -1,6 +1,7 @@
 extern crate nalgebra as na;
 extern crate rand;
 mod problem;
+use crate::pso_trait::DataExporter;
 use std::path::PathBuf;
 mod functions;
 mod particle_trait;
@@ -57,12 +58,7 @@ fn run_gsa() -> Result<(), Box<dyn std::error::Error>> {
   .cloned()
   .collect();
 
-  let mut gsa: GSA<GSAParticle> = GSA::new(
-    "GSA",
-    functions::cec17(1, 30),
-    params.clone(),
-    PathBuf::from("data/test/gsa"),
-  );
+  let mut gsa: GSA<GSAParticle> = GSA::new("GSA", functions::cec17(1, 30), params.clone(), PathBuf::from("data/test/gsa"));
   gsa.run(iterations);
   gsa.save_summary()?;
   gsa.save_data()?;

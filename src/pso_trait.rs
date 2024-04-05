@@ -36,29 +36,14 @@ impl Serialize for ParamValue {
   }
 }
 
-pub trait PSOTrait<T: Position + Velocity> {
+pub trait PSOTrait<T: Position + Velocity>: Name + OptimizationProblem + Particles<T> + DataExporter<T> {
   fn new(name: &str, problem: Problem, parameters: HashMap<String, ParamValue>, out_directory: PathBuf) -> Self
   where
     Self: Sized;
 
   fn init(&mut self, number_of_particles: usize);
 
-  fn name(&self) -> &String;
-
-  fn particles(&self) -> &Vec<T>;
-  fn particles_mut(&mut self) -> &mut Vec<T>;
-
   fn calculate_vel(&mut self, idx: usize) -> DVector<f64>;
-
-  fn problem(&mut self) -> &mut Problem;
-
-  fn out_directory(&self) -> &PathBuf;
-
-  fn global_best_pos(&self) -> DVector<f64>;
-  fn option_global_best_pos(&self) -> &Option<DVector<f64>>;
-
-  fn data(&self) -> &Vec<(f64, Vec<T>)>;
-  fn add_data(&mut self);
 
   fn run(&mut self, iterations: usize);
   fn experiment(&mut self, trials: usize, iterations: usize) {
@@ -66,7 +51,34 @@ pub trait PSOTrait<T: Position + Velocity> {
       self.run(iterations);
     }
   }
+}
 
+pub trait Particles<T> {
+  fn particles(&self) -> &Vec<T>;
+  fn particles_mut(&mut self) -> &mut Vec<T>;
+}
+
+pub trait GlobalBestPos {
+  fn global_best_pos(&self) -> DVector<f64>;
+  fn option_global_best_pos(&self) -> &Option<DVector<f64>>;
+  fn set_global_best_pos(&mut self, pos: DVector<f64>);
+}
+
+pub trait Name {
+  fn name(&self) -> &String;
+}
+
+pub trait OptimizationProblem {
+  fn problem(&mut self) -> &mut Problem;
+}
+
+pub trait Data<T>: OptimizationProblem + GlobalBestPos {
+  fn data(&self) -> &Vec<(f64, Vec<T>)>;
+  fn add_data(&mut self);
+}
+
+pub trait DataExporter<T: Position + Velocity>: Data<T> + Name + OptimizationProblem {
+  fn out_directory(&self) -> &PathBuf;
   fn save_data(&mut self) -> Result<(), Box<dyn std::error::Error>> {
     // Serialize it to a JSON string
     let mut vec_data = Vec::new();

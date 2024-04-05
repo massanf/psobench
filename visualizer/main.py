@@ -4,7 +4,7 @@ from tqdm import tqdm
 from matplotlib.ticker import LogLocator, LogFormatterMathtext
 import matplotlib.pyplot as plt  # type: ignore
 from typing import Any
-from gridsearch import GridSearch
+from grid_search import GridSearch
 import matplotlib.image as mpimg
 
 HOME = pathlib.Path(__file__).parent.parent

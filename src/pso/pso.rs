@@ -1,6 +1,6 @@
 use crate::particle_trait::{BestPosition, Position, Velocity};
 use crate::problem;
-use crate::pso_trait::{PSOTrait, ParamValue};
+use crate::pso_trait::{Data, DataExporter, GlobalBestPos, Name, OptimizationProblem, PSOTrait, ParamValue, Particles};
 use crate::rand::Rng;
 use crate::utils;
 use crate::Particle;
@@ -108,18 +108,6 @@ impl PSOTrait<Particle> for PSO<Particle> {
     utils::create_directory(self.out_directory().to_path_buf(), false, true);
   }
 
-  fn name(&self) -> &String {
-    &self.name
-  }
-
-  fn particles(&self) -> &Vec<Particle> {
-    &self.particles
-  }
-
-  fn particles_mut(&mut self) -> &mut Vec<Particle> {
-    &mut self.particles
-  }
-
   fn calculate_vel(&mut self, idx: usize) -> DVector<f64> {
     assert!(idx < self.particles().len());
 
@@ -141,33 +129,6 @@ impl PSOTrait<Particle> for PSO<Particle> {
     new_vel
   }
 
-  fn problem(&mut self) -> &mut Problem {
-    &mut self.problem
-  }
-
-  fn out_directory(&self) -> &PathBuf {
-    &self.out_directory
-  }
-
-  fn global_best_pos(&self) -> DVector<f64> {
-    self.global_best_pos.clone().unwrap()
-  }
-
-  fn option_global_best_pos(&self) -> &Option<DVector<f64>> {
-    &self.global_best_pos
-  }
-
-  fn data(&self) -> &Vec<(f64, Vec<Particle>)> {
-    &self.data
-  }
-
-  fn add_data(&mut self) {
-    let data = &self.global_best_pos().clone();
-    let gbest = self.problem().f(data);
-    let particles = self.particles().clone();
-    self.data.push((gbest, particles));
-  }
-
   fn run(&mut self, iterations: usize) {
     for _ in 0..iterations {
       self.problem().clear_memo();
@@ -187,5 +148,59 @@ impl PSOTrait<Particle> for PSO<Particle> {
       // Save the data for current iteration.
       self.add_data();
     }
+  }
+}
+
+impl<T> Particles<T> for PSO<T> {
+  fn particles(&self) -> &Vec<T> {
+    &self.particles
+  }
+
+  fn particles_mut(&mut self) -> &mut Vec<T> {
+    &mut self.particles
+  }
+}
+
+impl<T> GlobalBestPos for PSO<T> {
+  fn global_best_pos(&self) -> DVector<f64> {
+    self.global_best_pos.clone().unwrap()
+  }
+
+  fn option_global_best_pos(&self) -> &Option<DVector<f64>> {
+    &self.global_best_pos
+  }
+
+  fn set_global_best_pos(&mut self, pos: DVector<f64>) {
+    self.global_best_pos = Some(pos);
+  }
+}
+
+impl<T> OptimizationProblem for PSO<T> {
+  fn problem(&mut self) -> &mut Problem {
+    &mut self.problem
+  }
+}
+
+impl<T> Name for PSO<T> {
+  fn name(&self) -> &String {
+    &self.name
+  }
+}
+
+impl<T: Clone> Data<T> for PSO<T> {
+  fn data(&self) -> &Vec<(f64, Vec<T>)> {
+    &self.data
+  }
+
+  fn add_data(&mut self) {
+    let gbest = self.problem.f(&self.global_best_pos());
+    let particles = self.particles.clone();
+    self.data.push((gbest, particles));
+  }
+}
+
+impl<T: Position + Velocity + Clone> DataExporter<T> for PSO<T> {
+  fn out_directory(&self) -> &PathBuf {
+    &self.out_directory
   }
 }
