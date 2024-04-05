@@ -1,29 +1,34 @@
-use crate::particle_trait::ParticleTrait;
+use crate::particle_trait::{BestPosition, Position, Velocity};
 use crate::problem;
-use crate::pso_trait::PSOTrait;
-use crate::pso_trait::ParamValue;
+use crate::pso_trait::{PSOTrait, ParamValue};
 use crate::rand::Rng;
 use crate::utils;
+use crate::Particle;
 use nalgebra::DVector;
 use problem::Problem;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
 #[derive(Clone)]
-pub struct PSO<T: ParticleTrait> {
+pub struct PSO<Particle> {
   name: String,
   problem: Problem,
-  particles: Vec<T>,
+  particles: Vec<Particle>,
   global_best_pos: Option<DVector<f64>>,
-  data: Vec<(f64, Vec<T>)>,
+  data: Vec<(f64, Vec<Particle>)>,
   out_directory: PathBuf,
   w: f64,
   phi_p: f64,
   phi_g: f64,
 }
 
-impl<T: ParticleTrait> PSOTrait<T> for PSO<T> {
-  fn new(name: &str, problem: Problem, parameters: HashMap<String, ParamValue>, out_directory: PathBuf) -> PSO<T> {
+impl PSOTrait<Particle> for PSO<Particle> {
+  fn new(
+    name: &str,
+    problem: Problem,
+    parameters: HashMap<String, ParamValue>,
+    out_directory: PathBuf,
+  ) -> PSO<Particle> {
     assert!(
       parameters.contains_key("particle_count"),
       "Key 'particle_count' not found."
@@ -85,9 +90,9 @@ impl<T: ParticleTrait> PSOTrait<T> for PSO<T> {
 
   fn init(&mut self, number_of_particles: usize) {
     let problem = &mut self.problem();
-    let mut particles: Vec<T> = Vec::new();
+    let mut particles: Vec<Particle> = Vec::new();
     for _ in 0..number_of_particles {
-      particles.push(ParticleTrait::new(problem));
+      particles.push(Particle::new(problem));
     }
     let mut global_best_pos = None;
     for particle in particles.clone() {
@@ -107,11 +112,11 @@ impl<T: ParticleTrait> PSOTrait<T> for PSO<T> {
     &self.name
   }
 
-  fn particles(&self) -> &Vec<T> {
+  fn particles(&self) -> &Vec<Particle> {
     &self.particles
   }
 
-  fn particles_mut(&mut self) -> &mut Vec<T> {
+  fn particles_mut(&mut self) -> &mut Vec<Particle> {
     &mut self.particles
   }
 
@@ -152,7 +157,7 @@ impl<T: ParticleTrait> PSOTrait<T> for PSO<T> {
     &self.global_best_pos
   }
 
-  fn data(&self) -> &Vec<(f64, Vec<T>)> {
+  fn data(&self) -> &Vec<(f64, Vec<Particle>)> {
     &self.data
   }
 

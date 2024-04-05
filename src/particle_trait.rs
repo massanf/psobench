@@ -4,12 +4,6 @@ use crate::utils;
 use nalgebra::DVector;
 use problem::Problem;
 
-pub trait ParticleTrait: Position + BestPosition + Velocity + Clone {
-  fn new(problem: &mut Problem) -> Self
-  where
-    Self: Sized;
-}
-
 pub trait Position {
   fn init(&mut self, problem: &mut Problem) {
     self.set_pos(utils::random_init_pos(problem));

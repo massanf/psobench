@@ -1,7 +1,6 @@
-use crate::particle_trait;
+use crate::particle_trait::{Position, Velocity};
 use crate::problem;
 use nalgebra::DVector;
-use particle_trait::ParticleTrait;
 use problem::Problem;
 use serde::ser::{Serialize, Serializer};
 use serde_json::json;
@@ -37,7 +36,7 @@ impl Serialize for ParamValue {
   }
 }
 
-pub trait PSOTrait<T: ParticleTrait> {
+pub trait PSOTrait<T: Position + Velocity> {
   fn new(name: &str, problem: Problem, parameters: HashMap<String, ParamValue>, out_directory: PathBuf) -> Self
   where
     Self: Sized;

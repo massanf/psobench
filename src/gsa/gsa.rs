@@ -1,31 +1,37 @@
 use crate::particle_trait::Mass;
-use crate::particle_trait::ParticleTrait;
+use crate::particle_trait::{Position, Velocity};
 use crate::problem;
 use crate::pso_trait::PSOTrait;
 use crate::pso_trait::ParamValue;
 use crate::rand::Rng;
 use crate::utils;
+use crate::GSAParticle;
 use nalgebra::DVector;
 use problem::Problem;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
 #[derive(Clone)]
-pub struct GSA<T: ParticleTrait> {
+pub struct GSA<GSAParticle> {
   name: String,
   problem: Problem,
-  particles: Vec<T>,
+  particles: Vec<GSAParticle>,
   global_best_pos: Option<DVector<f64>>,
   influences: Vec<bool>,
   g: f64,
-  data: Vec<(f64, Vec<T>)>,
+  data: Vec<(f64, Vec<GSAParticle>)>,
   out_directory: PathBuf,
   g0: f64,
   alpha: f64,
 }
 
-impl<T: ParticleTrait + Mass> PSOTrait<T> for GSA<T> {
-  fn new(name: &str, problem: Problem, parameters: HashMap<String, ParamValue>, out_directory: PathBuf) -> GSA<T> {
+impl PSOTrait<GSAParticle> for GSA<GSAParticle> {
+  fn new(
+    name: &str,
+    problem: Problem,
+    parameters: HashMap<String, ParamValue>,
+    out_directory: PathBuf,
+  ) -> GSA<GSAParticle> {
     assert!(
       parameters.contains_key("particle_count"),
       "Key 'particle_count' not found."
@@ -78,9 +84,9 @@ impl<T: ParticleTrait + Mass> PSOTrait<T> for GSA<T> {
 
   fn init(&mut self, number_of_particles: usize) {
     let problem = &mut self.problem();
-    let mut particles: Vec<T> = Vec::new();
+    let mut particles: Vec<GSAParticle> = Vec::new();
     for _ in 0..number_of_particles {
-      particles.push(ParticleTrait::new(problem));
+      particles.push(GSAParticle::new(problem));
     }
 
     let mut global_best_pos = None;
@@ -89,7 +95,6 @@ impl<T: ParticleTrait + Mass> PSOTrait<T> for GSA<T> {
       if global_best_pos.is_none() || problem.f(&particle.pos()) < problem.f(global_best_pos.as_ref().unwrap()) {
         global_best_pos = Some(particle.pos().clone());
       }
-
     }
 
     self.particles = particles;
@@ -103,11 +108,11 @@ impl<T: ParticleTrait + Mass> PSOTrait<T> for GSA<T> {
     &self.name
   }
 
-  fn particles(&self) -> &Vec<T> {
+  fn particles(&self) -> &Vec<GSAParticle> {
     &self.particles
   }
 
-  fn particles_mut(&mut self) -> &mut Vec<T> {
+  fn particles_mut(&mut self) -> &mut Vec<GSAParticle> {
     &mut self.particles
   }
 
@@ -153,7 +158,7 @@ impl<T: ParticleTrait + Mass> PSOTrait<T> for GSA<T> {
     &self.global_best_pos
   }
 
-  fn data(&self) -> &Vec<(f64, Vec<T>)> {
+  fn data(&self) -> &Vec<(f64, Vec<GSAParticle>)> {
     &self.data
   }
 
