@@ -175,7 +175,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   // run_grid_search_gsa()?;
   // run_grid_search_pso()?;
   // run_cfo()?;
-  // run_gsa()?;
+  run_gsa()?;
   run_pso()?;
   Ok(())
 }

@@ -28,11 +28,6 @@ pub trait BestPosition: Position {
   fn option_best_pos(&self) -> &Option<DVector<f64>>;
   fn set_best_pos(&mut self, pos: DVector<f64>);
 
-  fn update_pos_and_best_pos(&mut self, pos: DVector<f64>, problem: &mut Problem) {
-    self.set_pos(pos);
-    self.update_best_pos(problem);
-  }
-
   fn update_best_pos(&mut self, problem: &mut Problem) {
     // This function returns whether the personal best was updated.
     if self.option_best_pos().is_none() || problem.f(&self.pos()) < problem.f(&self.best_pos()) {
@@ -76,6 +71,6 @@ pub trait Velocity: Position + BestPosition {
 }
 
 pub trait Mass {
-  fn set_mass(&mut self, mass: f64);
   fn mass(&self) -> f64;
+  fn set_mass(&mut self, mass: f64);
 }

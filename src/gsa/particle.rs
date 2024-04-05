@@ -68,7 +68,8 @@ impl Velocity for GSAParticle {
   }
 
   fn move_pos(&mut self, problem: &mut Problem) {
-    self.update_pos_and_best_pos(self.pos().clone() + self.vel().clone(), problem);
+    self.set_pos(self.pos().clone() + self.vel().clone());
+    self.update_best_pos(problem);
   }
 }
 
