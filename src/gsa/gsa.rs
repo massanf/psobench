@@ -9,7 +9,9 @@ use crate::utils;
 use crate::GSAParticle;
 use nalgebra::DVector;
 use problem::Problem;
+use serde_json::json;
 use std::collections::HashMap;
+use std::fs;
 use std::mem;
 use std::path::PathBuf;
 
@@ -280,8 +282,34 @@ impl<T: Clone> Data<T> for GSA<T> {
   }
 }
 
-impl<T: Position + Velocity + Clone> DataExporter<T> for GSA<T> {
+impl<T: Position + Velocity + Mass + Clone> DataExporter<T> for GSA<T> {
   fn out_directory(&self) -> &PathBuf {
     &self.out_directory
+  }
+
+  fn save_data(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    // Serialize it to a JSON string
+    let mut vec_data = Vec::new();
+    for t in 0..self.data().len() {
+      let mut iter_data = Vec::new();
+      for i in 0..self.data()[t].1.len() {
+        let pos = self.data()[t].1[i].pos().clone();
+        iter_data.push(json!({
+          "fitness": self.problem().f_no_memo(&pos),
+          "vel": self.data()[t].1[i].vel().as_slice(),
+          "pos": self.data()[t].1[i].pos().as_slice(),
+          "mass": self.data()[t].1[i].mass(),
+        }));
+      }
+      vec_data.push(json!({
+        "global_best_fitness": self.data()[t].0,
+        "particles": iter_data
+      }));
+    }
+
+    let serialized = serde_json::to_string(&json!(vec_data))?;
+
+    fs::write(self.out_directory().join("data.json"), serialized)?;
+    Ok(())
   }
 }

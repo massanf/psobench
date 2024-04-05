@@ -88,13 +88,13 @@ GRAPHS = HOME / "graphs" / NAME
 pso = PSO(DATA)
 pso.load_full()
 pso.overview(False, GRAPHS)
-pso.animate(GRAPHS / "animation.gif", 1, 0, 500)
+pso.animate(GRAPHS / "animation.mp4", 10, 0, 500)
 
-NAME = pathlib.Path("test") / "pso"
-DATA = HOME / "data" / NAME
-GRAPHS = HOME / "graphs" / NAME
-pso = PSO(DATA)
-pso.load_full()
-pso.overview(False, GRAPHS)
-pso.animate(GRAPHS / "animation.gif", 1, 0, 500)
+# NAME = pathlib.Path("test") / "pso"
+# DATA = HOME / "data" / NAME
+# GRAPHS = HOME / "graphs" / NAME
+# pso = PSO(DATA)
+# pso.load_full()
+# pso.overview(False, GRAPHS)
+# pso.animate(GRAPHS / "animation.gif", 1, 0, 500)
 

@@ -91,9 +91,17 @@ class PSO:
         plt.cla()
         self.progressbar.update(1)
         iteration = self.iterations[frame]
+        if hasattr(iteration.particles[0], "mass"):
+            masses = []
+            for particle in iteration.particles:
+                masses.append(particle.mass)
+            max_mass = np.max(masses)
         for particle in iteration.particles:
             assert len(particle.pos) >= 2
-            plt.scatter(particle.pos[0], particle.pos[1], c='c')
+            if hasattr(particle, "mass"):
+                plt.scatter(particle.pos[0], particle.pos[1], s=particle.mass * 50 / max_mass, c='c')
+            else:
+                plt.scatter(particle.pos[0], particle.pos[1], c='c')
 
         plt.grid()
         plt.xlim(self.lim)
