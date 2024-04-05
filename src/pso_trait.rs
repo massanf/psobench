@@ -44,15 +44,8 @@ pub trait ParticleOptimizer<T: Position + Velocity>:
     Self: Sized;
 
   fn init(&mut self, number_of_particles: usize);
-
   fn calculate_vel(&mut self, idx: usize) -> DVector<f64>;
-
   fn run(&mut self, iterations: usize);
-  fn experiment(&mut self, trials: usize, iterations: usize) {
-    for _ in 0..trials {
-      self.run(iterations);
-    }
-  }
 }
 
 pub trait Particles<T> {

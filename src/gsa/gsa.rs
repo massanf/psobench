@@ -1,5 +1,4 @@
 use crate::particle_trait::Mass;
-use std::mem;
 use crate::particle_trait::{Position, Velocity};
 use crate::problem;
 use crate::pso_trait::{
@@ -11,6 +10,7 @@ use crate::GSAParticle;
 use nalgebra::DVector;
 use problem::Problem;
 use std::collections::HashMap;
+use std::mem;
 use std::path::PathBuf;
 
 #[derive(Clone)]
