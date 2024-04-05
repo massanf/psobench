@@ -1,7 +1,10 @@
 use crate::particle_trait::Mass;
+use std::mem;
 use crate::particle_trait::{Position, Velocity};
 use crate::problem;
-use crate::pso_trait::{Particles, Data, DataExporter, GlobalBestPos, Name, OptimizationProblem, ParticleOptimizer, ParamValue};
+use crate::pso_trait::{
+  Data, DataExporter, GlobalBestPos, Name, OptimizationProblem, ParamValue, ParticleOptimizer, Particles,
+};
 use crate::rand::Rng;
 use crate::utils;
 use crate::GSAParticle;
@@ -211,14 +214,15 @@ impl ParticleOptimizer<GSAParticle> for GSA<GSAParticle> {
       // Update the position, best and worst.
       let mut new_global_best_pos = self.global_best_pos.clone().unwrap();
       for idx in 0..self.particles().len() {
-        let problem = &mut self.problem().clone();
+        let mut temp_problem = mem::replace(&mut self.problem, Problem::default());
         let particle = &mut self.particles_mut()[idx];
         particle.set_vel(vels[idx].clone());
-        let _ = particle.move_pos(problem);
+        let _ = particle.move_pos(&mut temp_problem);
         let pos = particle.pos().clone();
         if self.problem().f(&pos) < self.problem().f(&new_global_best_pos) {
           new_global_best_pos = self.particles()[idx].pos().clone();
         }
+        self.problem = temp_problem;
       }
       self.global_best_pos = Some(new_global_best_pos);
 
@@ -227,7 +231,6 @@ impl ParticleOptimizer<GSAParticle> for GSA<GSAParticle> {
     }
   }
 }
-
 
 impl<T> Particles<T> for GSA<T> {
   fn particles(&self) -> &Vec<T> {

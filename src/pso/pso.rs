@@ -9,6 +9,7 @@ use crate::PSOParticle;
 use nalgebra::DVector;
 use problem::Problem;
 use std::collections::HashMap;
+use std::mem;
 use std::path::PathBuf;
 
 #[derive(Clone)]
@@ -138,12 +139,14 @@ impl ParticleOptimizer<PSOParticle> for PSO<PSOParticle> {
       let mut new_global_best_pos = self.global_best_pos().clone();
       for idx in 0..self.particles().len() {
         let vel = self.calculate_vel(idx);
-        let problem = &mut self.problem().clone();
+        let mut temp_problem = mem::replace(&mut self.problem, Problem::default());
         self.particles_mut()[idx].set_vel(vel);
-        self.particles_mut()[idx].move_pos(problem);
-        if self.problem.f(&self.particles()[idx].best_pos()) < self.problem.f(&new_global_best_pos) {
+        self.particles_mut()[idx].move_pos(&mut temp_problem);
+        let best_pos = self.particles()[idx].best_pos().clone();
+        if self.problem().f(&best_pos) < self.problem.f(&new_global_best_pos) {
           new_global_best_pos = self.particles()[idx].best_pos().clone();
         }
+        self.problem = temp_problem;
       }
       self.global_best_pos = Some(new_global_best_pos);
 

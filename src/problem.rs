@@ -1,4 +1,5 @@
 extern crate nalgebra as na;
+use crate::functions;
 use std::collections::hash_map::DefaultHasher;
 use std::sync::Arc;
 use std::{
@@ -76,6 +77,10 @@ impl Problem {
     ans
   }
 
+  pub fn f_no_memo(&mut self, x: &DVector<f64>) -> f64 {
+    (self.f)(x)
+  }
+
   pub fn clear_memo(&mut self) {
     self.memo.clear();
   }
@@ -90,5 +95,11 @@ impl Problem {
 
   pub fn cnt(&self) -> usize {
     self.cnt
+  }
+}
+
+impl Default for Problem {
+  fn default() -> Problem {
+    Problem::new("DEFAULT".to_owned(), Arc::new(functions::sphere), (-100., 100.), 0)
   }
 }

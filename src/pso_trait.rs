@@ -84,13 +84,12 @@ pub trait DataExporter<T: Position + Velocity>: Data<T> + Name + OptimizationPro
   fn save_data(&mut self) -> Result<(), Box<dyn std::error::Error>> {
     // Serialize it to a JSON string
     let mut vec_data = Vec::new();
-    let problem = self.problem().clone();
     for t in 0..self.data().len() {
       let mut iter_data = Vec::new();
       for i in 0..self.data()[t].1.len() {
         let pos = self.data()[t].1[i].pos().clone();
         iter_data.push(json!({
-          "fitness": problem.clone().f(&pos),
+          "fitness": self.problem().f_no_memo(&pos),
           "vel": self.data()[t].1[i].vel().as_slice(),
           "pos": self.data()[t].1[i].pos().as_slice(),
         }));

@@ -7,7 +7,7 @@ extern "C" {
 }
 
 #[allow(dead_code)]
-fn sphere(v: &DVector<f64>) -> f64 {
+pub fn sphere(v: &DVector<f64>) -> f64 {
   let mut sum = 0.0;
   for i in 0..v.len() {
     sum += v[i] * v[i];
