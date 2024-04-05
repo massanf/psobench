@@ -4,26 +4,52 @@ use crate::utils;
 use nalgebra::DVector;
 use problem::Problem;
 
-pub trait ParticleTrait: Clone {
+pub trait ParticleTrait: Position + BestPosition + Velocity + Clone {
   fn new(problem: &mut Problem) -> Self
   where
     Self: Sized;
+}
 
+pub trait Position {
   fn init(&mut self, problem: &mut Problem) {
-    let pos = utils::random_init_pos(problem);
-    self.new_pos(pos.clone(), problem);
-    self.set_best_pos(pos);
-    self.set_vel(utils::random_init_vel(problem));
+    self.set_pos(utils::random_init_pos(problem));
   }
 
   fn pos(&self) -> &DVector<f64>;
   fn set_pos(&mut self, pos: DVector<f64>);
-  fn new_pos(&mut self, pos: DVector<f64>, problem: &mut Problem) {
-    self.set_pos(pos);
-    self.eval(problem);
+}
+
+pub trait BestPosition: Position {
+  fn init(&mut self) {
+    self.set_best_pos(self.pos().clone());
   }
 
-  fn update_pos(&mut self, problem: &mut Problem) {
+  fn best_pos(&self) -> DVector<f64>;
+  fn option_best_pos(&self) -> &Option<DVector<f64>>;
+  fn set_best_pos(&mut self, pos: DVector<f64>);
+
+  fn update_pos_and_best_pos(&mut self, pos: DVector<f64>, problem: &mut Problem) {
+    self.set_pos(pos);
+    self.update_best_pos(problem);
+  }
+
+  fn update_best_pos(&mut self, problem: &mut Problem) {
+    // This function returns whether the personal best was updated.
+    if self.option_best_pos().is_none() || problem.f(&self.pos()) < problem.f(&self.best_pos()) {
+      self.set_best_pos(self.pos().clone());
+    }
+  }
+}
+
+pub trait Velocity: Position + BestPosition {
+  fn init(&mut self, problem: &mut Problem) {
+    self.set_vel(utils::random_init_vel(problem));
+  }
+
+  fn vel(&self) -> &DVector<f64>;
+  fn set_vel(&mut self, vel: DVector<f64>);
+
+  fn move_pos(&mut self, problem: &mut Problem) {
     let mut new_pos = self.pos().clone();
     let mut new_vel = self.vel().clone();
 
@@ -44,21 +70,8 @@ pub trait ParticleTrait: Clone {
     self.set_vel(new_vel);
 
     // This function returns whether the personal best was updated.
-    self.new_pos(new_pos, problem);
-  }
-
-  fn best_pos(&self) -> DVector<f64>;
-  fn option_best_pos(&self) -> &Option<DVector<f64>>;
-  fn set_best_pos(&mut self, pos: DVector<f64>);
-
-  fn vel(&self) -> &DVector<f64>;
-  fn set_vel(&mut self, vel: DVector<f64>);
-
-  fn eval(&mut self, problem: &mut Problem) {
-    // This function returns whether the personal best was updated.
-    if self.option_best_pos().is_none() || problem.f(&self.pos()) < problem.f(&self.best_pos()) {
-      self.set_best_pos(self.pos().clone());
-    }
+    self.set_pos(new_pos);
+    self.update_best_pos(problem);
   }
 }
 

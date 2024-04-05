@@ -172,7 +172,7 @@ impl<T: ParticleTrait> PSOTrait<T> for PSO<T> {
         let vel = self.calculate_vel(idx);
         let problem = &mut self.problem().clone();
         self.particles_mut()[idx].set_vel(vel);
-        self.particles_mut()[idx].update_pos(problem);
+        self.particles_mut()[idx].move_pos(problem);
         if self.problem.f(&self.particles()[idx].best_pos()) < self.problem.f(&new_global_best_pos) {
           new_global_best_pos = self.particles()[idx].best_pos().clone();
         }

@@ -84,15 +84,12 @@ impl<T: ParticleTrait + Mass> PSOTrait<T> for GSA<T> {
     }
 
     let mut global_best_pos = None;
-    let mut global_worst_pos = None;
 
     for particle in particles.clone() {
       if global_best_pos.is_none() || problem.f(&particle.pos()) < problem.f(global_best_pos.as_ref().unwrap()) {
         global_best_pos = Some(particle.pos().clone());
       }
-      if global_worst_pos.is_none() || problem.f(&particle.pos()) > problem.f(global_worst_pos.as_ref().unwrap()) {
-        global_worst_pos = Some(particle.pos().clone());
-      }
+
     }
 
     self.particles = particles;
@@ -252,7 +249,7 @@ impl<T: ParticleTrait + Mass> PSOTrait<T> for GSA<T> {
         let problem = &mut self.problem().clone();
         let particle = &mut self.particles_mut()[idx];
         particle.set_vel(vels[idx].clone());
-        let _ = particle.update_pos(problem);
+        let _ = particle.move_pos(problem);
         let pos = particle.pos().clone();
         if self.problem().f(&pos) < self.problem().f(&new_global_best_pos) {
           new_global_best_pos = self.particles()[idx].pos().clone();

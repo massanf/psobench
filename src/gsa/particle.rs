@@ -1,8 +1,8 @@
 extern crate nalgebra as na;
 use crate::particle_trait;
 use crate::particle_trait::Mass;
+use crate::particle_trait::{BestPosition, Position, Velocity};
 use crate::problem;
-use crate::utils;
 use nalgebra::DVector;
 use particle_trait::ParticleTrait;
 use problem::Problem;
@@ -23,30 +23,24 @@ impl ParticleTrait for GSAParticle {
       mass: 0.,
       best_pos: None,
     };
-    particle.init(problem);
+    Position::init(&mut particle, problem);
+    BestPosition::init(&mut particle);
+    Velocity::init(&mut particle, problem);
     particle
   }
+}
 
-  fn init(&mut self, problem: &mut Problem) {
-    let pos = utils::random_init_pos(problem);
-    self.new_pos(pos.clone(), problem);
-    self.set_best_pos(pos);
-    let vel = DVector::from_element(problem.dim(), 0.);
-    self.set_vel(vel);
-  }
-
+impl Position for GSAParticle {
   fn pos(&self) -> &DVector<f64> {
     &self.pos
-  }
-
-  fn update_pos(&mut self, problem: &mut Problem) {
-    self.new_pos(self.pos().clone() + self.vel().clone(), problem);
   }
 
   fn set_pos(&mut self, pos: DVector<f64>) {
     self.pos = pos;
   }
+}
 
+impl BestPosition for GSAParticle {
   fn best_pos(&self) -> DVector<f64> {
     self.best_pos.clone().unwrap()
   }
@@ -58,6 +52,12 @@ impl ParticleTrait for GSAParticle {
   fn set_best_pos(&mut self, pos: DVector<f64>) {
     self.best_pos = Some(pos);
   }
+}
+
+impl Velocity for GSAParticle {
+  fn init(&mut self, problem: &mut Problem) {
+    self.set_vel(DVector::from_element(problem.dim(), 0.));
+  }
 
   fn vel(&self) -> &DVector<f64> {
     &self.vel
@@ -65,6 +65,10 @@ impl ParticleTrait for GSAParticle {
 
   fn set_vel(&mut self, vel: DVector<f64>) {
     self.vel = vel;
+  }
+
+  fn move_pos(&mut self, problem: &mut Problem) {
+    self.update_pos_and_best_pos(self.pos().clone() + self.vel().clone(), problem);
   }
 }
 
