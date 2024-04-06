@@ -10,12 +10,15 @@ use std::collections::HashMap;
 mod grid_search;
 mod gsa;
 mod pso;
+mod fdo;
 mod pso_trait;
 use crate::pso_trait::ParticleOptimizer;
 use gsa::gsa::GSA;
 use gsa::particle::GSAParticle;
 use pso::particle::PSOParticle;
+use fdo::particle::FDOParticle;
 use pso::pso::PSO;
+use fdo::fdo::FDO;
 mod utils;
 
 #[allow(dead_code)]
@@ -68,6 +71,33 @@ fn run_gsa() -> Result<(), Box<dyn std::error::Error>> {
   gsa.save_summary()?;
   gsa.save_data()?;
   gsa.save_config(&params)?;
+  Ok(())
+}
+
+#[allow(dead_code)]
+fn run_fdo() -> Result<(), Box<dyn std::error::Error>> {
+  // Experiment Settings
+  let iterations = 1000;
+  let params: HashMap<String, ParamValue> = [
+    ("w".to_owned(), ParamValue::Float(0.8)),
+    ("phi_p".to_owned(), ParamValue::Float(1.0)),
+    ("phi_g".to_owned(), ParamValue::Float(1.0)),
+    ("particle_count".to_owned(), ParamValue::Int(50)),
+  ]
+  .iter()
+  .cloned()
+  .collect();
+
+  let mut fdo: FDO<FDOParticle> = FDO::new(
+    "PSO",
+    functions::cec17(1, 10),
+    params.clone(),
+    PathBuf::from("data/test/pso"),
+  );
+  fdo.run(iterations);
+  fdo.save_summary()?;
+  fdo.save_data()?;
+  fdo.save_config(&params)?;
   Ok(())
 }
 
