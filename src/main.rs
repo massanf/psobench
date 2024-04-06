@@ -74,7 +74,8 @@ fn run_gsa() -> Result<(), Box<dyn std::error::Error>> {
 #[allow(dead_code)]
 fn run_grid_search_gsa() -> Result<(), Box<dyn std::error::Error>> {
   let iterations = 1000;
-  let out_directory = PathBuf::from("data/gsa_100/grid_search");
+  let dim = 30;
+  let out_directory = PathBuf::from(format!("data/gsa_{}/grid_search", dim));
 
   let g0: Vec<ParamValue> = vec![
     ParamValue::Float(10.0),
@@ -105,7 +106,7 @@ fn run_grid_search_gsa() -> Result<(), Box<dyn std::error::Error>> {
     grid_search::grid_search::<GSAParticle, GSA<GSAParticle>>(
       "GSA".to_owned(),
       iterations,
-      functions::cec17(func_num, 100),
+      functions::cec17(func_num, dim),
       5,
       ("g0".to_owned(), g0.clone()),
       ("alpha".to_owned(), alpha.clone()),
@@ -119,7 +120,8 @@ fn run_grid_search_gsa() -> Result<(), Box<dyn std::error::Error>> {
 #[allow(dead_code)]
 fn run_grid_search_pso() -> Result<(), Box<dyn std::error::Error>> {
   let iterations = 1000;
-  let out_directory = PathBuf::from("data/pso_100/grid_search");
+  let dim = 30;
+  let out_directory = PathBuf::from(format!("data/pso_{}/grid_search", dim));
 
   let phi_p: Vec<ParamValue> = vec![
     ParamValue::Float(-4.0),
@@ -161,7 +163,7 @@ fn run_grid_search_pso() -> Result<(), Box<dyn std::error::Error>> {
     grid_search::grid_search::<PSOParticle, PSO<PSOParticle>>(
       "PSO".to_owned(),
       iterations,
-      functions::cec17(func_num, 100),
+      functions::cec17(func_num, dim),
       5,
       ("phi_p".to_owned(), phi_p.clone()),
       ("phi_g".to_owned(), phi_g.clone()),
@@ -173,10 +175,10 @@ fn run_grid_search_pso() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-  // run_grid_search_gsa()?;
+  run_grid_search_gsa()?;
   // run_grid_search_pso()?;
   // run_cfo()?;
-  run_gsa()?;
-  run_pso()?;
+  // run_gsa()?;
+  // run_pso()?;
   Ok(())
 }
