@@ -7,3 +7,10 @@ out/
 .vscode/
 **/__pycache__
 .mypy_cache
+bin/
+lib/
+pyvenv.cfg
+lib64/
+lib64
+share/
+pyvenv.cfg
