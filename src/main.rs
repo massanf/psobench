@@ -12,13 +12,16 @@ mod grid_search;
 mod gsa;
 mod pso;
 mod pso_trait;
+mod tiled_gsa;
 use crate::pso_trait::ParticleOptimizer;
+use crate::tiled_gsa::tiled_gsa::TiledGSA;
 use fdo::fdo::FDO;
 use fdo::particle::FDOParticle;
 use gsa::gsa::GSA;
 use gsa::particle::GSAParticle;
 use pso::particle::PSOParticle;
 use pso::pso::PSO;
+use tiled_gsa::particle::TiledGSAParticle;
 mod utils;
 
 #[allow(dead_code)]
@@ -63,6 +66,32 @@ fn run_gsa() -> Result<(), Box<dyn std::error::Error>> {
 
   let mut gsa: GSA<GSAParticle> = GSA::new(
     "GSA",
+    functions::cec17(1, 10),
+    params.clone(),
+    PathBuf::from("data/test/gsa"),
+  );
+  gsa.run(iterations);
+  gsa.save_summary()?;
+  gsa.save_data()?;
+  gsa.save_config(&params)?;
+  Ok(())
+}
+
+#[allow(dead_code)]
+fn run_tiled_gsa() -> Result<(), Box<dyn std::error::Error>> {
+  // Experiment Settings
+  let iterations = 1000;
+  let params: HashMap<String, ParamValue> = [
+    ("g0".to_owned(), ParamValue::Float(100.0)),
+    ("alpha".to_owned(), ParamValue::Float(20.0)),
+    ("particle_count".to_owned(), ParamValue::Int(50)),
+  ]
+  .iter()
+  .cloned()
+  .collect();
+
+  let mut gsa: TiledGSA<TiledGSAParticle> = TiledGSA::new(
+    "TiledGSA",
     functions::cec17(1, 10),
     params.clone(),
     PathBuf::from("data/test/gsa"),

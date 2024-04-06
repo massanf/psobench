@@ -1,3 +1,4 @@
+use crate::particle_trait::BestPosition;
 use crate::particle_trait::Mass;
 use crate::particle_trait::{Position, Velocity};
 use crate::problem;
@@ -6,10 +7,9 @@ use crate::pso_trait::{
 };
 use crate::rand::Rng;
 use crate::utils;
-use crate::GSAParticle;
+use crate::TiledGSAParticle;
 use nalgebra::DVector;
 use problem::Problem;
-use crate::particle_trait::BestPosition;
 use serde_json::json;
 use std::collections::HashMap;
 use std::fs;
@@ -17,26 +17,26 @@ use std::mem;
 use std::path::PathBuf;
 
 #[derive(Clone)]
-pub struct GSA<GSAParticle> {
+pub struct TiledGSA<TiledGSAParticle> {
   name: String,
   problem: Problem,
-  particles: Vec<GSAParticle>,
+  particles: Vec<TiledGSAParticle>,
   global_best_pos: Option<DVector<f64>>,
   influences: Vec<bool>,
   g: f64,
-  data: Vec<(f64, Vec<GSAParticle>)>,
+  data: Vec<(f64, Vec<TiledGSAParticle>)>,
   out_directory: PathBuf,
   g0: f64,
   alpha: f64,
 }
 
-impl ParticleOptimizer<GSAParticle> for GSA<GSAParticle> {
+impl ParticleOptimizer<TiledGSAParticle> for TiledGSA<TiledGSAParticle> {
   fn new(
     name: &str,
     problem: Problem,
     parameters: HashMap<String, ParamValue>,
     out_directory: PathBuf,
-  ) -> GSA<GSAParticle> {
+  ) -> TiledGSA<TiledGSAParticle> {
     assert!(
       parameters.contains_key("particle_count"),
       "Key 'particle_count' not found."
@@ -70,7 +70,7 @@ impl ParticleOptimizer<GSAParticle> for GSA<GSAParticle> {
       }
     }
 
-    let mut gsa = GSA {
+    let mut gsa = TiledGSA {
       name: name.to_owned(),
       problem,
       particles: Vec::new(),
@@ -89,9 +89,9 @@ impl ParticleOptimizer<GSAParticle> for GSA<GSAParticle> {
 
   fn init(&mut self, number_of_particles: usize) {
     let problem = &mut self.problem();
-    let mut particles: Vec<GSAParticle> = Vec::new();
+    let mut particles: Vec<TiledGSAParticle> = Vec::new();
     for _ in 0..number_of_particles {
-      particles.push(GSAParticle::new(problem));
+      particles.push(TiledGSAParticle::new(problem));
     }
 
     let mut global_best_pos = None;
@@ -236,7 +236,7 @@ impl ParticleOptimizer<GSAParticle> for GSA<GSAParticle> {
   }
 }
 
-impl<T> Particles<T> for GSA<T> {
+impl<T> Particles<T> for TiledGSA<T> {
   fn particles(&self) -> &Vec<T> {
     &self.particles
   }
@@ -246,7 +246,7 @@ impl<T> Particles<T> for GSA<T> {
   }
 }
 
-impl<T> GlobalBestPos for GSA<T> {
+impl<T> GlobalBestPos for TiledGSA<T> {
   fn global_best_pos(&self) -> DVector<f64> {
     self.global_best_pos.clone().unwrap()
   }
@@ -260,19 +260,19 @@ impl<T> GlobalBestPos for GSA<T> {
   }
 }
 
-impl<T> OptimizationProblem for GSA<T> {
+impl<T> OptimizationProblem for TiledGSA<T> {
   fn problem(&mut self) -> &mut Problem {
     &mut self.problem
   }
 }
 
-impl<T> Name for GSA<T> {
+impl<T> Name for TiledGSA<T> {
   fn name(&self) -> &String {
     &self.name
   }
 }
 
-impl<T: Clone> Data<T> for GSA<T> {
+impl<T: Clone> Data<T> for TiledGSA<T> {
   fn data(&self) -> &Vec<(f64, Vec<T>)> {
     &self.data
   }
@@ -284,7 +284,7 @@ impl<T: Clone> Data<T> for GSA<T> {
   }
 }
 
-impl<T: Position + Velocity + Mass + Clone> DataExporter<T> for GSA<T> {
+impl<T: Position + Velocity + Mass + Clone> DataExporter<T> for TiledGSA<T> {
   fn out_directory(&self) -> &PathBuf {
     &self.out_directory
   }

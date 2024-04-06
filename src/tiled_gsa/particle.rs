@@ -6,16 +6,16 @@ use nalgebra::DVector;
 use problem::Problem;
 
 #[derive(Clone)]
-pub struct GSAParticle {
+pub struct TiledGSAParticle {
   pos: DVector<f64>,
   vel: DVector<f64>,
   mass: f64,
   best_pos: Option<DVector<f64>>,
 }
 
-impl GSAParticle {
-  pub fn new(problem: &mut Problem) -> GSAParticle {
-    let mut particle = GSAParticle {
+impl TiledGSAParticle {
+  pub fn new(problem: &mut Problem) -> TiledGSAParticle {
+    let mut particle = TiledGSAParticle {
       pos: DVector::from_element(problem.dim(), 0.),
       vel: DVector::from_element(problem.dim(), 0.),
       mass: 0.,
@@ -28,7 +28,7 @@ impl GSAParticle {
   }
 }
 
-impl Position for GSAParticle {
+impl Position for TiledGSAParticle {
   fn pos(&self) -> &DVector<f64> {
     &self.pos
   }
@@ -38,7 +38,7 @@ impl Position for GSAParticle {
   }
 }
 
-impl BestPosition for GSAParticle {
+impl BestPosition for TiledGSAParticle {
   fn best_pos(&self) -> DVector<f64> {
     self.best_pos.clone().unwrap()
   }
@@ -52,7 +52,7 @@ impl BestPosition for GSAParticle {
   }
 }
 
-impl Velocity for GSAParticle {
+impl Velocity for TiledGSAParticle {
   fn init(&mut self, problem: &mut Problem) {
     self.set_vel(DVector::from_element(problem.dim(), 0.));
   }
@@ -71,7 +71,7 @@ impl Velocity for GSAParticle {
   }
 }
 
-impl Mass for GSAParticle {
+impl Mass for TiledGSAParticle {
   fn set_mass(&mut self, mass: f64) {
     self.mass = mass;
   }
