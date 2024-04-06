@@ -72,9 +72,8 @@ fn run_gsa() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[allow(dead_code)]
-fn run_grid_search_gsa() -> Result<(), Box<dyn std::error::Error>> {
+fn run_grid_search_gsa(dim: usize) -> Result<(), Box<dyn std::error::Error>> {
   let iterations = 1000;
-  let dim = 30;
   let out_directory = PathBuf::from(format!("data/gsa_{}/grid_search", dim));
 
   let g0: Vec<ParamValue> = vec![
@@ -118,9 +117,8 @@ fn run_grid_search_gsa() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[allow(dead_code)]
-fn run_grid_search_pso() -> Result<(), Box<dyn std::error::Error>> {
+fn run_grid_search_pso(dim: usize) -> Result<(), Box<dyn std::error::Error>> {
   let iterations = 1000;
-  let dim = 30;
   let out_directory = PathBuf::from(format!("data/pso_{}/grid_search", dim));
 
   let phi_p: Vec<ParamValue> = vec![
@@ -175,7 +173,7 @@ fn run_grid_search_pso() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-  run_grid_search_gsa()?;
+  run_grid_search_gsa(100)?;
   // run_grid_search_pso()?;
   // run_cfo()?;
   // run_gsa()?;
