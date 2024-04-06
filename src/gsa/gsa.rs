@@ -9,6 +9,7 @@ use crate::utils;
 use crate::GSAParticle;
 use nalgebra::DVector;
 use problem::Problem;
+use crate::particle_trait::BestPosition;
 use serde_json::json;
 use std::collections::HashMap;
 use std::fs;
@@ -220,6 +221,7 @@ impl ParticleOptimizer<GSAParticle> for GSA<GSAParticle> {
         let particle = &mut self.particles_mut()[idx];
         particle.set_vel(vels[idx].clone());
         let _ = particle.move_pos(&mut temp_problem);
+        let _ = particle.update_best_pos(&mut temp_problem);
         let pos = particle.pos().clone();
         if self.problem().f(&pos) < self.problem().f(&new_global_best_pos) {
           new_global_best_pos = self.particles()[idx].pos().clone();

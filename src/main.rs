@@ -92,7 +92,7 @@ fn run_fdo() -> Result<(), Box<dyn std::error::Error>> {
     "PSO",
     functions::cec17(1, 10),
     params.clone(),
-    PathBuf::from("data/test/pso"),
+    PathBuf::from("data/test/fdo"),
   );
   fdo.run(iterations);
   fdo.save_summary()?;

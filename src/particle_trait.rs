@@ -30,7 +30,7 @@ pub trait BestPosition: Position {
   }
 }
 
-pub trait Velocity: Position + BestPosition {
+pub trait Velocity: Position {
   fn init(&mut self, problem: &mut Problem) {
     self.set_vel(utils::random_init_vel(problem));
   }
@@ -60,7 +60,6 @@ pub trait Velocity: Position + BestPosition {
 
     // This function returns whether the personal best was updated.
     self.set_pos(new_pos);
-    self.update_best_pos(problem);
   }
 }
 
