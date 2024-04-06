@@ -173,10 +173,10 @@ fn run_grid_search_pso(dim: usize) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-  run_grid_search_gsa(100)?;
+  // run_grid_search_gsa(100)?;
   // run_grid_search_pso()?;
   // run_cfo()?;
-  // run_gsa()?;
+  run_gsa()?;
   // run_pso()?;
   Ok(())
 }

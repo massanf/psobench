@@ -22,7 +22,7 @@ class PSO:
             config: Dict[str, Any] = json.load(file)
         self.config = config
 
-        # Config
+        # Summary
         with open(experiment_path / "summary.json", 'r') as file:
             summary: Dict[str, Any] = json.load(file)
         self.summary = summary
@@ -91,14 +91,16 @@ class PSO:
         plt.cla()
         self.progressbar.update(1)
         iteration = self.iterations[frame]
+        has_mass = False
         if hasattr(iteration.particles[0], "mass"):
+            has_mass = True
             masses = []
             for particle in iteration.particles:
                 masses.append(particle.mass)
             max_mass = np.max(masses)
         for particle in iteration.particles:
             assert len(particle.pos) >= 2
-            if hasattr(particle, "mass"):
+            if has_mass and max_mass != 0.0:
                 plt.scatter(particle.pos[0], particle.pos[1], s=particle.mass * 50 / max_mass, c='c')
             else:
                 plt.scatter(particle.pos[0], particle.pos[1], c='c')
@@ -131,11 +133,11 @@ class PSO:
         self.progressbar = tqdm(total=math.ceil((end - start) / skip_frames) + 1)
         ani = FuncAnimation(fig, self.update_plot_animate,
                             frames=frames)
-        ani.save(destination_path, writer='imagemagick', fps=10)
+        ani.save(destination_path, fps=10)
 
     def plot_global_best_fitness_progress(self, out_directory: pathlib.Path) -> None:
         if not out_directory.exists():
-            os.mkdir(out_directory)
+            os.makedirs(out_directory)
         plt.close()
         plt.cla()
         plt.rcdefaults()
@@ -147,7 +149,7 @@ class PSO:
     def overview(self, animate: bool, out_directory: pathlib.Path) -> None:
         assert self.fully_loaded
         if not out_directory.exists():
-            os.mkdir(out_directory)
+            os.makedirs(out_directory)
         plt.rcdefaults()
         utils.plot_and_fill(self.fitness())
         plt.gca().autoscale(axis='y', tight=False)
