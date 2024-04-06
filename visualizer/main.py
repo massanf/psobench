@@ -84,7 +84,7 @@ class GridSearches:
 # plt.tight_layout()
 # plt.savefig(GRAPHS / f"progress_comparison_{dim}.png")
 
-NAME = pathlib.Path("test") / "gsa"
+NAME = pathlib.Path("test") / "fdo"
 DATA = HOME / "data" / NAME
 GRAPHS = HOME / "graphs" / NAME
 pso = PSO(DATA)
@@ -99,4 +99,3 @@ pso.animate(GRAPHS / "animation.gif", 1, 0, 500)
 # pso.load_full()
 # pso.overview(False, GRAPHS)
 # pso.animate(GRAPHS / "animation.gif", 1, 0, 500)
-

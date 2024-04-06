@@ -4,16 +4,12 @@ use crate::problem;
 use crate::pso_trait::{
   Data, DataExporter, GlobalBestPos, Name, OptimizationProblem, ParamValue, ParticleOptimizer, Particles,
 };
-use crate::rand::Rng;
 use crate::utils;
 use crate::FDOParticle;
 use nalgebra::DVector;
 use problem::Problem;
 use serde_json::json;
-use std::collections::HashMap;
-use std::fs;
-use std::mem;
-use std::path::PathBuf;
+use std::{collections::HashMap, fs, mem, path::PathBuf};
 
 #[derive(Clone)]
 pub struct FDO<FDOParticle> {
@@ -21,12 +17,9 @@ pub struct FDO<FDOParticle> {
   problem: Problem,
   particles: Vec<FDOParticle>,
   global_best_pos: Option<DVector<f64>>,
-  influences: Vec<bool>,
-  g: f64,
   data: Vec<(f64, Vec<FDOParticle>)>,
   out_directory: PathBuf,
-  g0: f64,
-  alpha: f64,
+  wf: bool,
 }
 
 impl ParticleOptimizer<FDOParticle> for FDO<FDOParticle> {
@@ -49,22 +42,19 @@ impl ParticleOptimizer<FDOParticle> for FDO<FDOParticle> {
       }
     }
 
-    assert!(parameters.contains_key("g0"), "Key 'g0' not found.");
-    let g0: f64;
-    match parameters["g0"] {
-      ParamValue::Float(val) => g0 = val,
+    assert!(parameters.contains_key("wf"), "Key 'wf' not found.");
+    let wf: bool;
+    match parameters["wf"] {
+      ParamValue::Int(val) => match val {
+        0 => wf = false,
+        1 => wf = true,
+        _ => {
+          eprintln!("Error: parameter 'wf' must be either 0 or 1.");
+          std::process::exit(1);
+        }
+      },
       _ => {
-        eprintln!("Error: parameter 'g0' should be of type Param::Float.");
-        std::process::exit(1);
-      }
-    }
-
-    assert!(parameters.contains_key("alpha"), "Key 'alpha' not found.");
-    let alpha: f64;
-    match parameters["alpha"] {
-      ParamValue::Float(val) => alpha = val,
-      _ => {
-        eprintln!("Error: parameter 'alpha' should be of type Param::Float.");
+        eprintln!("Error: parameter 'wf' should be of type Param::Int.");
         std::process::exit(1);
       }
     }
@@ -74,12 +64,9 @@ impl ParticleOptimizer<FDOParticle> for FDO<FDOParticle> {
       problem,
       particles: Vec::new(),
       global_best_pos: None,
-      influences: vec![false; number_of_particles],
-      g: g0,
       data: Vec::new(),
       out_directory,
-      g0,
-      alpha,
+      wf,
     };
 
     gsa.init(number_of_particles);
@@ -109,124 +96,80 @@ impl ParticleOptimizer<FDOParticle> for FDO<FDOParticle> {
   }
 
   fn calculate_vel(&mut self, idx: usize) -> DVector<f64> {
-    assert!(idx < self.particles().len());
-
-    let mut a: DVector<f64> = DVector::from_element(self.problem().dim(), 0.);
-
-    let mut rng = rand::thread_rng();
-
-    for j in 0..self.particles().len() {
-      if idx == j || !self.influences[j] {
-        continue;
-      }
-      let r = self.particles()[j].pos() - self.particles()[idx].pos();
-      let mut a_delta = self.g * self.particles()[j].mass() / (r.norm() + std::f64::EPSILON) * r;
-
-      for e in a_delta.iter_mut() {
-        let rand: f64 = rng.gen_range(0.0..1.0);
-        *e = rand * *e;
-      }
-
-      a += a_delta;
-    }
-
-    let rand: f64 = rng.gen_range(0.0..1.0);
-    rand * self.particles()[idx].vel() + a
+    self.particles()[idx].vel().clone()
   }
 
   fn run(&mut self, iterations: usize) {
-    for iter in 0..iterations {
-      self.g = self.g0 * (-self.alpha * iter as f64 / iterations as f64).exp();
+    for _ in 0..iterations {
+      // Move problem.
+      let mut problem = mem::replace(&mut self.problem, Problem::default());
 
-      // Calculate M
-      let mut m_unscaled = Vec::new();
-      let mut m_sum = 0.;
-      let mut best = None;
-      let mut worst = None;
-      for idx in 0..self.particles().len() {
-        let pos = self.particles()[idx].pos().clone();
-        if best.is_none() || self.problem().f(&pos) < self.problem().f(&best.as_ref().unwrap()) {
-          best = Some(pos.clone());
-        }
-        if worst.is_none() || self.problem().f(&pos) > self.problem().f(&worst.as_ref().unwrap()) {
-          worst = Some(pos.clone());
+      let wf = self.wf.clone();
+      let mut new_global_best_pos = None;
+      for particle in self.particles() {
+        if new_global_best_pos.is_none() || problem.f(particle.pos()) < problem.f(new_global_best_pos.clone().unwrap())
+        {
+          new_global_best_pos = Some(particle.pos());
         }
       }
 
-      let mut m: Vec<f64> = Vec::new();
-      if best == worst {
-        // This is for when all of the particles are at the exact same position.
-        // It can happen during grid search when values for g0 are weird.
-        m = vec![0.; self.problem().dim()];
-      } else {
-        for idx in 0..self.particles().len() {
-          let p = self.particles()[idx].clone();
-          let numerator = self.problem().f(p.pos()) - self.problem().f(&worst.as_ref().unwrap());
-          let denominator = self.problem().f(&best.as_ref().unwrap()) - self.problem().f(&worst.as_ref().unwrap());
-          assert!(
-            numerator <= 0.,
-            "Numerator must be less than or equal to 0: {}",
-            numerator
-          );
-          assert!(denominator < 0., "Denominator must be less than 0: {}", denominator);
-          let m_i = numerator / denominator;
-          m_unscaled.push(m_i);
-          m_sum += m_i;
-        }
+      self.set_global_best_pos(new_global_best_pos.clone().unwrap().clone());
+      let global_best_pos = &self.global_best_pos().clone();
+      let f_global_best = self.problem().f(&global_best_pos);
 
-        for idx in 0..self.particles().len() {
-          m.push(m_unscaled[idx] / m_sum);
-        }
+      for particle in self.particles_mut() {
+        let pos = particle.pos().clone();
+        let vel = particle.vel().clone();
+        let r = utils::uniform_distribution(
+          &DVector::from_element(global_best_pos.len(), -1.),
+          &DVector::from_element(global_best_pos.len(), 1.),
+        );
 
-        // Only use k largest values. Set others to 0.
-        let mut m_sorted = m.clone();
-        m_sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
-
-        let particle_count = self.particles().len();
-        let mut k = (-(particle_count as f64) / (iterations as f64) * iter as f64 + particle_count as f64) as usize;
-        k = std::cmp::max(k, 1);
-        k = std::cmp::min(k, particle_count);
-
-        for i in 0..particle_count {
-          let loc;
-          match m_sorted.binary_search_by(|v| v.partial_cmp(&m[i]).expect("Couldn't compare values")) {
-            Ok(val) => loc = val,
-            Err(val) => loc = val,
-          }
-          if (particle_count - loc) > k {
-            self.influences[i] = false;
+        let fw;
+        if problem.f(&pos) == 0. {
+          fw = f64::NAN;
+        } else {
+          if wf {
+            fw = (f_global_best / problem.f(&pos)).abs() - 1.;
           } else {
-            self.influences[i] = true;
+            fw = (f_global_best / problem.f(&pos)).abs();
           }
         }
-      }
-      for (idx, particle) in self.particles_mut().iter_mut().enumerate() {
-        particle.set_mass(m[idx]);
-      }
+        let mut new_vel = DVector::from_element(global_best_pos.len(), 0.);
+        for d in 0..global_best_pos.len() {
+          if fw == 1. || fw.is_nan() {
+            // TODO: confused; I don't think this is correct.
+            new_vel[d] = pos.clone()[d] * r[d];
+          } else if fw == 0. {
+            new_vel[d] = (global_best_pos.clone() - pos.clone())[d] * r[d];
+          } else {
+            if r[d] >= 0. {
+              new_vel[d] = (pos.clone() - global_best_pos.clone())[d] * fw;
+            } else {
+              new_vel[d] = (pos.clone() - global_best_pos.clone())[d] * fw * -1.;
+            }
+          }
+        }
 
-      // Calculate vels.
-      let mut vels = Vec::new();
-      for idx in 0..self.particles().len() {
-        vels.push(self.calculate_vel(idx));
+        let new_pos = pos.clone() + new_vel.clone();
+        if problem.f(&new_pos) < problem.f(&pos) {
+          particle.set_vel(new_vel);
+          particle.move_pos(&mut problem);
+        } else {
+          let new_pos = pos.clone() + vel.clone();
+          if problem.f(&new_pos) < problem.f(&pos) {
+            particle.move_pos(&mut problem);
+          } else {
+            // Do nothing.
+          }
+        }
       }
 
       // Clear memory.
       self.problem().clear_memo();
 
-      // Update the position, best and worst.
-      let mut new_global_best_pos = self.global_best_pos.clone().unwrap();
-      for idx in 0..self.particles().len() {
-        let mut temp_problem = mem::replace(&mut self.problem, Problem::default());
-        let particle = &mut self.particles_mut()[idx];
-        particle.set_vel(vels[idx].clone());
-        let _ = particle.move_pos(&mut temp_problem);
-        let pos = particle.pos().clone();
-        if self.problem().f(&pos) < self.problem().f(&new_global_best_pos) {
-          new_global_best_pos = self.particles()[idx].pos().clone();
-        }
-        self.problem = temp_problem;
-      }
-      self.global_best_pos = Some(new_global_best_pos);
+      // Set problem.
+      self.problem = problem;
 
       // Save the data for current iteration.
       self.add_data();
