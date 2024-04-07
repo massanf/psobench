@@ -39,7 +39,7 @@ impl Serialize for ParamValue {
 pub trait ParticleOptimizer<T: Position + Velocity>:
   Name + OptimizationProblem + Particles<T> + DataExporter<T>
 {
-  fn new(name: &str, problem: Problem, parameters: HashMap<String, ParamValue>, out_directory: PathBuf) -> Self
+  fn new(name: String, problem: Problem, parameters: HashMap<String, ParamValue>, out_directory: PathBuf) -> Self
   where
     Self: Sized;
 
@@ -53,10 +53,16 @@ pub trait Particles<T> {
   fn particles_mut(&mut self) -> &mut Vec<T>;
 }
 
-pub trait GlobalBestPos {
+pub trait GlobalBestPos: OptimizationProblem {
   fn global_best_pos(&self) -> DVector<f64>;
   fn option_global_best_pos(&self) -> &Option<DVector<f64>>;
   fn set_global_best_pos(&mut self, pos: DVector<f64>);
+  fn update_global_best_pos(&mut self, pos: DVector<f64>) {
+    let gb = self.global_best_pos().clone();
+    if self.problem().f(&pos) < self.problem().f(&gb) {
+      self.set_global_best_pos(pos);
+    }
+  }
 }
 
 pub trait Name {

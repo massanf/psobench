@@ -32,7 +32,7 @@ pub struct GSA<GSAParticle> {
 
 impl ParticleOptimizer<GSAParticle> for GSA<GSAParticle> {
   fn new(
-    name: &str,
+    name: String,
     problem: Problem,
     parameters: HashMap<String, ParamValue>,
     out_directory: PathBuf,
@@ -71,7 +71,7 @@ impl ParticleOptimizer<GSAParticle> for GSA<GSAParticle> {
     }
 
     let mut gsa = GSA {
-      name: name.to_owned(),
+      name: name,
       problem,
       particles: Vec::new(),
       global_best_pos: None,
@@ -103,7 +103,7 @@ impl ParticleOptimizer<GSAParticle> for GSA<GSAParticle> {
     }
 
     self.particles = particles;
-    self.global_best_pos = Some(global_best_pos.unwrap());
+    self.set_global_best_pos(global_best_pos.unwrap());
     self.add_data();
 
     utils::create_directory(self.out_directory().to_path_buf(), true, false);
@@ -228,7 +228,7 @@ impl ParticleOptimizer<GSAParticle> for GSA<GSAParticle> {
         }
         self.problem = temp_problem;
       }
-      self.global_best_pos = Some(new_global_best_pos);
+      self.update_global_best_pos(new_global_best_pos);
 
       // Save the data for current iteration.
       self.add_data();

@@ -1,7 +1,13 @@
+use crate::particle_trait::{Position, Velocity};
 use crate::problem;
+use crate::DataExporter;
+use crate::ParamValue;
+use crate::ParticleOptimizer;
 use nalgebra::DVector;
 use problem::Problem;
 use rand::distributions::{Distribution, Uniform};
+use rayon::prelude::*;
+use std::collections::HashMap;
 use std::fs;
 use std::io;
 use std::path::PathBuf;
@@ -75,4 +81,32 @@ pub fn create_directory(path: PathBuf, addable: bool, ask_clear: bool) {
       (false, false) => {}
     },
   }
+}
+
+pub fn run_attempts<U: Position + Velocity, T: ParticleOptimizer<U> + DataExporter<U>>(
+  params: HashMap<String, ParamValue>,
+  name: String,
+  problem: Problem,
+  out_directory: PathBuf,
+  iterations: usize,
+  attempts: usize,
+  save_data: bool,
+  bar: &indicatif::ProgressBar,
+) -> Result<(), Box<dyn std::error::Error>> {
+  (0..attempts).into_par_iter().for_each(|attempt| {
+    let mut pso: T = T::new(
+      name.clone(),
+      problem.clone(),
+      params.clone(),
+      out_directory.join(format!("{}", attempt)),
+    );
+    pso.run(iterations);
+    let _ = pso.save_summary();
+    let _ = pso.save_config(&params);
+    if save_data {
+      let _ = pso.save_data();
+    }
+    bar.inc(1);
+  });
+  Ok(())
 }

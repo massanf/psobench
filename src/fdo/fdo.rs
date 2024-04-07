@@ -7,6 +7,7 @@ use crate::pso_trait::{
 use crate::utils;
 use crate::FDOParticle;
 use nalgebra::DVector;
+use nalgebra::Matrix;
 use problem::Problem;
 use serde_json::json;
 use std::{collections::HashMap, fs, mem, path::PathBuf};
@@ -24,7 +25,7 @@ pub struct FDO<FDOParticle> {
 
 impl ParticleOptimizer<FDOParticle> for FDO<FDOParticle> {
   fn new(
-    name: &str,
+    name: String,
     problem: Problem,
     parameters: HashMap<String, ParamValue>,
     out_directory: PathBuf,
@@ -60,7 +61,7 @@ impl ParticleOptimizer<FDOParticle> for FDO<FDOParticle> {
     }
 
     let mut gsa = FDO {
-      name: name.to_owned(),
+      name: name,
       problem,
       particles: Vec::new(),
       global_best_pos: None,
@@ -89,7 +90,7 @@ impl ParticleOptimizer<FDOParticle> for FDO<FDOParticle> {
     }
 
     self.particles = particles;
-    self.global_best_pos = Some(global_best_pos.unwrap());
+    self.set_global_best_pos(global_best_pos.unwrap());
     self.add_data();
 
     utils::create_directory(self.out_directory().to_path_buf(), true, false);
@@ -105,16 +106,16 @@ impl ParticleOptimizer<FDOParticle> for FDO<FDOParticle> {
       let mut problem = mem::replace(&mut self.problem, Problem::default());
 
       let wf = self.wf.clone();
-      let mut new_global_best_pos = None;
+      let mut new_global_best_pos: Option<Matrix<_, _, _, _>> = None;
       for particle in self.particles() {
-        if new_global_best_pos.is_none() || problem.f(particle.pos()) < problem.f(new_global_best_pos.clone().unwrap())
+        if new_global_best_pos.is_none() || problem.f(particle.pos()) < problem.f(&new_global_best_pos.clone().unwrap())
         {
-          new_global_best_pos = Some(particle.pos());
+          new_global_best_pos = Some(particle.pos().clone());
         }
       }
 
-      self.set_global_best_pos(new_global_best_pos.clone().unwrap().clone());
-      let global_best_pos = &self.global_best_pos().clone();
+      self.update_global_best_pos(new_global_best_pos.clone().unwrap());
+      let global_best_pos = new_global_best_pos.unwrap().clone();
       let f_global_best = self.problem().f(&global_best_pos);
 
       for particle in self.particles_mut() {

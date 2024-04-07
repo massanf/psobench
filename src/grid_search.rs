@@ -8,30 +8,6 @@ use rayon::prelude::*;
 use serde_json::json;
 use std::{collections::HashMap, fs, path::PathBuf, sync::Arc};
 
-fn run_attempts<U: Position + Velocity, T: ParticleOptimizer<U> + DataExporter<U>>(
-  params: HashMap<String, ParamValue>,
-  name: String,
-  problem: Problem,
-  out_directory: PathBuf,
-  iterations: usize,
-  attempts: usize,
-  bar: &indicatif::ProgressBar,
-) -> Result<(), Box<dyn std::error::Error>> {
-  (0..attempts).into_par_iter().for_each(|attempt| {
-    let mut pso: T = T::new(
-      &name.clone(),
-      problem.clone(),
-      params.clone(),
-      out_directory.join(format!("{}", attempt)),
-    );
-    pso.run(iterations);
-    let _ = pso.save_summary();
-    let _ = pso.save_config(&params);
-    bar.inc(1);
-  });
-  Ok(())
-}
-
 fn save_grid_search_config(
   problem: Problem,
   param1: (String, Vec<ParamValue>),
@@ -80,13 +56,14 @@ pub fn grid_search<U: Position + Velocity, T: ParticleOptimizer<U> + DataExporte
       params.insert(param1.0.clone(), x1.clone());
       params.insert(param2.0.clone(), x2.clone());
 
-      let _ = run_attempts::<U, T>(
+      let _ = utils::run_attempts::<U, T>(
         params,
         name.clone(),
         problem.clone(),
         out_directory.join(format!("{}={},{}={}", param1.0, x1, param2.0, x2)),
         iterations,
         attempts,
+        false,
         &bar,
       );
     });
@@ -129,13 +106,14 @@ pub fn grid_search_dim<U: Position + Velocity, T: ParticleOptimizer<U> + DataExp
       let problem = problem_type(dim.clone());
       let mut params = base_params.clone();
       params.insert(param.0.clone(), x.clone());
-      let _ = run_attempts::<U, T>(
+      let _ = utils::run_attempts::<U, T>(
         params,
         name.clone(),
         problem.clone(),
         out_directory.join(format!("{}={},{}={}", param.0.clone(), x, "dim", dim)),
         iterations,
         attempts,
+        false,
         &bar,
       );
     });
