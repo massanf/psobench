@@ -80,6 +80,7 @@ class GridSearch:
                     best = avg
                     best_psos = psos
         data = []
+        best_psos = self.psos[0][0]
         for pso in best_psos:
             data.append(pso.global_best_fitness_progress())
         return [sum(group) / len(group) for group in zip(*data)]

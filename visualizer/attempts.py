@@ -9,8 +9,8 @@ class Attempts:
             self.data.append(PSO(attempt))
 
     def average_global_best_progress(self):
-        best = float("inf")
         data = []
         for pso in self.data:
             data.append(pso.global_best_fitness_progress())
+        # return data[0]
         return [sum(group) / len(group) for group in zip(*data)]

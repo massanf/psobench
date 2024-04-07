@@ -41,31 +41,31 @@ class Tests:
         return axs
 
 
-tests = Tests(DATA / "test" / "30")
+# tests = Tests(DATA / "test" / "30")
+# fig, axs = plt.subplots(5, 6, figsize=(12, 10), dpi=300)
+# axs = tests.plot_all(axs)
+# plt.tight_layout()
+# plt.savefig(GRAPHS / f"progress_comparison.png")
 
-fig, axs = plt.subplots(5, 6, figsize=(12, 10), dpi=300)
-axs = tests.plot_all(axs)
-plt.tight_layout()
-plt.savefig(GRAPHS / f"progress_comparison.png")
 
-# gsa_path = pathlib.Path("grid_search") / f"gsa_{dim}"
-# gsa = GridSearches(DATA, GRAPHS, gsa_path)
+gsa_path = pathlib.Path("grid_search") / f"gsa_30"
+gsa = GridSearches(DATA, GRAPHS, gsa_path)
 # gsa.heatmap_collage("grid_search.png", True, True)
 
 # tiled_gsa_path = pathlib.Path("grid_search") / f"tiled_gsa_{dim}"
 # tiled_gsa = GridSearches(DATA, GRAPHS, tiled_gsa_path)
 # tiled_gsa.heatmap_collage("grid_search.png", True, True)
 
-# pso_path = pathlib.Path("grid_search") / f"pso_{dim}"
-# pso = GridSearches(DATA, GRAPHS, pso_path)
+pso_path = pathlib.Path("grid_search") / f"pso_30"
+pso = GridSearches(DATA, GRAPHS, pso_path)
 # pso.heatmap_collage("grid_search.png", False, False)
 
-# fig, axs = plt.subplots(5, 6, figsize=(12, 10), dpi=300)
-# axs = gsa.plot_best_global_progress(axs)
-# axs = pso.plot_best_global_progress(axs)
+fig, axs = plt.subplots(5, 6, figsize=(12, 10), dpi=300)
+axs = gsa.plot_best_global_progresses(axs)
+axs = pso.plot_best_global_progresses(axs)
 # axs = tiled_gsa.plot_best_global_progress(axs)
-# plt.tight_layout()
-# plt.savefig(GRAPHS / f"progress_comparison_{dim}.png")
+plt.tight_layout()
+plt.savefig(GRAPHS / f"progress_comparison.png")
 
 # NAME = pathlib.Path("test") / "tiled_gsa"
 # DATA = HOME / "data" / NAME

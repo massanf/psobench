@@ -1,4 +1,3 @@
-use crate::particle_trait::BestPosition;
 use crate::particle_trait::Mass;
 use crate::particle_trait::{Position, Velocity};
 use crate::problem;
@@ -71,7 +70,7 @@ impl ParticleOptimizer<GSAParticle> for GSA<GSAParticle> {
     }
 
     let mut gsa = GSA {
-      name: name,
+      name,
       problem,
       particles: Vec::new(),
       global_best_pos: None,
@@ -95,7 +94,6 @@ impl ParticleOptimizer<GSAParticle> for GSA<GSAParticle> {
     }
 
     let mut global_best_pos = None;
-
     for particle in particles.clone() {
       if global_best_pos.is_none() || problem.f(&particle.pos()) < problem.f(global_best_pos.as_ref().unwrap()) {
         global_best_pos = Some(particle.pos().clone());
@@ -221,7 +219,6 @@ impl ParticleOptimizer<GSAParticle> for GSA<GSAParticle> {
         let particle = &mut self.particles_mut()[idx];
         particle.set_vel(vels[idx].clone());
         let _ = particle.move_pos(&mut temp_problem);
-        let _ = particle.update_best_pos(&mut temp_problem);
         let pos = particle.pos().clone();
         if self.problem().f(&pos) < self.problem().f(&new_global_best_pos) {
           new_global_best_pos = self.particles()[idx].pos().clone();

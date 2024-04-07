@@ -70,9 +70,9 @@ for func_num in 1..=30 {
 
 # Running the Visualizer
 ```
-$ source .venv/bin/activate
-$ pipenv shell
-$ python visualizer/main.py
+source .venv/bin/activate
+pipenv shell
+python visualizer/main.py
 ```
 
 # Acknowledgement

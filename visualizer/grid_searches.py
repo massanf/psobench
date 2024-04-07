@@ -31,7 +31,6 @@ class GridSearches:
             graph_dir.mkdir(parents=True, exist_ok=True)
             grid = GridSearch(function_dir)
             grid.draw_heatmap(graph_dir, log_1, log_2)
-            grid.plot_best_global_progress(graph_dir)
 
     def heatmap_collage(self, filename: str, log_1: bool, log_2: bool):
         self.draw_heatmap(log_1, log_2)
@@ -50,7 +49,7 @@ class GridSearches:
         plt.subplots_adjust(wspace=0.1, hspace=0.1)
         plt.savefig(self.graphs / filename, bbox_inches='tight', pad_inches=0.1)
 
-    def plot_best_global_progress(self, axs) -> Any:
+    def plot_best_global_progresses(self, axs) -> Any:
         axs = axs.flatten()
         for i, ax in enumerate(tqdm(axs)):
             if i >= len(self.data_paths):
@@ -59,7 +58,7 @@ class GridSearches:
             grid = GridSearch(self.data_paths[i])
             axs[i].yaxis.set_major_locator(LogLocator(base=10.0))
             axs[i].yaxis.set_major_formatter(LogFormatterMathtext(base=10.0, labelOnlyBase=False))
-            axs[i].plot(grid.best_global_progress(), label=self.path.parent.name)
+            axs[i].plot(grid.best_global_progress(), label=self.path.name)
             axs[i].set_title(grid.name)
             axs[i].legend()
         return axs

@@ -57,4 +57,29 @@ impl Velocity for PSOParticle {
   fn set_vel(&mut self, vel: DVector<f64>) {
     self.vel = vel;
   }
+
+  fn move_pos(&mut self, problem: &mut Problem) {
+    let mut new_pos = self.pos().clone();
+    let mut new_vel = self.vel().clone();
+
+    // Check wall.
+    for (i, e) in new_pos.iter_mut().enumerate() {
+      if self.pos()[i] + self.vel()[i] < problem.domain().0 {
+        *e = 2. * problem.domain().0 - self.vel()[i] - self.pos()[i];
+        new_vel[i] = -new_vel[i];
+      } else if self.pos()[i] + self.vel()[i] > problem.domain().1 {
+        *e = 2. * problem.domain().1 - self.vel()[i] - self.pos()[i];
+        new_vel[i] = -new_vel[i];
+      } else {
+        *e = self.pos()[i] + self.vel()[i];
+      }
+    }
+
+    // Set new velocity, as it may have hit a wall
+    self.set_vel(new_vel);
+
+    // This function returns whether the personal best was updated.
+    self.set_pos(new_pos);
+    self.update_best_pos(problem);
+  }
 }
