@@ -66,8 +66,21 @@ impl Velocity for TiledGSAParticle {
   }
 
   fn move_pos(&mut self, problem: &mut Problem) {
-    self.set_pos(self.pos().clone() + self.vel().clone());
-    self.update_best_pos(problem);
+    let mut new_pos = self.pos().clone();
+
+    // Check wall.
+    for (i, e) in new_pos.iter_mut().enumerate() {
+      *e = self.pos()[i] + self.vel()[i];
+      if *e < problem.domain().0 {
+        *e += problem.domain().1 - problem.domain().0;
+      }
+      if *e > problem.domain().1 {
+        *e -= problem.domain().1 - problem.domain().0;
+      }
+    }
+
+    // This function returns whether the personal best was updated.
+    self.set_pos(new_pos);
   }
 }
 

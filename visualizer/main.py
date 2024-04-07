@@ -13,12 +13,12 @@ GRAPHS = HOME / "graphs"
 
 class GridSearches:
     def __init__(self, path: pathlib.Path):
-        if not path.exists():
-            raise ValueError(f"Path {path} does not exist.")
-
         self.path = path
         self.data = DATA / path
         self.graphs = GRAPHS / path
+
+        if not self.data.exists():
+            raise ValueError(f"Path {path} does not exist.")
 
         self.data_paths = []
         self.graph_paths = []
@@ -32,7 +32,7 @@ class GridSearches:
     def draw_heatmap(self, log_1: bool, log_2: bool):
         for idx, function_dir in enumerate(self.data_paths):
             graph_dir = self.graphs / function_dir.name
-            graph_dir.makedirs(parents=True, exist_ok=True)
+            graph_dir.mkdir(parents=True, exist_ok=True)
             grid = GridSearch(function_dir)
             grid.draw_heatmap(graph_dir, log_1, log_2)
             grid.plot_best_global_progress(graph_dir)
@@ -68,29 +68,34 @@ class GridSearches:
             axs[i].legend()
         return axs
 
-# dim = 30
+dim = 30
 
-# gsa_path = pathlib.Path(f"gsa_{dim}") / "grid_search"
-# gsa = GridSearches(gsa_path)
-# # gsa.heatmap_collage("grid_search.png", True, True)
+gsa_path = pathlib.Path("grid_search") / f"gsa_{dim}"
+gsa = GridSearches(gsa_path)
+gsa.heatmap_collage("grid_search.png", True, True)
 
-# pso_path = pathlib.Path(f"pso_{dim}") / "grid_search"
-# pso = GridSearches(pso_path)
-# # pso.heatmap_collage("grid_search.png", False, False)
+tiled_gsa_path = pathlib.Path("grid_search") / f"tiled_gsa_{dim}"
+tiled_gsa = GridSearches(tiled_gsa_path)
+tiled_gsa.heatmap_collage("grid_search.png", True, True)
 
-# fig, axs = plt.subplots(5, 6, figsize=(12, 10), dpi=300)
-# axs = gsa.plot_best_global_progress(axs)
-# axs = pso.plot_best_global_progress(axs)
-# plt.tight_layout()
-# plt.savefig(GRAPHS / f"progress_comparison_{dim}.png")
+pso_path = pathlib.Path("grid_search") / f"pso_{dim}"
+pso = GridSearches(pso_path)
+pso.heatmap_collage("grid_search.png", False, False)
 
-NAME = pathlib.Path("test") / "fdo"
-DATA = HOME / "data" / NAME
-GRAPHS = HOME / "graphs" / NAME
-pso = PSO(DATA)
-pso.load_full()
-pso.overview(False, GRAPHS)
-pso.animate(GRAPHS / "animation.gif", 1, 0, 500)
+fig, axs = plt.subplots(5, 6, figsize=(12, 10), dpi=300)
+axs = gsa.plot_best_global_progress(axs)
+axs = pso.plot_best_global_progress(axs)
+axs = tiled_gsa.plot_best_global_progress(axs)
+plt.tight_layout()
+plt.savefig(GRAPHS / f"progress_comparison_{dim}.png")
+
+# NAME = pathlib.Path("test") / "tiled_gsa"
+# DATA = HOME / "data" / NAME
+# GRAPHS = HOME / "graphs" / NAME
+# pso = PSO(DATA)
+# pso.load_full()
+# pso.overview(False, GRAPHS)
+# pso.animate(GRAPHS / "animation.gif", 1, 0, 50)
 
 # NAME = pathlib.Path("test") / "pso"
 # DATA = HOME / "data" / NAME

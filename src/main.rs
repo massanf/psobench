@@ -94,7 +94,7 @@ fn run_tiled_gsa() -> Result<(), Box<dyn std::error::Error>> {
     "TiledGSA",
     functions::cec17(1, 10),
     params.clone(),
-    PathBuf::from("data/test/gsa"),
+    PathBuf::from("data/test/tiled_gsa"),
   );
   gsa.run(iterations);
   gsa.save_summary()?;
@@ -132,7 +132,7 @@ fn run_fdo() -> Result<(), Box<dyn std::error::Error>> {
 #[allow(dead_code)]
 fn run_grid_search_gsa(dim: usize) -> Result<(), Box<dyn std::error::Error>> {
   let iterations = 1000;
-  let out_directory = PathBuf::from(format!("data/gsa_{}/grid_search", dim));
+  let out_directory = PathBuf::from(format!("data/grid_search/gsa_{}", dim));
 
   let g0: Vec<ParamValue> = vec![
     ParamValue::Float(10.0),
@@ -175,9 +175,54 @@ fn run_grid_search_gsa(dim: usize) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[allow(dead_code)]
+fn run_grid_search_tiled_gsa(dim: usize) -> Result<(), Box<dyn std::error::Error>> {
+  let iterations = 1000;
+  let out_directory = PathBuf::from(format!("data/grid_search/tiled_gsa_{}", dim));
+
+  let g0: Vec<ParamValue> = vec![
+    ParamValue::Float(10.0),
+    ParamValue::Float(50.0),
+    ParamValue::Float(100.0),
+    ParamValue::Float(500.0),
+    ParamValue::Float(1000.0),
+    ParamValue::Float(5000.0),
+  ];
+  let alpha: Vec<ParamValue> = vec![
+    ParamValue::Float(1.0),
+    ParamValue::Float(2.0),
+    ParamValue::Float(5.0),
+    ParamValue::Float(10.0),
+    ParamValue::Float(20.0),
+    ParamValue::Float(50.0),
+    ParamValue::Float(100.0),
+  ];
+
+  let base_params: HashMap<String, ParamValue> =
+    [("particle_count".to_owned(), ParamValue::Int(30))].iter().cloned().collect();
+
+  for func_num in 1..=30 {
+    if func_num == 2 {
+      continue;
+    }
+
+    grid_search::grid_search::<TiledGSAParticle, TiledGSA<TiledGSAParticle>>(
+      "TiledGSA".to_owned(),
+      iterations,
+      functions::cec17(func_num, dim),
+      5,
+      ("g0".to_owned(), g0.clone()),
+      ("alpha".to_owned(), alpha.clone()),
+      base_params.clone(),
+      out_directory.clone(),
+    )?;
+  }
+  Ok(())
+}
+
+#[allow(dead_code)]
 fn run_grid_search_pso(dim: usize) -> Result<(), Box<dyn std::error::Error>> {
   let iterations = 1000;
-  let out_directory = PathBuf::from(format!("data/pso_{}/grid_search", dim));
+  let out_directory = PathBuf::from(format!("data/grid_search/pso_{}", dim));
 
   let phi_p: Vec<ParamValue> = vec![
     ParamValue::Float(-4.0),
@@ -231,11 +276,13 @@ fn run_grid_search_pso(dim: usize) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-  // run_grid_search_gsa(100)?;
-  // run_grid_search_pso()?;
+  run_grid_search_gsa(30)?;
+  // run_grid_search_tiled_gsa(30)?;
+  run_grid_search_pso(30)?;
   // run_cfo()?;
   // run_gsa()?;
-  run_fdo()?;
+  // run_fdo()?;
+  // run_tiled_gsa()?;
   // run_pso()?;
   Ok(())
 }

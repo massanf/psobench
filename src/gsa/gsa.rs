@@ -1,3 +1,4 @@
+use crate::particle_trait::BestPosition;
 use crate::particle_trait::Mass;
 use crate::particle_trait::{Position, Velocity};
 use crate::problem;
@@ -9,7 +10,6 @@ use crate::utils;
 use crate::GSAParticle;
 use nalgebra::DVector;
 use problem::Problem;
-use crate::particle_trait::BestPosition;
 use serde_json::json;
 use std::collections::HashMap;
 use std::fs;

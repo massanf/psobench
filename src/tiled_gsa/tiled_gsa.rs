@@ -120,15 +120,23 @@ impl ParticleOptimizer<TiledGSAParticle> for TiledGSA<TiledGSAParticle> {
       if idx == j || !self.influences[j] {
         continue;
       }
-      let r = self.particles()[j].pos() - self.particles()[idx].pos();
-      let mut a_delta = self.g * self.particles()[j].mass() / (r.norm() + std::f64::EPSILON) * r;
 
-      for e in a_delta.iter_mut() {
-        let rand: f64 = rng.gen_range(0.0..1.0);
-        *e = rand * *e;
+      let offset = [-1., 0., 1.];
+      for d in 0..self.global_best_pos().len() {
+        for dir in offset.iter() {
+          let mut pos = self.particles()[j].pos().clone();
+          pos[d] += dir * (self.problem().domain().1 - self.problem().domain().0);
+          let r = pos - self.particles()[idx].pos();
+          let mut a_delta = self.g * self.particles()[j].mass() / (r.norm() + std::f64::EPSILON) * r;
+
+          for e in a_delta.iter_mut() {
+            let rand: f64 = rng.gen_range(0.0..1.0);
+            *e = rand * *e;
+          }
+
+          a += a_delta;
+        }
       }
-
-      a += a_delta;
     }
 
     let rand: f64 = rng.gen_range(0.0..1.0);

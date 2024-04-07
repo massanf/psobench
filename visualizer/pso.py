@@ -133,7 +133,7 @@ class PSO:
         self.progressbar = tqdm(total=math.ceil((end - start) / skip_frames) + 1)
         ani = FuncAnimation(fig, self.update_plot_animate,
                             frames=frames)
-        ani.save(destination_path, fps=10)
+        ani.save(destination_path, fps=2)
 
     def plot_global_best_fitness_progress(self, out_directory: pathlib.Path) -> None:
         if not out_directory.exists():
