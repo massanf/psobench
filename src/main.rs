@@ -20,7 +20,7 @@ use crate::pso_trait::ParticleOptimizer;
 use fdo::fdo::FDO;
 use fdo::particle::FDOParticle;
 use gsa::gsa::GSA;
-use gsa::particle::GSAParticle;
+use gsa::gsa_particle::GSAParticle;
 use gsa::tiled_gsa_particle::TiledGSAParticle;
 use pso::particle::PSOParticle;
 use pso::pso::PSO;
@@ -346,22 +346,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   //   PathBuf::from(format!("data/test/pso_{}", dim)),
   // )?;
 
-  // let gsa_params: HashMap<String, ParamValue> = [
-  //   ("g0".to_owned(), ParamValue::Float(5000.0)),
-  //   ("alpha".to_owned(), ParamValue::Float(5.0)),
-  //   ("particle_count".to_owned(), ParamValue::Int(30)),
-  // ]
-  // .iter()
-  // .cloned()
-  // .collect();
-  // check_cec17::<GSAParticle, GSA<GSAParticle>>(
-  //   "GSA".to_owned(),
-  //   iterations,
-  //   dim,
-  //   gsa_params,
-  //   attempts,
-  //   PathBuf::from(format!("data/test/gsa_{}", dim)),
-  // )?;
+  let gsa_params: HashMap<String, ParamValue> = [
+    ("g0".to_owned(), ParamValue::Float(5000.0)),
+    ("alpha".to_owned(), ParamValue::Float(5.0)),
+    ("particle_count".to_owned(), ParamValue::Int(30)),
+  ]
+  .iter()
+  .cloned()
+  .collect();
+  check_cec17::<GSAParticle, GSA<GSAParticle>>(
+    "GSA".to_owned(),
+    iterations,
+    dim,
+    gsa_params,
+    attempts,
+    PathBuf::from(format!("data/test/gsa_{}", dim)),
+  )?;
 
   let tiled_gsa_params: HashMap<String, ParamValue> = [
     ("g0".to_owned(), ParamValue::Float(1000.0)),
