@@ -15,16 +15,15 @@ use indicatif::ProgressStyle;
 mod gsa;
 mod pso;
 mod pso_trait;
-mod tiled_gsa;
+use crate::gsa::tiled_gsa::TiledGSA;
 use crate::pso_trait::ParticleOptimizer;
-use crate::tiled_gsa::tiled_gsa::TiledGSA;
 use fdo::fdo::FDO;
 use fdo::particle::FDOParticle;
 use gsa::gsa::GSA;
 use gsa::particle::GSAParticle;
+use gsa::tiled_gsa_particle::TiledGSAParticle;
 use pso::particle::PSOParticle;
 use pso::pso::PSO;
-use tiled_gsa::particle::TiledGSAParticle;
 mod utils;
 use crate::particle_trait::Velocity;
 
@@ -73,13 +72,40 @@ fn check_cec17<T: Velocity, U: ParticleOptimizer<T>>(
 }
 
 #[allow(dead_code)]
+fn run_pso() -> Result<(), Box<dyn std::error::Error>> {
+  // Experiment Settings
+  let iterations = 1000;
+  let params: HashMap<String, ParamValue> = [
+    ("w".to_owned(), ParamValue::Float(0.8)),
+    ("phi_p".to_owned(), ParamValue::Float(1.0)),
+    ("phi_g".to_owned(), ParamValue::Float(1.0)),
+    ("particle_count".to_owned(), ParamValue::Int(50)),
+  ]
+  .iter()
+  .cloned()
+  .collect();
+
+  let mut pso: PSO<PSOParticle> = PSO::new(
+    "PSO".to_owned(),
+    functions::cec17(1, 10),
+    params.clone(),
+    PathBuf::from("data/test/pso"),
+  );
+  pso.run(iterations);
+  pso.save_summary()?;
+  pso.save_data()?;
+  pso.save_config(&params)?;
+  Ok(())
+}
+
+#[allow(dead_code)]
 fn run_gsa() -> Result<(), Box<dyn std::error::Error>> {
   // Experiment Settings
   let iterations = 1000;
   let params: HashMap<String, ParamValue> = [
-    ("g0".to_owned(), ParamValue::Float(100.0)),
+    ("g0".to_owned(), ParamValue::Float(5.0)),
     ("alpha".to_owned(), ParamValue::Float(20.0)),
-    ("particle_count".to_owned(), ParamValue::Int(50)),
+    ("particle_count".to_owned(), ParamValue::Int(30)),
   ]
   .iter()
   .cloned()
@@ -87,7 +113,8 @@ fn run_gsa() -> Result<(), Box<dyn std::error::Error>> {
 
   let mut gsa: GSA<GSAParticle> = GSA::new(
     "GSA".to_owned(),
-    functions::cec17(1, 10),
+    // functions::cec17(1, 10),
+    functions::f1(30),
     params.clone(),
     PathBuf::from("data/test/gsa"),
   );
@@ -105,7 +132,7 @@ fn run_tiled_gsa() -> Result<(), Box<dyn std::error::Error>> {
   let params: HashMap<String, ParamValue> = [
     ("g0".to_owned(), ParamValue::Float(100.0)),
     ("alpha".to_owned(), ParamValue::Float(20.0)),
-    ("particle_count".to_owned(), ParamValue::Int(50)),
+    ("particle_count".to_owned(), ParamValue::Int(100)),
   ]
   .iter()
   .cloned()
@@ -113,7 +140,7 @@ fn run_tiled_gsa() -> Result<(), Box<dyn std::error::Error>> {
 
   let mut gsa: TiledGSA<TiledGSAParticle> = TiledGSA::new(
     "TiledGSA".to_owned(),
-    functions::cec17(1, 10),
+    functions::cec17(1, 30),
     params.clone(),
     PathBuf::from("data/test/tiled_gsa"),
   );
@@ -129,7 +156,7 @@ fn run_fdo() -> Result<(), Box<dyn std::error::Error>> {
   // Experiment Settings
   let iterations = 1000;
   let params: HashMap<String, ParamValue> = [
-    ("particle_count".to_owned(), ParamValue::Int(50)),
+    ("particle_count".to_owned(), ParamValue::Int(30)),
     ("wf".to_owned(), ParamValue::Int(1)),
   ]
   .iter()
@@ -184,7 +211,7 @@ fn run_grid_search_gsa(dim: usize) -> Result<(), Box<dyn std::error::Error>> {
       "GSA".to_owned(),
       iterations,
       functions::cec17(func_num, dim),
-      5,
+      10,
       ("g0".to_owned(), g0.clone()),
       ("alpha".to_owned(), alpha.clone()),
       base_params.clone(),
@@ -200,14 +227,15 @@ fn run_grid_search_tiled_gsa(dim: usize) -> Result<(), Box<dyn std::error::Error
   let out_directory = PathBuf::from(format!("data/grid_search/tiled_gsa_{}", dim));
 
   let g0: Vec<ParamValue> = vec![
-    ParamValue::Float(10.0),
-    ParamValue::Float(50.0),
     ParamValue::Float(100.0),
     ParamValue::Float(500.0),
     ParamValue::Float(1000.0),
     ParamValue::Float(5000.0),
+    ParamValue::Float(10000.0),
+    ParamValue::Float(50000.0),
   ];
   let alpha: Vec<ParamValue> = vec![
+    ParamValue::Float(0.1),
     ParamValue::Float(1.0),
     ParamValue::Float(2.0),
     ParamValue::Float(5.0),
@@ -229,7 +257,7 @@ fn run_grid_search_tiled_gsa(dim: usize) -> Result<(), Box<dyn std::error::Error
       "TiledGSA".to_owned(),
       iterations,
       functions::cec17(func_num, dim),
-      5,
+      10,
       ("g0".to_owned(), g0.clone()),
       ("alpha".to_owned(), alpha.clone()),
       base_params.clone(),
@@ -285,7 +313,7 @@ fn run_grid_search_pso(dim: usize) -> Result<(), Box<dyn std::error::Error>> {
       "PSO".to_owned(),
       iterations,
       functions::cec17(func_num, dim),
-      5,
+      10,
       ("phi_p".to_owned(), phi_p.clone()),
       ("phi_g".to_owned(), phi_g.clone()),
       base_params.clone(),
@@ -296,15 +324,15 @@ fn run_grid_search_pso(dim: usize) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-  // let dim = 30;
-  // let iterations = 1000;
-  // let attempts = 5;
+  let dim = 30;
+  let iterations = 1000;
+  let attempts = 30;
 
   // let pso_params: HashMap<String, ParamValue> = [
   //   ("w".to_owned(), ParamValue::Float(0.8)),
   //   ("phi_p".to_owned(), ParamValue::Float(1.0)),
   //   ("phi_g".to_owned(), ParamValue::Float(1.0)),
-  //   ("particle_count".to_owned(), ParamValue::Int(50)),
+  //   ("particle_count".to_owned(), ParamValue::Int(30)),
   // ]
   // .iter()
   // .cloned()
@@ -319,9 +347,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   // )?;
 
   // let gsa_params: HashMap<String, ParamValue> = [
-  //   ("g0".to_owned(), ParamValue::Float(100.0)),
-  //   ("alpha".to_owned(), ParamValue::Float(20.0)),
-  //   ("particle_count".to_owned(), ParamValue::Int(50)),
+  //   ("g0".to_owned(), ParamValue::Float(5000.0)),
+  //   ("alpha".to_owned(), ParamValue::Float(5.0)),
+  //   ("particle_count".to_owned(), ParamValue::Int(30)),
   // ]
   // .iter()
   // .cloned()
@@ -335,24 +363,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   //   PathBuf::from(format!("data/test/gsa_{}", dim)),
   // )?;
 
-  // let tiled_gsa_params: HashMap<String, ParamValue> = [
-  //   ("g0".to_owned(), ParamValue::Float(100.0)),
-  //   ("alpha".to_owned(), ParamValue::Float(20.0)),
-  //   ("particle_count".to_owned(), ParamValue::Int(50)),
-  // ]
-  // .iter()
-  // .cloned()
-  // .collect();
-  // check_cec17::<TiledGSAParticle, TiledGSA<TiledGSAParticle>>(
-  //   "TiledGSA".to_owned(),
-  //   iterations,
-  //   dim,
-  //   tiled_gsa_params,
-  //   attempts,
-  //   PathBuf::from(format!("data/test/tiled_gsa_{}", dim)),
-  // )?;
+  let tiled_gsa_params: HashMap<String, ParamValue> = [
+    ("g0".to_owned(), ParamValue::Float(1000.0)),
+    ("alpha".to_owned(), ParamValue::Float(5.0)),
+    ("particle_count".to_owned(), ParamValue::Int(30)),
+  ]
+  .iter()
+  .cloned()
+  .collect();
+  check_cec17::<TiledGSAParticle, TiledGSA<TiledGSAParticle>>(
+    "TiledGSA".to_owned(),
+    iterations,
+    dim,
+    tiled_gsa_params,
+    attempts,
+    PathBuf::from(format!("data/test/tiled_gsa_{}", dim)),
+  )?;
 
-  run_grid_search_gsa(30)?;
+  // run_grid_search_gsa(30)?;
   // run_grid_search_tiled_gsa(30)?;
   // run_grid_search_pso(30)?;
   // run_cfo()?;

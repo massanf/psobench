@@ -16,6 +16,15 @@ pub fn sphere(v: &DVector<f64>) -> f64 {
 }
 
 #[allow(dead_code)]
+pub fn skewed_sphere(v: &DVector<f64>) -> f64 {
+  let mut sum = 0.0;
+  for i in 0..v.len() {
+    sum += (v[i] - 0.8) * (v[i] - 0.8);
+  }
+  sum
+}
+
+#[allow(dead_code)]
 fn rosenbrock(v: &DVector<f64>) -> f64 {
   let mut sum = 0.0;
   for i in 0..v.len() - 1 {
@@ -50,6 +59,11 @@ fn cec17_impl(v: &DVector<f64>, func_num: usize) -> f64 {
 #[allow(dead_code)]
 pub fn f1(dim: usize) -> Problem {
   Problem::new("Sphere".to_owned(), Arc::new(sphere), (-1., 1.), dim)
+}
+
+#[allow(dead_code)]
+pub fn f1_skewed(dim: usize) -> Problem {
+  Problem::new("Skewed Sphere".to_owned(), Arc::new(skewed_sphere), (-1., 1.), dim)
 }
 
 #[allow(dead_code)]
