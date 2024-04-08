@@ -1,3 +1,4 @@
+use crate::gsa::tiled_gsa_particle::TiledGSAParticle;
 use crate::particle_trait::Mass;
 use crate::particle_trait::{Position, Velocity};
 use crate::problem;
@@ -6,7 +7,6 @@ use crate::pso_trait::{
 };
 use crate::rand::Rng;
 use crate::utils;
-use crate::TiledGSAParticle;
 use nalgebra::DVector;
 use problem::Problem;
 use serde_json::json;

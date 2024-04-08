@@ -1,16 +1,14 @@
 use crate::particle_trait::{BestPosition, Position, Velocity};
 use crate::problem;
+use crate::pso::particle::PSOParticle;
 use crate::pso_trait::{
   Data, DataExporter, GlobalBestPos, Name, OptimizationProblem, ParamValue, ParticleOptimizer, Particles,
 };
 use crate::rand::Rng;
 use crate::utils;
-use crate::PSOParticle;
 use nalgebra::DVector;
 use problem::Problem;
-use std::collections::HashMap;
-use std::mem;
-use std::path::PathBuf;
+use std::{collections::HashMap, mem, path::PathBuf};
 
 #[derive(Clone)]
 pub struct PSO<PSOParticle> {

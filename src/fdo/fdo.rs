@@ -1,3 +1,4 @@
+use crate::fdo::particle::FDOParticle;
 use crate::particle_trait::Mass;
 use crate::particle_trait::{Position, Velocity};
 use crate::problem;
@@ -5,7 +6,6 @@ use crate::pso_trait::{
   Data, DataExporter, GlobalBestPos, Name, OptimizationProblem, ParamValue, ParticleOptimizer, Particles,
 };
 use crate::utils;
-use crate::FDOParticle;
 use nalgebra::DVector;
 use nalgebra::Matrix;
 use problem::Problem;

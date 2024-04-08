@@ -2,9 +2,9 @@ use crate::functions;
 use crate::grid_search;
 use crate::particle_trait::{Position, Velocity};
 use crate::problem;
-use crate::DataExporter;
-use crate::ParamValue;
-use crate::ParticleOptimizer;
+use crate::pso_trait::DataExporter;
+use crate::pso_trait::ParamValue;
+use crate::pso_trait::ParticleOptimizer;
 use indicatif::ProgressBar;
 use indicatif::ProgressStyle;
 use nalgebra::DVector;
@@ -163,14 +163,13 @@ pub fn check_cec17<T: Velocity, U: ParticleOptimizer<T>>(
 pub fn run_grid_searches<T: Velocity, U: ParticleOptimizer<T>>(
   name: String,
   attempts: usize,
+  iterations: usize,
   param1: (String, Vec<ParamValue>),
   param2: (String, Vec<ParamValue>),
   base_params: HashMap<String, ParamValue>,
   dim: usize,
   out_directory: PathBuf,
 ) -> Result<(), Box<dyn std::error::Error>> {
-  let iterations = 1000;
-
   for func_num in 1..=30 {
     if func_num == 2 {
       continue;

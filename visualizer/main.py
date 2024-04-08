@@ -75,7 +75,7 @@ class Tests:
 # pso.overview(False, GRAPHS)
 # pso.animate(GRAPHS / "animation.gif", 1, 0, 50)
 
-NAME = pathlib.Path("test") / "gsa"
+NAME = pathlib.Path("test") / "30" / "gsa" / "CEC2017_F01" / "0"
 DATA = HOME / "data" / NAME
 GRAPHS = HOME / "graphs" / NAME
 pso = PSO(DATA)
