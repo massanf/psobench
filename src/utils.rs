@@ -1,8 +1,12 @@
+use crate::functions;
+use crate::grid_search;
 use crate::particle_trait::{Position, Velocity};
 use crate::problem;
 use crate::DataExporter;
 use crate::ParamValue;
 use crate::ParticleOptimizer;
+use indicatif::ProgressBar;
+use indicatif::ProgressStyle;
 use nalgebra::DVector;
 use problem::Problem;
 use rand::distributions::{Distribution, Uniform};
@@ -108,5 +112,80 @@ pub fn run_attempts<U: Position + Velocity, T: ParticleOptimizer<U> + DataExport
     }
     bar.inc(1);
   });
+  Ok(())
+}
+
+#[allow(dead_code)]
+pub fn check_cec17<T: Velocity, U: ParticleOptimizer<T>>(
+  name: String,
+  iterations: usize,
+  dim: usize,
+  params: HashMap<String, ParamValue>,
+  attempts: usize,
+  out_directory: PathBuf,
+) -> Result<(), Box<dyn std::error::Error>> {
+  // Progress Bar.
+  let bar = ProgressBar::new((29 * attempts) as u64);
+  bar.set_style(
+    ProgressStyle::default_bar()
+      .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {msg}")
+      .unwrap()
+      .progress_chars("#>-"),
+  );
+  bar.set_message(format!("{}...   ", name.clone()));
+
+  let mut func_nums = Vec::new();
+  for func_num in 1..=30 {
+    if func_num == 2 {
+      continue;
+    }
+    func_nums.push(func_num);
+  }
+
+  func_nums.into_par_iter().for_each(|func_num: usize| {
+    let problem = functions::cec17(func_num, dim);
+    let _ = run_attempts::<T, U>(
+      params.clone(),
+      name.clone(),
+      problem.clone(),
+      out_directory.join(format!("{}", problem.clone().name())),
+      iterations,
+      attempts,
+      true,
+      &bar,
+    );
+  });
+
+  Ok(())
+}
+
+#[allow(dead_code)]
+pub fn run_grid_searches<T: Velocity, U: ParticleOptimizer<T>>(
+  name: String,
+  attempts: usize,
+  param1: (String, Vec<ParamValue>),
+  param2: (String, Vec<ParamValue>),
+  base_params: HashMap<String, ParamValue>,
+  dim: usize,
+  out_directory: PathBuf,
+) -> Result<(), Box<dyn std::error::Error>> {
+  let iterations = 1000;
+
+  for func_num in 1..=30 {
+    if func_num == 2 {
+      continue;
+    }
+
+    grid_search::grid_search::<T, U>(
+      name.clone(),
+      iterations,
+      functions::cec17(func_num, dim),
+      attempts,
+      param1.clone(),
+      param2.clone(),
+      base_params.clone(),
+      out_directory.clone(),
+    )?;
+  }
   Ok(())
 }

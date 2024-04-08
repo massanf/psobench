@@ -257,3 +257,28 @@ impl<T: Position + Velocity + Mass + Clone> DataExporter<T> for FDO<T> {
     Ok(())
   }
 }
+
+// #[allow(dead_code)]
+// fn run_fdo() -> Result<(), Box<dyn std::error::Error>> {
+//   // Experiment Settings
+//   let iterations = 1000;
+//   let params: HashMap<String, ParamValue> = [
+//     ("particle_count".to_owned(), ParamValue::Int(30)),
+//     ("wf".to_owned(), ParamValue::Int(1)),
+//   ]
+//   .iter()
+//   .cloned()
+//   .collect();
+
+//   let mut fdo: FDO<FDOParticle> = FDO::new(
+//     "FDO".to_owned(),
+//     functions::cec17(1, 100),
+//     params.clone(),
+//     PathBuf::from("data/test/fdo"),
+//   );
+//   fdo.run(iterations);
+//   fdo.save_summary()?;
+//   fdo.save_data()?;
+//   fdo.save_config(&params)?;
+//   Ok(())
+// }
