@@ -26,9 +26,20 @@ lazy_static! {
     .collect();
     gsa_params
   };
+  pub static ref IGSA_PARAMS: HashMap<String, ParamValue> = {
+    let gsa_params: HashMap<String, ParamValue> = [
+      ("g0".to_owned(), ParamValue::Float(5000.0)),
+      ("alpha".to_owned(), ParamValue::Float(5.0)),
+      ("particle_count".to_owned(), ParamValue::Int(30)),
+    ]
+    .iter()
+    .cloned()
+    .collect();
+    gsa_params
+  };
   pub static ref TILED_GSA_PARAMS: HashMap<String, ParamValue> = {
     let tiled_gsa_params: HashMap<String, ParamValue> = [
-      ("g0".to_owned(), ParamValue::Float(1000.0)),
+      ("g0".to_owned(), ParamValue::Float(5000.0)),
       ("alpha".to_owned(), ParamValue::Float(5.0)),
       ("particle_count".to_owned(), ParamValue::Int(30)),
     ]
@@ -78,12 +89,18 @@ lazy_static! {
   };
   pub static ref GSA_G0_OPTIONS: (String, Vec<ParamValue>) = {
     let g0: Vec<ParamValue> = vec![
+      ParamValue::Float(2.0),
+      ParamValue::Float(5.0),
       ParamValue::Float(10.0),
+      ParamValue::Float(20.0),
       ParamValue::Float(50.0),
       ParamValue::Float(100.0),
+      ParamValue::Float(200.0),
       ParamValue::Float(500.0),
       ParamValue::Float(1000.0),
+      ParamValue::Float(2000.0),
       ParamValue::Float(5000.0),
+      ParamValue::Float(10000.0),
     ];
     ("g0".to_owned(), g0)
   };

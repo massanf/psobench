@@ -139,7 +139,7 @@ impl ParticleOptimizer<PSOParticle> for PSO<PSOParticle> {
         let vel = self.calculate_vel(idx);
         let mut temp_problem = mem::replace(&mut self.problem, Problem::default());
         let particle = &mut self.particles_mut()[idx];
-        particle.set_vel(vel);
+        particle.set_vel(vel, &mut temp_problem);
         particle.move_pos(&mut temp_problem);
         let best_pos = self.particles()[idx].best_pos().clone();
         if self.problem().f(&best_pos) < self.problem.f(&new_global_best_pos) {

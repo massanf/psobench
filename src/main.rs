@@ -17,13 +17,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   let iterations = 1000;
   let attempts = 10;
 
-  // executers::pso_cec17(iterations, dim, attempts)?;
+  executers::pso_cec17(iterations, dim, attempts)?;
   // executers::gsa_cec17(iterations, dim, attempts)?;
-  // executers::tiled_gsa_cec17(iterations, dim, attempts)?;
+  // executers::igsa_cec17(iterations, dim, attempts)?;
 
   // executers::grid_search_pso(iterations, dim, attempts)?;
   // executers::grid_search_gsa(iterations, dim, attempts)?;
-  // executers::grid_search_tiled_gsa(iterations, dim, attempts)?;
+  // executers::grid_search_igsa(iterations, dim, attempts)?;
 
   Ok(())
 }

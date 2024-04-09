@@ -7,6 +7,7 @@ use crate::pso;
 use crate::utils;
 use gsa::gsa::GSA;
 use gsa::gsa_particle::GSAParticle;
+use gsa::igsa::IGSA;
 use gsa::tiled_gsa_particle::TiledGSAParticle;
 use pso::particle::PSOParticle;
 use pso::pso::PSO;
@@ -52,6 +53,19 @@ pub fn tiled_gsa_cec17(iterations: usize, dim: usize, attempts: usize) -> Result
 }
 
 #[allow(dead_code)]
+pub fn igsa_cec17(iterations: usize, dim: usize, attempts: usize) -> Result<(), Box<dyn std::error::Error>> {
+  utils::check_cec17::<GSAParticle, IGSA<GSAParticle>>(
+    "IGSA".to_owned(),
+    iterations,
+    dim,
+    parameters::IGSA_PARAMS.clone(),
+    attempts,
+    PathBuf::from(format!("data/test/{}/igsa", dim)),
+  )?;
+  Ok(())
+}
+
+#[allow(dead_code)]
 pub fn grid_search_pso(iterations: usize, dim: usize, attempts: usize) -> Result<(), Box<dyn std::error::Error>> {
   utils::run_grid_searches::<PSOParticle, PSO<PSOParticle>>(
     "PSO".to_owned(),
@@ -77,6 +91,21 @@ pub fn grid_search_gsa(iterations: usize, dim: usize, attempts: usize) -> Result
     parameters::GSA_BASE_PARAMS.clone(),
     dim,
     PathBuf::from(format!("data/grid_search/{}/gsa", dim)),
+  )?;
+  Ok(())
+}
+
+#[allow(dead_code)]
+pub fn grid_search_igsa(iterations: usize, dim: usize, attempts: usize) -> Result<(), Box<dyn std::error::Error>> {
+  utils::run_grid_searches::<GSAParticle, IGSA<GSAParticle>>(
+    "IGSA".to_owned(),
+    attempts,
+    iterations,
+    parameters::GSA_G0_OPTIONS.clone(),
+    parameters::GSA_ALPHA_OPTIONS.clone(),
+    parameters::GSA_BASE_PARAMS.clone(),
+    dim,
+    PathBuf::from(format!("data/grid_search/{}/igsa", dim)),
   )?;
   Ok(())
 }

@@ -37,14 +37,25 @@ impl Position for GSAParticle {
 
 impl Velocity for GSAParticle {
   fn init(&mut self, problem: &mut Problem) {
-    self.set_vel(DVector::from_element(problem.dim(), 0.));
+    self.set_vel(DVector::from_element(problem.dim(), 0.), problem);
   }
 
   fn vel(&self) -> &DVector<f64> {
     &self.vel
   }
 
-  fn set_vel(&mut self, vel: DVector<f64>) {
+  fn set_vel(&mut self, vel: DVector<f64>, problem: &mut Problem) {
+    // let mut new_vel = vel;
+    // let v_max = (problem.domain().1 - problem.domain().0) / 2.;
+
+    // for e in new_vel.iter_mut() {
+    //   if *e > v_max {
+    //     *e = v_max;
+    //   } else if *e < v_max {
+    //     *e = -v_max;
+    //   }
+    // }
+
     self.vel = vel;
   }
 
@@ -52,7 +63,7 @@ impl Velocity for GSAParticle {
     let mut new_pos = self.pos().clone();
     let mut new_vel = self.vel().clone();
 
-    // Check wall.
+    // Check wall and reflect.
     for (i, e) in new_pos.iter_mut().enumerate() {
       if self.pos()[i] + self.vel()[i] < problem.domain().0 {
         *e = 2. * problem.domain().0 - self.vel()[i] - self.pos()[i];
@@ -66,7 +77,7 @@ impl Velocity for GSAParticle {
     }
 
     // Set new velocity, as it may have hit a wall
-    self.set_vel(new_vel);
+    self.set_vel(new_vel, problem);
 
     // This function returns whether the personal best was updated.
     self.set_pos(new_pos);

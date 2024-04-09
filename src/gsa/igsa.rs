@@ -1,4 +1,4 @@
-use crate::gsa::tiled_gsa_particle::TiledGSAParticle;
+use crate::gsa::gsa_particle::GSAParticle;
 use crate::particle_trait::Mass;
 use crate::particle_trait::{Position, Velocity};
 use crate::problem;
@@ -16,26 +16,26 @@ use std::mem;
 use std::path::PathBuf;
 
 #[derive(Clone)]
-pub struct TiledGSA<TiledGSAParticle> {
+pub struct IGSA<GSAParticle> {
   name: String,
   problem: Problem,
-  particles: Vec<TiledGSAParticle>,
+  particles: Vec<GSAParticle>,
   global_best_pos: Option<DVector<f64>>,
   influences: Vec<bool>,
   g: f64,
-  data: Vec<(f64, Vec<TiledGSAParticle>)>,
+  data: Vec<(f64, Vec<GSAParticle>)>,
   out_directory: PathBuf,
   g0: f64,
   alpha: f64,
 }
 
-impl ParticleOptimizer<TiledGSAParticle> for TiledGSA<TiledGSAParticle> {
+impl ParticleOptimizer<GSAParticle> for IGSA<GSAParticle> {
   fn new(
     name: String,
     problem: Problem,
     parameters: HashMap<String, ParamValue>,
     out_directory: PathBuf,
-  ) -> TiledGSA<TiledGSAParticle> {
+  ) -> IGSA<GSAParticle> {
     assert!(
       parameters.contains_key("particle_count"),
       "Key 'particle_count' not found."
@@ -69,8 +69,8 @@ impl ParticleOptimizer<TiledGSAParticle> for TiledGSA<TiledGSAParticle> {
       }
     }
 
-    let mut gsa = TiledGSA {
-      name: name,
+    let mut gsa = IGSA {
+      name,
       problem,
       particles: Vec::new(),
       global_best_pos: None,
@@ -88,13 +88,12 @@ impl ParticleOptimizer<TiledGSAParticle> for TiledGSA<TiledGSAParticle> {
 
   fn init(&mut self, number_of_particles: usize) {
     let problem = &mut self.problem();
-    let mut particles: Vec<TiledGSAParticle> = Vec::new();
+    let mut particles: Vec<GSAParticle> = Vec::new();
     for _ in 0..number_of_particles {
-      particles.push(TiledGSAParticle::new(problem));
+      particles.push(GSAParticle::new(problem));
     }
 
     let mut global_best_pos = None;
-
     for particle in particles.clone() {
       if global_best_pos.is_none() || problem.f(&particle.pos()) < problem.f(global_best_pos.as_ref().unwrap()) {
         global_best_pos = Some(particle.pos().clone());
@@ -119,27 +118,29 @@ impl ParticleOptimizer<TiledGSAParticle> for TiledGSA<TiledGSAParticle> {
       if idx == j || !self.influences[j] {
         continue;
       }
+      let r = self.particles()[j].pos() - self.particles()[idx].pos();
+      let mut a_delta = self.g * self.particles()[j].mass() / (r.norm() + std::f64::EPSILON) * r;
 
-      let offset = [-1., 0., 1.];
-      for d in 0..self.global_best_pos().len() {
-        for dir in offset.iter() {
-          let mut pos = self.particles()[j].pos().clone();
-          pos[d] += dir * (self.problem().domain().1 - self.problem().domain().0);
-          let r = pos - self.particles()[idx].pos();
-          let mut a_delta = self.g * self.particles()[j].mass() / (r.norm() + std::f64::EPSILON) * r;
-
-          for e in a_delta.iter_mut() {
-            let rand: f64 = rng.gen_range(0.0..1.0);
-            *e = rand * *e;
-          }
-
-          a += a_delta;
-        }
+      for e in a_delta.iter_mut() {
+        let rand: f64 = rng.gen_range(0.0..1.0);
+        *e = rand * *e;
       }
+
+      a += a_delta;
     }
 
     let rand: f64 = rng.gen_range(0.0..1.0);
-    rand * self.particles()[idx].vel() + a
+    let mut new_vel = rand * self.particles()[idx].vel() + a;
+
+    for e in new_vel.iter_mut() {
+      if *e > self.problem().domain().1 - self.problem().domain().0 {
+        *e = self.problem().domain().1 - self.problem().domain().0;
+      } else if *e < self.problem().domain().0 - self.problem().domain().1 {
+        *e = self.problem().domain().0 - self.problem().domain().1;
+      }
+    }
+
+    new_vel
   }
 
   fn run(&mut self, iterations: usize) {
@@ -209,7 +210,7 @@ impl ParticleOptimizer<TiledGSAParticle> for TiledGSA<TiledGSAParticle> {
         }
       }
       for (idx, particle) in self.particles_mut().iter_mut().enumerate() {
-        particle.set_mass(m[idx]);
+        particle.set_mass(1.0 / (1.0 + f64::exp(m[idx])));
       }
 
       // Calculate vels.
@@ -242,7 +243,7 @@ impl ParticleOptimizer<TiledGSAParticle> for TiledGSA<TiledGSAParticle> {
   }
 }
 
-impl<T> Particles<T> for TiledGSA<T> {
+impl<T> Particles<T> for IGSA<T> {
   fn particles(&self) -> &Vec<T> {
     &self.particles
   }
@@ -252,7 +253,7 @@ impl<T> Particles<T> for TiledGSA<T> {
   }
 }
 
-impl<T> GlobalBestPos for TiledGSA<T> {
+impl<T> GlobalBestPos for IGSA<T> {
   fn global_best_pos(&self) -> DVector<f64> {
     self.global_best_pos.clone().unwrap()
   }
@@ -266,19 +267,19 @@ impl<T> GlobalBestPos for TiledGSA<T> {
   }
 }
 
-impl<T> OptimizationProblem for TiledGSA<T> {
+impl<T> OptimizationProblem for IGSA<T> {
   fn problem(&mut self) -> &mut Problem {
     &mut self.problem
   }
 }
 
-impl<T> Name for TiledGSA<T> {
+impl<T> Name for IGSA<T> {
   fn name(&self) -> &String {
     &self.name
   }
 }
 
-impl<T: Clone> Data<T> for TiledGSA<T> {
+impl<T: Clone> Data<T> for IGSA<T> {
   fn data(&self) -> &Vec<(f64, Vec<T>)> {
     &self.data
   }
@@ -290,7 +291,7 @@ impl<T: Clone> Data<T> for TiledGSA<T> {
   }
 }
 
-impl<T: Position + Velocity + Mass + Clone> DataExporter<T> for TiledGSA<T> {
+impl<T: Position + Velocity + Mass + Clone> DataExporter<T> for IGSA<T> {
   fn out_directory(&self) -> &PathBuf {
     &self.out_directory
   }

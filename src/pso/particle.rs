@@ -54,7 +54,7 @@ impl Velocity for PSOParticle {
     &self.vel
   }
 
-  fn set_vel(&mut self, vel: DVector<f64>) {
+  fn set_vel(&mut self, vel: DVector<f64>, _problem: &mut Problem) {
     self.vel = vel;
   }
 
@@ -76,7 +76,7 @@ impl Velocity for PSOParticle {
     }
 
     // Set new velocity, as it may have hit a wall
-    self.set_vel(new_vel);
+    self.set_vel(new_vel, problem);
 
     // This function returns whether the personal best was updated.
     self.set_pos(new_pos);

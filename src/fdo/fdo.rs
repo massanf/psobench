@@ -154,7 +154,7 @@ impl ParticleOptimizer<FDOParticle> for FDO<FDOParticle> {
 
         let new_pos = pos.clone() + new_vel.clone();
         if problem.f(&new_pos) < problem.f(&pos) {
-          particle.set_vel(new_vel);
+          particle.set_vel(new_vel, &mut problem);
           particle.move_pos(&mut problem);
         } else {
           let new_pos = pos.clone() + vel.clone();

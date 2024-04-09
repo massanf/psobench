@@ -217,7 +217,7 @@ impl ParticleOptimizer<GSAParticle> for GSA<GSAParticle> {
       for idx in 0..self.particles().len() {
         let mut temp_problem = mem::replace(&mut self.problem, Problem::default());
         let particle = &mut self.particles_mut()[idx];
-        particle.set_vel(vels[idx].clone());
+        particle.set_vel(vels[idx].clone(), &mut temp_problem);
         let _ = particle.move_pos(&mut temp_problem);
         let pos = particle.pos().clone();
         if self.problem().f(&pos) < self.problem().f(&new_global_best_pos) {

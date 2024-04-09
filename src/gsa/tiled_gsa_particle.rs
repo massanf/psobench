@@ -37,14 +37,14 @@ impl Position for TiledGSAParticle {
 
 impl Velocity for TiledGSAParticle {
   fn init(&mut self, problem: &mut Problem) {
-    self.set_vel(DVector::from_element(problem.dim(), 0.));
+    self.set_vel(DVector::from_element(problem.dim(), 0.), problem);
   }
 
   fn vel(&self) -> &DVector<f64> {
     &self.vel
   }
 
-  fn set_vel(&mut self, vel: DVector<f64>) {
+  fn set_vel(&mut self, vel: DVector<f64>, _problem: &mut Problem) {
     self.vel = vel;
   }
 

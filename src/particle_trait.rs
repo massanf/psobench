@@ -32,11 +32,11 @@ pub trait BestPosition: Position {
 
 pub trait Velocity: Position {
   fn init(&mut self, problem: &mut Problem) {
-    self.set_vel(utils::random_init_vel(problem));
+    self.set_vel(utils::random_init_vel(problem), problem);
   }
 
   fn vel(&self) -> &DVector<f64>;
-  fn set_vel(&mut self, vel: DVector<f64>);
+  fn set_vel(&mut self, vel: DVector<f64>, problem: &mut Problem);
 
   fn move_pos(&mut self, problem: &mut Problem) {
     let mut new_pos = self.pos().clone();
@@ -56,7 +56,7 @@ pub trait Velocity: Position {
     }
 
     // Set new velocity, as it may have hit a wall
-    self.set_vel(new_vel);
+    self.set_vel(new_vel, problem);
 
     // This function returns whether the personal best was updated.
     self.set_pos(new_pos);
