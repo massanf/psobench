@@ -1,7 +1,7 @@
-use crate::particle_trait::{Position, Velocity};
-use crate::problem;
+use crate::particles::traits::{Position, Velocity};
+use crate::problems;
 use nalgebra::DVector;
-use problem::Problem;
+use problems::Problem;
 use serde::ser::{Serialize, Serializer};
 use serde_json::json;
 use std::collections::HashMap;
@@ -36,9 +36,7 @@ impl Serialize for ParamValue {
   }
 }
 
-pub trait ParticleOptimizer<T: Position + Velocity>:
-  Name + OptimizationProblem + Particles<T> + DataExporter<T>
-{
+pub trait Optimizer<T: Position + Velocity>: Name + OptimizationProblem + Particles<T> + DataExporter<T> {
   fn new(name: String, problem: Problem, parameters: HashMap<String, ParamValue>, out_directory: PathBuf) -> Self
   where
     Self: Sized;

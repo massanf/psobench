@@ -1,7 +1,6 @@
-use crate::particle_trait::{Position, Velocity};
-use crate::problem::Problem;
-use crate::pso_trait::DataExporter;
-use crate::pso_trait::{ParamValue, ParticleOptimizer};
+use crate::optimizers::traits::{DataExporter, Optimizer, ParamValue};
+use crate::particles::traits::{Position, Velocity};
+use crate::problems::Problem;
 use crate::utils;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
@@ -28,7 +27,7 @@ fn save_grid_search_config(
 }
 
 #[allow(dead_code)]
-pub fn grid_search<U: Position + Velocity, T: ParticleOptimizer<U> + DataExporter<U>>(
+pub fn grid_search<U: Position + Velocity, T: Optimizer<U> + DataExporter<U>>(
   name: String,
   iterations: usize,
   problem: Problem,
@@ -75,7 +74,7 @@ pub fn grid_search<U: Position + Velocity, T: ParticleOptimizer<U> + DataExporte
 }
 
 #[allow(dead_code)]
-pub fn grid_search_dim<U: Position + Velocity, T: ParticleOptimizer<U> + DataExporter<U>>(
+pub fn grid_search_dim<U: Position + Velocity, T: Optimizer<U> + DataExporter<U>>(
   name: String,
   iterations: usize,
   problem_type: Arc<dyn Fn(usize) -> Problem + Sync + Send>,

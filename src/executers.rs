@@ -1,16 +1,9 @@
 extern crate nalgebra as na;
 extern crate rand;
-use crate::gsa;
-use crate::gsa::tiled_gsa::TiledGSA;
+use crate::optimizers::{gsa::GSA, pso::PSO, tiled_gsa::TiledGSA};
 use crate::parameters;
-use crate::pso;
+use crate::particles::{gsa_particle::GSAParticle, pso_particle::PSOParticle};
 use crate::utils;
-use gsa::gsa::GSA;
-use gsa::gsa_particle::GSAParticle;
-use gsa::igsa::IGSA;
-use gsa::tiled_gsa_particle::TiledGSAParticle;
-use pso::particle::PSOParticle;
-use pso::pso::PSO;
 use std::path::PathBuf;
 
 #[allow(dead_code)]
@@ -41,26 +34,13 @@ pub fn gsa_cec17(iterations: usize, dim: usize, attempts: usize) -> Result<(), B
 
 #[allow(dead_code)]
 pub fn tiled_gsa_cec17(iterations: usize, dim: usize, attempts: usize) -> Result<(), Box<dyn std::error::Error>> {
-  utils::check_cec17::<TiledGSAParticle, TiledGSA<TiledGSAParticle>>(
+  utils::check_cec17::<GSAParticle, TiledGSA<GSAParticle>>(
     "TiledGSA".to_owned(),
     iterations,
     dim,
     parameters::TILED_GSA_PARAMS.clone(),
     attempts,
     PathBuf::from(format!("data/test/{}/tiled_gsa", dim)),
-  )?;
-  Ok(())
-}
-
-#[allow(dead_code)]
-pub fn igsa_cec17(iterations: usize, dim: usize, attempts: usize) -> Result<(), Box<dyn std::error::Error>> {
-  utils::check_cec17::<GSAParticle, IGSA<GSAParticle>>(
-    "IGSA".to_owned(),
-    iterations,
-    dim,
-    parameters::IGSA_PARAMS.clone(),
-    attempts,
-    PathBuf::from(format!("data/test/{}/igsa", dim)),
   )?;
   Ok(())
 }
@@ -96,23 +76,8 @@ pub fn grid_search_gsa(iterations: usize, dim: usize, attempts: usize) -> Result
 }
 
 #[allow(dead_code)]
-pub fn grid_search_igsa(iterations: usize, dim: usize, attempts: usize) -> Result<(), Box<dyn std::error::Error>> {
-  utils::run_grid_searches::<GSAParticle, IGSA<GSAParticle>>(
-    "IGSA".to_owned(),
-    attempts,
-    iterations,
-    parameters::GSA_G0_OPTIONS.clone(),
-    parameters::GSA_ALPHA_OPTIONS.clone(),
-    parameters::GSA_BASE_PARAMS.clone(),
-    dim,
-    PathBuf::from(format!("data/grid_search/{}/igsa", dim)),
-  )?;
-  Ok(())
-}
-
-#[allow(dead_code)]
 pub fn grid_search_tiled_gsa(iterations: usize, dim: usize, attempts: usize) -> Result<(), Box<dyn std::error::Error>> {
-  utils::run_grid_searches::<TiledGSAParticle, TiledGSA<TiledGSAParticle>>(
+  utils::run_grid_searches::<GSAParticle, TiledGSA<GSAParticle>>(
     "GSA".to_owned(),
     attempts,
     iterations,

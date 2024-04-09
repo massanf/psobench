@@ -1,9 +1,8 @@
 extern crate nalgebra as na;
-use crate::particle_trait::Mass;
-use crate::particle_trait::{Position, Velocity};
-use crate::problem;
+use crate::particles::traits::{Mass, Particle, Position, Velocity};
+use crate::problems;
 use nalgebra::DVector;
-use problem::Problem;
+use problems::Problem;
 
 #[derive(Clone)]
 pub struct GSAParticle {
@@ -12,8 +11,8 @@ pub struct GSAParticle {
   mass: f64,
 }
 
-impl GSAParticle {
-  pub fn new(problem: &mut Problem) -> GSAParticle {
+impl Particle for GSAParticle {
+  fn new(problem: &mut Problem) -> GSAParticle {
     let mut particle = GSAParticle {
       pos: DVector::from_element(problem.dim(), 0.),
       vel: DVector::from_element(problem.dim(), 0.),
@@ -44,7 +43,7 @@ impl Velocity for GSAParticle {
     &self.vel
   }
 
-  fn set_vel(&mut self, vel: DVector<f64>, problem: &mut Problem) {
+  fn set_vel(&mut self, vel: DVector<f64>, _problem: &mut Problem) {
     // let mut new_vel = vel;
     // let v_max = (problem.domain().1 - problem.domain().0) / 2.;
 

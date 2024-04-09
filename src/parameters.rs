@@ -1,4 +1,4 @@
-use crate::pso_trait::ParamValue;
+use crate::optimizers::traits::ParamValue;
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 

@@ -1,20 +1,13 @@
-use crate::functions;
 use crate::grid_search;
-use crate::particle_trait::{Position, Velocity};
-use crate::problem;
-use crate::pso_trait::DataExporter;
-use crate::pso_trait::ParamValue;
-use crate::pso_trait::ParticleOptimizer;
-use indicatif::ProgressBar;
-use indicatif::ProgressStyle;
+use crate::optimizers::traits::{DataExporter, Optimizer, ParamValue};
+use crate::particles::traits::{Position, Velocity};
+use crate::problems;
+use indicatif::{ProgressBar, ProgressStyle};
 use nalgebra::DVector;
-use problem::Problem;
+use problems::Problem;
 use rand::distributions::{Distribution, Uniform};
 use rayon::prelude::*;
-use std::collections::HashMap;
-use std::fs;
-use std::io;
-use std::path::PathBuf;
+use std::{collections::HashMap, fs, io, path::PathBuf};
 
 pub fn uniform_distribution(low: &DVector<f64>, high: &DVector<f64>) -> DVector<f64> {
   let mut rng = rand::thread_rng();
@@ -87,7 +80,7 @@ pub fn create_directory(path: PathBuf, addable: bool, ask_clear: bool) {
   }
 }
 
-pub fn run_attempts<U: Position + Velocity, T: ParticleOptimizer<U> + DataExporter<U>>(
+pub fn run_attempts<U: Position + Velocity, T: Optimizer<U> + DataExporter<U>>(
   params: HashMap<String, ParamValue>,
   name: String,
   problem: Problem,
@@ -116,7 +109,7 @@ pub fn run_attempts<U: Position + Velocity, T: ParticleOptimizer<U> + DataExport
 }
 
 #[allow(dead_code)]
-pub fn check_cec17<T: Velocity, U: ParticleOptimizer<T>>(
+pub fn check_cec17<T: Velocity, U: Optimizer<T>>(
   name: String,
   iterations: usize,
   dim: usize,
@@ -143,7 +136,7 @@ pub fn check_cec17<T: Velocity, U: ParticleOptimizer<T>>(
   }
 
   func_nums.into_par_iter().for_each(|func_num: usize| {
-    let problem = functions::cec17(func_num, dim);
+    let problem = problems::cec17(func_num, dim);
     let _ = run_attempts::<T, U>(
       params.clone(),
       name.clone(),
@@ -160,7 +153,7 @@ pub fn check_cec17<T: Velocity, U: ParticleOptimizer<T>>(
 }
 
 #[allow(dead_code)]
-pub fn run_grid_searches<T: Velocity, U: ParticleOptimizer<T>>(
+pub fn run_grid_searches<T: Velocity, U: Optimizer<T>>(
   name: String,
   attempts: usize,
   iterations: usize,
@@ -178,7 +171,7 @@ pub fn run_grid_searches<T: Velocity, U: ParticleOptimizer<T>>(
     grid_search::grid_search::<T, U>(
       name.clone(),
       iterations,
-      functions::cec17(func_num, dim),
+      problems::cec17(func_num, dim),
       attempts,
       param1.clone(),
       param2.clone(),

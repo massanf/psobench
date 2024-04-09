@@ -1,14 +1,13 @@
-use crate::fdo::particle::FDOParticle;
-use crate::particle_trait::Mass;
-use crate::particle_trait::{Position, Velocity};
-use crate::problem;
-use crate::pso_trait::{
-  Data, DataExporter, GlobalBestPos, Name, OptimizationProblem, ParamValue, ParticleOptimizer, Particles,
+use crate::optimizers::traits::{
+  Data, DataExporter, GlobalBestPos, Name, OptimizationProblem, Optimizer, ParamValue, Particles,
 };
+use crate::particles::fdo_particle::FDOParticle;
+use crate::particles::traits::{Mass, Position, Velocity};
+use crate::problems;
 use crate::utils;
 use nalgebra::DVector;
 use nalgebra::Matrix;
-use problem::Problem;
+use problems::Problem;
 use serde_json::json;
 use std::{collections::HashMap, fs, mem, path::PathBuf};
 
@@ -23,7 +22,7 @@ pub struct FDO<FDOParticle> {
   wf: bool,
 }
 
-impl ParticleOptimizer<FDOParticle> for FDO<FDOParticle> {
+impl Optimizer<FDOParticle> for FDO<FDOParticle> {
   fn new(
     name: String,
     problem: Problem,

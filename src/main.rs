@@ -1,15 +1,12 @@
 extern crate nalgebra as na;
 extern crate rand;
 mod executers;
-mod fdo;
 mod functions;
 mod grid_search;
-mod gsa;
+mod optimizers;
 mod parameters;
-mod particle_trait;
-mod problem;
-mod pso;
-mod pso_trait;
+mod particles;
+mod problems;
 mod utils;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -18,8 +15,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   let attempts = 10;
 
   executers::pso_cec17(iterations, dim, attempts)?;
-  // executers::gsa_cec17(iterations, dim, attempts)?;
-  // executers::igsa_cec17(iterations, dim, attempts)?;
+  executers::gsa_cec17(iterations, dim, attempts)?;
 
   // executers::grid_search_pso(iterations, dim, attempts)?;
   // executers::grid_search_gsa(iterations, dim, attempts)?;

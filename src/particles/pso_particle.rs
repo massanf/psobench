@@ -1,8 +1,8 @@
 extern crate nalgebra as na;
-use crate::particle_trait::{BestPosition, Position, Velocity};
-use crate::problem;
+use crate::particles::traits::{BestPosition, Particle, Position, Velocity};
+use crate::problems;
 use nalgebra::DVector;
-use problem::Problem;
+use problems::Problem;
 
 #[derive(Clone)]
 pub struct PSOParticle {
@@ -11,8 +11,8 @@ pub struct PSOParticle {
   best_pos: Option<DVector<f64>>,
 }
 
-impl PSOParticle {
-  pub fn new(problem: &mut Problem) -> PSOParticle {
+impl Particle for PSOParticle {
+  fn new(problem: &mut Problem) -> PSOParticle {
     let mut particle = PSOParticle {
       pos: DVector::from_element(problem.dim(), 0.),
       vel: DVector::from_element(problem.dim(), 0.),

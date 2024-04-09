@@ -1,8 +1,12 @@
 extern crate nalgebra as na;
-use crate::problem;
+use crate::problems;
 use crate::utils;
 use nalgebra::DVector;
-use problem::Problem;
+use problems::Problem;
+
+pub trait Particle {
+  fn new(problem: &mut Problem) -> Self;
+}
 
 pub trait Position {
   fn init(&mut self, problem: &mut Problem) {

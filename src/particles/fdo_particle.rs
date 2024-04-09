@@ -1,9 +1,8 @@
 extern crate nalgebra as na;
-use crate::particle_trait::Mass;
-use crate::particle_trait::{Position, Velocity};
-use crate::problem;
+use crate::particles::traits::{Mass, Position, Velocity};
+use crate::problems;
 use nalgebra::DVector;
-use problem::Problem;
+use problems::Problem;
 
 #[derive(Clone)]
 pub struct FDOParticle {

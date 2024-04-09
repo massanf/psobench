@@ -1,14 +1,12 @@
-use crate::gsa::tiled_gsa_particle::TiledGSAParticle;
-use crate::particle_trait::Mass;
-use crate::particle_trait::{Position, Velocity};
-use crate::problem;
-use crate::pso_trait::{
-  Data, DataExporter, GlobalBestPos, Name, OptimizationProblem, ParamValue, ParticleOptimizer, Particles,
+use crate::optimizers::traits::{
+  Data, DataExporter, GlobalBestPos, Name, OptimizationProblem, Optimizer, ParamValue, Particles,
 };
+use crate::particles::traits::{Mass, Particle, Position, Velocity};
+use crate::problems;
 use crate::rand::Rng;
 use crate::utils;
 use nalgebra::DVector;
-use problem::Problem;
+use problems::Problem;
 use serde_json::json;
 use std::collections::HashMap;
 use std::fs;
@@ -16,26 +14,21 @@ use std::mem;
 use std::path::PathBuf;
 
 #[derive(Clone)]
-pub struct TiledGSA<TiledGSAParticle> {
+pub struct GSA<T> {
   name: String,
   problem: Problem,
-  particles: Vec<TiledGSAParticle>,
+  particles: Vec<T>,
   global_best_pos: Option<DVector<f64>>,
   influences: Vec<bool>,
   g: f64,
-  data: Vec<(f64, Vec<TiledGSAParticle>)>,
+  data: Vec<(f64, Vec<T>)>,
   out_directory: PathBuf,
   g0: f64,
   alpha: f64,
 }
 
-impl ParticleOptimizer<TiledGSAParticle> for TiledGSA<TiledGSAParticle> {
-  fn new(
-    name: String,
-    problem: Problem,
-    parameters: HashMap<String, ParamValue>,
-    out_directory: PathBuf,
-  ) -> TiledGSA<TiledGSAParticle> {
+impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for GSA<T> {
+  fn new(name: String, problem: Problem, parameters: HashMap<String, ParamValue>, out_directory: PathBuf) -> GSA<T> {
     assert!(
       parameters.contains_key("particle_count"),
       "Key 'particle_count' not found."
@@ -69,8 +62,8 @@ impl ParticleOptimizer<TiledGSAParticle> for TiledGSA<TiledGSAParticle> {
       }
     }
 
-    let mut gsa = TiledGSA {
-      name: name,
+    let mut gsa = GSA {
+      name,
       problem,
       particles: Vec::new(),
       global_best_pos: None,
@@ -88,13 +81,12 @@ impl ParticleOptimizer<TiledGSAParticle> for TiledGSA<TiledGSAParticle> {
 
   fn init(&mut self, number_of_particles: usize) {
     let problem = &mut self.problem();
-    let mut particles: Vec<TiledGSAParticle> = Vec::new();
+    let mut particles: Vec<T> = Vec::new();
     for _ in 0..number_of_particles {
-      particles.push(TiledGSAParticle::new(problem));
+      particles.push(T::new(problem));
     }
 
     let mut global_best_pos = None;
-
     for particle in particles.clone() {
       if global_best_pos.is_none() || problem.f(&particle.pos()) < problem.f(global_best_pos.as_ref().unwrap()) {
         global_best_pos = Some(particle.pos().clone());
@@ -119,23 +111,15 @@ impl ParticleOptimizer<TiledGSAParticle> for TiledGSA<TiledGSAParticle> {
       if idx == j || !self.influences[j] {
         continue;
       }
+      let r = self.particles()[j].pos() - self.particles()[idx].pos();
+      let mut a_delta = self.g * self.particles()[j].mass() / (r.norm() + std::f64::EPSILON) * r;
 
-      let offset = [-1., 0., 1.];
-      for d in 0..self.global_best_pos().len() {
-        for dir in offset.iter() {
-          let mut pos = self.particles()[j].pos().clone();
-          pos[d] += dir * (self.problem().domain().1 - self.problem().domain().0);
-          let r = pos - self.particles()[idx].pos();
-          let mut a_delta = self.g * self.particles()[j].mass() / (r.norm() + std::f64::EPSILON) * r;
-
-          for e in a_delta.iter_mut() {
-            let rand: f64 = rng.gen_range(0.0..1.0);
-            *e = rand * *e;
-          }
-
-          a += a_delta;
-        }
+      for e in a_delta.iter_mut() {
+        let rand: f64 = rng.gen_range(0.0..1.0);
+        *e = rand * *e;
       }
+
+      a += a_delta;
     }
 
     let rand: f64 = rng.gen_range(0.0..1.0);
@@ -242,7 +226,7 @@ impl ParticleOptimizer<TiledGSAParticle> for TiledGSA<TiledGSAParticle> {
   }
 }
 
-impl<T> Particles<T> for TiledGSA<T> {
+impl<T> Particles<T> for GSA<T> {
   fn particles(&self) -> &Vec<T> {
     &self.particles
   }
@@ -252,7 +236,7 @@ impl<T> Particles<T> for TiledGSA<T> {
   }
 }
 
-impl<T> GlobalBestPos for TiledGSA<T> {
+impl<T> GlobalBestPos for GSA<T> {
   fn global_best_pos(&self) -> DVector<f64> {
     self.global_best_pos.clone().unwrap()
   }
@@ -266,19 +250,19 @@ impl<T> GlobalBestPos for TiledGSA<T> {
   }
 }
 
-impl<T> OptimizationProblem for TiledGSA<T> {
+impl<T> OptimizationProblem for GSA<T> {
   fn problem(&mut self) -> &mut Problem {
     &mut self.problem
   }
 }
 
-impl<T> Name for TiledGSA<T> {
+impl<T> Name for GSA<T> {
   fn name(&self) -> &String {
     &self.name
   }
 }
 
-impl<T: Clone> Data<T> for TiledGSA<T> {
+impl<T: Clone> Data<T> for GSA<T> {
   fn data(&self) -> &Vec<(f64, Vec<T>)> {
     &self.data
   }
@@ -290,7 +274,7 @@ impl<T: Clone> Data<T> for TiledGSA<T> {
   }
 }
 
-impl<T: Position + Velocity + Mass + Clone> DataExporter<T> for TiledGSA<T> {
+impl<T: Position + Velocity + Mass + Clone> DataExporter<T> for GSA<T> {
   fn out_directory(&self) -> &PathBuf {
     &self.out_directory
   }
