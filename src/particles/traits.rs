@@ -28,7 +28,7 @@ pub trait BestPosition: Position {
 
   fn update_best_pos(&mut self, problem: &mut Problem) {
     // This function returns whether the personal best was updated.
-    if self.option_best_pos().is_none() || problem.f(&self.pos()) < problem.f(&self.best_pos()) {
+    if self.option_best_pos().is_none() || problem.f(self.pos()) < problem.f(&self.best_pos()) {
       self.set_best_pos(self.pos().clone());
     }
   }

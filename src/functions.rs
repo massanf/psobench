@@ -46,7 +46,7 @@ pub fn rastrigin(v: &DVector<f64>) -> f64 {
 #[allow(dead_code)]
 pub fn cec17_impl(v: &DVector<f64>, func_num: usize) -> f64 {
   let x = v.clone();
-  let nx = v.len() as usize;
+  let nx = v.len();
   let mut result = 0.0f64;
   unsafe {
     cec17_test_func(x.as_ptr(), &mut result, nx, 1, func_num);

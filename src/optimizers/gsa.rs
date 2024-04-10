@@ -14,7 +14,7 @@ use std::mem;
 use std::path::PathBuf;
 
 #[derive(Clone)]
-pub struct GSA<T> {
+pub struct Gsa<T> {
   name: String,
   problem: Problem,
   particles: Vec<T>,
@@ -27,42 +27,39 @@ pub struct GSA<T> {
   alpha: f64,
 }
 
-impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for GSA<T> {
-  fn new(name: String, problem: Problem, parameters: HashMap<String, ParamValue>, out_directory: PathBuf) -> GSA<T> {
+impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
+  fn new(name: String, problem: Problem, parameters: HashMap<String, ParamValue>, out_directory: PathBuf) -> Gsa<T> {
     assert!(
       parameters.contains_key("particle_count"),
       "Key 'particle_count' not found."
     );
-    let number_of_particles: usize;
-    match parameters["particle_count"] {
-      ParamValue::Int(val) => number_of_particles = (val as usize).try_into().unwrap(),
+    let number_of_particles = match parameters["particle_count"] {
+      ParamValue::Int(val) => val as usize,
       _ => {
         eprintln!("Error: parameter 'particle_count' should be of type Param::Int.");
         std::process::exit(1);
       }
-    }
+    };
 
     assert!(parameters.contains_key("g0"), "Key 'g0' not found.");
-    let g0: f64;
-    match parameters["g0"] {
-      ParamValue::Float(val) => g0 = val,
+    let g0 = match parameters["g0"] {
+      ParamValue::Float(val) => val,
       _ => {
         eprintln!("Error: parameter 'g0' should be of type Param::Float.");
         std::process::exit(1);
       }
-    }
+    };
 
     assert!(parameters.contains_key("alpha"), "Key 'alpha' not found.");
-    let alpha: f64;
-    match parameters["alpha"] {
-      ParamValue::Float(val) => alpha = val,
+    let alpha = match parameters["alpha"] {
+      ParamValue::Float(val) => val,
       _ => {
         eprintln!("Error: parameter 'alpha' should be of type Param::Float.");
         std::process::exit(1);
       }
-    }
+    };
 
-    let mut gsa = GSA {
+    let mut gsa = Gsa {
       name,
       problem,
       particles: Vec::new(),
@@ -88,7 +85,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for GSA<T> {
 
     let mut global_best_pos = None;
     for particle in particles.clone() {
-      if global_best_pos.is_none() || problem.f(&particle.pos()) < problem.f(global_best_pos.as_ref().unwrap()) {
+      if global_best_pos.is_none() || problem.f(particle.pos()) < problem.f(global_best_pos.as_ref().unwrap()) {
         global_best_pos = Some(particle.pos().clone());
       }
     }
@@ -116,7 +113,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for GSA<T> {
 
       for e in a_delta.iter_mut() {
         let rand: f64 = rng.gen_range(0.0..1.0);
-        *e = rand * *e;
+        *e *= rand;
       }
 
       a += a_delta;
@@ -137,10 +134,10 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for GSA<T> {
       let mut worst = None;
       for idx in 0..self.particles().len() {
         let pos = self.particles()[idx].pos().clone();
-        if best.is_none() || self.problem().f(&pos) < self.problem().f(&best.as_ref().unwrap()) {
+        if best.is_none() || self.problem().f(&pos) < self.problem().f(best.as_ref().unwrap()) {
           best = Some(pos.clone());
         }
-        if worst.is_none() || self.problem().f(&pos) > self.problem().f(&worst.as_ref().unwrap()) {
+        if worst.is_none() || self.problem().f(&pos) > self.problem().f(worst.as_ref().unwrap()) {
           worst = Some(pos.clone());
         }
       }
@@ -153,8 +150,8 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for GSA<T> {
       } else {
         for idx in 0..self.particles().len() {
           let p = self.particles()[idx].clone();
-          let numerator = self.problem().f(p.pos()) - self.problem().f(&worst.as_ref().unwrap());
-          let denominator = self.problem().f(&best.as_ref().unwrap()) - self.problem().f(&worst.as_ref().unwrap());
+          let numerator = self.problem().f(p.pos()) - self.problem().f(worst.as_ref().unwrap());
+          let denominator = self.problem().f(best.as_ref().unwrap()) - self.problem().f(worst.as_ref().unwrap());
           assert!(
             numerator <= 0.,
             "Numerator must be less than or equal to 0: {}",
@@ -166,8 +163,11 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for GSA<T> {
           m_sum += m_i;
         }
 
-        for idx in 0..self.particles().len() {
-          m.push(m_unscaled[idx] / m_sum);
+        // for idx in 0..self.particles().len() {
+        //   m.push(m_unscaled[idx] / m_sum);
+        // }
+        for item in m_unscaled.iter().take(self.particles().len()) {
+          m.push(item / m_sum);
         }
 
         // Only use k largest values. Set others to 0.
@@ -179,17 +179,12 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for GSA<T> {
         k = std::cmp::max(k, 1);
         k = std::cmp::min(k, particle_count);
 
-        for i in 0..particle_count {
-          let loc;
-          match m_sorted.binary_search_by(|v| v.partial_cmp(&m[i]).expect("Couldn't compare values")) {
-            Ok(val) => loc = val,
-            Err(val) => loc = val,
-          }
-          if (particle_count - loc) > k {
-            self.influences[i] = false;
-          } else {
-            self.influences[i] = true;
-          }
+        for (i, m_i) in m.iter().enumerate().take(particle_count) {
+          let loc = match m_sorted.binary_search_by(|v| v.partial_cmp(m_i).expect("Couldn't compare values")) {
+            Ok(val) => val,
+            Err(val) => val,
+          };
+          self.influences[i] = (particle_count - loc) <= k;
         }
       }
       for (idx, particle) in self.particles_mut().iter_mut().enumerate() {
@@ -207,14 +202,15 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for GSA<T> {
 
       // Update the position, best and worst.
       let mut new_global_best_pos = self.global_best_pos.clone().unwrap();
-      for idx in 0..self.particles().len() {
-        let mut temp_problem = mem::replace(&mut self.problem, Problem::default());
-        let particle = &mut self.particles_mut()[idx];
-        particle.set_vel(vels[idx].clone(), &mut temp_problem);
-        let _ = particle.move_pos(&mut temp_problem);
+      // for (i, m_i) in 0..self.particles().len() {
+      for (i, vel) in vels.iter().enumerate().take(self.particles().len()) {
+        let mut temp_problem = mem::take(&mut self.problem);
+        let particle = &mut self.particles_mut()[i];
+        particle.set_vel(vel.clone(), &mut temp_problem);
+        particle.move_pos(&mut temp_problem);
         let pos = particle.pos().clone();
         if self.problem().f(&pos) < self.problem().f(&new_global_best_pos) {
-          new_global_best_pos = self.particles()[idx].pos().clone();
+          new_global_best_pos = self.particles()[i].pos().clone();
         }
         self.problem = temp_problem;
       }
@@ -226,7 +222,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for GSA<T> {
   }
 }
 
-impl<T> Particles<T> for GSA<T> {
+impl<T> Particles<T> for Gsa<T> {
   fn particles(&self) -> &Vec<T> {
     &self.particles
   }
@@ -236,7 +232,7 @@ impl<T> Particles<T> for GSA<T> {
   }
 }
 
-impl<T> GlobalBestPos for GSA<T> {
+impl<T> GlobalBestPos for Gsa<T> {
   fn global_best_pos(&self) -> DVector<f64> {
     self.global_best_pos.clone().unwrap()
   }
@@ -250,19 +246,19 @@ impl<T> GlobalBestPos for GSA<T> {
   }
 }
 
-impl<T> OptimizationProblem for GSA<T> {
+impl<T> OptimizationProblem for Gsa<T> {
   fn problem(&mut self) -> &mut Problem {
     &mut self.problem
   }
 }
 
-impl<T> Name for GSA<T> {
+impl<T> Name for Gsa<T> {
   fn name(&self) -> &String {
     &self.name
   }
 }
 
-impl<T: Clone> Data<T> for GSA<T> {
+impl<T: Clone> Data<T> for Gsa<T> {
   fn data(&self) -> &Vec<(f64, Vec<T>)> {
     &self.data
   }
@@ -274,7 +270,7 @@ impl<T: Clone> Data<T> for GSA<T> {
   }
 }
 
-impl<T: Position + Velocity + Mass + Clone> DataExporter<T> for GSA<T> {
+impl<T: Position + Velocity + Mass + Clone> DataExporter<T> for Gsa<T> {
   fn out_directory(&self) -> &PathBuf {
     &self.out_directory
   }

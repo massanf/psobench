@@ -12,7 +12,7 @@ use serde_json::json;
 use std::{collections::HashMap, fs, mem, path::PathBuf};
 
 #[derive(Clone)]
-pub struct FDO<FDOParticle> {
+pub struct Fdo<FDOParticle> {
   name: String,
   problem: Problem,
   particles: Vec<FDOParticle>,
@@ -22,25 +22,24 @@ pub struct FDO<FDOParticle> {
   wf: bool,
 }
 
-impl Optimizer<FDOParticle> for FDO<FDOParticle> {
+impl Optimizer<FDOParticle> for Fdo<FDOParticle> {
   fn new(
     name: String,
     problem: Problem,
     parameters: HashMap<String, ParamValue>,
     out_directory: PathBuf,
-  ) -> FDO<FDOParticle> {
+  ) -> Fdo<FDOParticle> {
     assert!(
       parameters.contains_key("particle_count"),
       "Key 'particle_count' not found."
     );
-    let number_of_particles: usize;
-    match parameters["particle_count"] {
-      ParamValue::Int(val) => number_of_particles = (val as usize).try_into().unwrap(),
+    let number_of_particles = match parameters["particle_count"] {
+      ParamValue::Int(val) => val as usize,
       _ => {
         eprintln!("Error: parameter 'particle_count' should be of type Param::Int.");
         std::process::exit(1);
       }
-    }
+    };
 
     assert!(parameters.contains_key("wf"), "Key 'wf' not found.");
     let wf: bool;
@@ -59,8 +58,8 @@ impl Optimizer<FDOParticle> for FDO<FDOParticle> {
       }
     }
 
-    let mut gsa = FDO {
-      name: name,
+    let mut gsa = Fdo {
+      name,
       problem,
       particles: Vec::new(),
       global_best_pos: None,
@@ -83,7 +82,7 @@ impl Optimizer<FDOParticle> for FDO<FDOParticle> {
     let mut global_best_pos = None;
 
     for particle in particles.clone() {
-      if global_best_pos.is_none() || problem.f(&particle.pos()) < problem.f(global_best_pos.as_ref().unwrap()) {
+      if global_best_pos.is_none() || problem.f(particle.pos()) < problem.f(global_best_pos.as_ref().unwrap()) {
         global_best_pos = Some(particle.pos().clone());
       }
     }
@@ -102,9 +101,9 @@ impl Optimizer<FDOParticle> for FDO<FDOParticle> {
   fn run(&mut self, iterations: usize) {
     for _ in 0..iterations {
       // Move problem.
-      let mut problem = mem::replace(&mut self.problem, Problem::default());
+      let mut problem = mem::take(&mut self.problem);
 
-      let wf = self.wf.clone();
+      let wf = self.wf;
       let mut new_global_best_pos: Option<Matrix<_, _, _, _>> = None;
       for particle in self.particles() {
         if new_global_best_pos.is_none() || problem.f(particle.pos()) < problem.f(&new_global_best_pos.clone().unwrap())
@@ -128,12 +127,10 @@ impl Optimizer<FDOParticle> for FDO<FDOParticle> {
         let fw;
         if problem.f(&pos) == 0. {
           fw = f64::NAN;
+        } else if wf {
+          fw = (f_global_best / problem.f(&pos)).abs() - 1.;
         } else {
-          if wf {
-            fw = (f_global_best / problem.f(&pos)).abs() - 1.;
-          } else {
-            fw = (f_global_best / problem.f(&pos)).abs();
-          }
+          fw = (f_global_best / problem.f(&pos)).abs();
         }
         let mut new_vel = DVector::from_element(global_best_pos.len(), 0.);
         for d in 0..global_best_pos.len() {
@@ -142,12 +139,10 @@ impl Optimizer<FDOParticle> for FDO<FDOParticle> {
             new_vel[d] = pos.clone()[d] * r[d];
           } else if fw == 0. {
             new_vel[d] = (global_best_pos.clone() - pos.clone())[d] * r[d];
+          } else if r[d] >= 0. {
+            new_vel[d] = (pos.clone() - global_best_pos.clone())[d] * fw;
           } else {
-            if r[d] >= 0. {
-              new_vel[d] = (pos.clone() - global_best_pos.clone())[d] * fw;
-            } else {
-              new_vel[d] = (pos.clone() - global_best_pos.clone())[d] * fw * -1.;
-            }
+            new_vel[d] = (pos.clone() - global_best_pos.clone())[d] * fw * -1.;
           }
         }
 
@@ -177,7 +172,7 @@ impl Optimizer<FDOParticle> for FDO<FDOParticle> {
   }
 }
 
-impl<T> Particles<T> for FDO<T> {
+impl<T> Particles<T> for Fdo<T> {
   fn particles(&self) -> &Vec<T> {
     &self.particles
   }
@@ -187,7 +182,7 @@ impl<T> Particles<T> for FDO<T> {
   }
 }
 
-impl<T> GlobalBestPos for FDO<T> {
+impl<T> GlobalBestPos for Fdo<T> {
   fn global_best_pos(&self) -> DVector<f64> {
     self.global_best_pos.clone().unwrap()
   }
@@ -201,19 +196,19 @@ impl<T> GlobalBestPos for FDO<T> {
   }
 }
 
-impl<T> OptimizationProblem for FDO<T> {
+impl<T> OptimizationProblem for Fdo<T> {
   fn problem(&mut self) -> &mut Problem {
     &mut self.problem
   }
 }
 
-impl<T> Name for FDO<T> {
+impl<T> Name for Fdo<T> {
   fn name(&self) -> &String {
     &self.name
   }
 }
 
-impl<T: Clone> Data<T> for FDO<T> {
+impl<T: Clone> Data<T> for Fdo<T> {
   fn data(&self) -> &Vec<(f64, Vec<T>)> {
     &self.data
   }
@@ -225,7 +220,7 @@ impl<T: Clone> Data<T> for FDO<T> {
   }
 }
 
-impl<T: Position + Velocity + Mass + Clone> DataExporter<T> for FDO<T> {
+impl<T: Position + Velocity + Mass + Clone> DataExporter<T> for Fdo<T> {
   fn out_directory(&self) -> &PathBuf {
     &self.out_directory
   }
@@ -269,8 +264,8 @@ impl<T: Position + Velocity + Mass + Clone> DataExporter<T> for FDO<T> {
 //   .cloned()
 //   .collect();
 
-//   let mut fdo: FDO<FDOParticle> = FDO::new(
-//     "FDO".to_owned(),
+//   let mut fdo: Fdo<FDOParticle> = Fdo::new(
+//     "Fdo".to_owned(),
 //     functions::cec17(1, 100),
 //     params.clone(),
 //     PathBuf::from("data/test/fdo"),

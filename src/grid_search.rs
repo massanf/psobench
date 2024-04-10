@@ -27,6 +27,7 @@ fn save_grid_search_config(
 }
 
 #[allow(dead_code)]
+#[allow(clippy::too_many_arguments)]
 pub fn grid_search<U: Position + Velocity, T: Optimizer<U> + DataExporter<U>>(
   name: String,
   iterations: usize,
@@ -74,6 +75,7 @@ pub fn grid_search<U: Position + Velocity, T: Optimizer<U> + DataExporter<U>>(
 }
 
 #[allow(dead_code)]
+#[allow(clippy::too_many_arguments)]
 pub fn grid_search_dim<U: Position + Velocity, T: Optimizer<U> + DataExporter<U>>(
   name: String,
   iterations: usize,
@@ -102,7 +104,7 @@ pub fn grid_search_dim<U: Position + Velocity, T: Optimizer<U> + DataExporter<U>
   bar.set_message(format!("{}...   ", problem_type(2).name()));
   let _ = &param.1.clone().into_par_iter().for_each(|x| {
     let _ = &dims.clone().into_par_iter().for_each(|dim| {
-      let problem = problem_type(dim.clone());
+      let problem = problem_type(dim);
       let mut params = base_params.clone();
       params.insert(param.0.clone(), x.clone());
       let _ = utils::run_attempts::<U, T>(

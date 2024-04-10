@@ -10,7 +10,7 @@ use problems::Problem;
 use std::{collections::HashMap, mem, path::PathBuf};
 
 #[derive(Clone)]
-pub struct PSO<T> {
+pub struct Pso<T> {
   name: String,
   problem: Problem,
   particles: Vec<T>,
@@ -22,53 +22,49 @@ pub struct PSO<T> {
   phi_g: f64,
 }
 
-impl<T: Particle + Position + Velocity + BestPosition + Clone> Optimizer<T> for PSO<T> {
-  fn new(name: String, problem: Problem, parameters: HashMap<String, ParamValue>, out_directory: PathBuf) -> PSO<T> {
+impl<T: Particle + Position + Velocity + BestPosition + Clone> Optimizer<T> for Pso<T> {
+  fn new(name: String, problem: Problem, parameters: HashMap<String, ParamValue>, out_directory: PathBuf) -> Pso<T> {
     assert!(
       parameters.contains_key("particle_count"),
       "Key 'particle_count' not found."
     );
-    let number_of_particles: usize;
-    match parameters["particle_count"] {
-      ParamValue::Int(val) => number_of_particles = (val as usize).try_into().unwrap(),
+    let number_of_particles = match parameters["particle_count"] {
+      ParamValue::Int(val) => val as usize,
       _ => {
         eprintln!("Error: parameter 'particle_count' should be of type Param::Int.");
         std::process::exit(1);
       }
-    }
+    };
 
     assert!(parameters.contains_key("w"), "Key 'w' not found.");
-    let w: f64;
-    match parameters["w"] {
-      ParamValue::Float(val) => w = val,
+    let w = match parameters["w"] {
+      ParamValue::Float(val) => val,
       _ => {
         eprintln!("Error");
         std::process::exit(1);
       }
-    }
+    };
 
     assert!(parameters.contains_key("phi_p"), "Key 'phi_p' not found.");
-    let phi_p: f64;
-    match parameters["phi_p"] {
-      ParamValue::Float(val) => phi_p = val,
+    let phi_p = match parameters["phi_p"] {
+      ParamValue::Float(val) => val,
       _ => {
         eprintln!("Error");
         std::process::exit(1);
       }
-    }
+    };
 
     assert!(parameters.contains_key("phi_g"), "Key 'phi_g' not found.");
-    let phi_g: f64;
-    match parameters["phi_g"] {
-      ParamValue::Float(val) => phi_g = val,
+    let phi_g = match parameters["phi_g"] {
+      ParamValue::Float(val) => val,
       _ => {
         eprintln!("Error");
         std::process::exit(1);
       }
-    }
+    };
 
-    let mut pso = PSO {
-      name: name,
+    let mut pso = Pso {
+      name,
       problem,
       particles: Vec::new(),
       global_best_pos: None,
@@ -91,7 +87,7 @@ impl<T: Particle + Position + Velocity + BestPosition + Clone> Optimizer<T> for 
     }
     let mut global_best_pos = None;
     for particle in particles.clone() {
-      if global_best_pos.is_none() || problem.f(&particle.pos()) < problem.f(global_best_pos.as_ref().unwrap()) {
+      if global_best_pos.is_none() || problem.f(particle.pos()) < problem.f(global_best_pos.as_ref().unwrap()) {
         global_best_pos = Some(particle.pos().clone());
       }
     }
@@ -131,7 +127,7 @@ impl<T: Particle + Position + Velocity + BestPosition + Clone> Optimizer<T> for 
       let mut new_global_best_pos = self.global_best_pos().clone();
       for idx in 0..self.particles().len() {
         let vel = self.calculate_vel(idx);
-        let mut temp_problem = mem::replace(&mut self.problem, Problem::default());
+        let mut temp_problem = mem::take(&mut self.problem);
         let particle = &mut self.particles_mut()[idx];
         particle.set_vel(vel, &mut temp_problem);
         particle.move_pos(&mut temp_problem);
@@ -149,7 +145,7 @@ impl<T: Particle + Position + Velocity + BestPosition + Clone> Optimizer<T> for 
   }
 }
 
-impl<T> Particles<T> for PSO<T> {
+impl<T> Particles<T> for Pso<T> {
   fn particles(&self) -> &Vec<T> {
     &self.particles
   }
@@ -159,7 +155,7 @@ impl<T> Particles<T> for PSO<T> {
   }
 }
 
-impl<T> GlobalBestPos for PSO<T> {
+impl<T> GlobalBestPos for Pso<T> {
   fn global_best_pos(&self) -> DVector<f64> {
     self.global_best_pos.clone().unwrap()
   }
@@ -173,19 +169,19 @@ impl<T> GlobalBestPos for PSO<T> {
   }
 }
 
-impl<T> OptimizationProblem for PSO<T> {
+impl<T> OptimizationProblem for Pso<T> {
   fn problem(&mut self) -> &mut Problem {
     &mut self.problem
   }
 }
 
-impl<T> Name for PSO<T> {
+impl<T> Name for Pso<T> {
   fn name(&self) -> &String {
     &self.name
   }
 }
 
-impl<T: Clone> Data<T> for PSO<T> {
+impl<T: Clone> Data<T> for Pso<T> {
   fn data(&self) -> &Vec<(f64, Vec<T>)> {
     &self.data
   }
@@ -197,7 +193,7 @@ impl<T: Clone> Data<T> for PSO<T> {
   }
 }
 
-impl<T: Position + Velocity + Clone> DataExporter<T> for PSO<T> {
+impl<T: Position + Velocity + Clone> DataExporter<T> for Pso<T> {
   fn out_directory(&self) -> &PathBuf {
     &self.out_directory
   }

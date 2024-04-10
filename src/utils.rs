@@ -50,12 +50,9 @@ pub fn create_directory(path: PathBuf, addable: bool, ask_clear: bool) {
         let mut user_input = String::new();
         let _ = io::stdin().read_line(&mut user_input);
 
-        match user_input.trim().to_lowercase().as_str() {
-          "y" => {
-            let _ = fs::remove_dir_all(path.clone());
-            let _ = fs::create_dir_all(path);
-          }
-          _ => {}
+        if user_input.trim().to_lowercase().as_str() == "y" {
+          let _ = fs::remove_dir_all(path.clone());
+          let _ = fs::create_dir_all(path);
         }
       }
       (true, false) => {}
@@ -80,6 +77,7 @@ pub fn create_directory(path: PathBuf, addable: bool, ask_clear: bool) {
   }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn run_attempts<U: Position + Velocity, T: Optimizer<U> + DataExporter<U>>(
   params: HashMap<String, ParamValue>,
   name: String,
@@ -141,7 +139,7 @@ pub fn check_cec17<T: Velocity, U: Optimizer<T>>(
       params.clone(),
       name.clone(),
       problem.clone(),
-      out_directory.join(format!("{}", problem.clone().name())),
+      out_directory.join(problem.clone().name()),
       iterations,
       attempts,
       true,
@@ -153,6 +151,7 @@ pub fn check_cec17<T: Velocity, U: Optimizer<T>>(
 }
 
 #[allow(dead_code)]
+#[allow(clippy::too_many_arguments)]
 pub fn run_grid_searches<T: Velocity, U: Optimizer<T>>(
   name: String,
   attempts: usize,

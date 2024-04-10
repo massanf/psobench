@@ -142,11 +142,11 @@ pub fn f3(dim: usize) -> Problem {
 #[allow(dead_code)]
 pub fn cec17(func_num: usize, dim: usize) -> Problem {
   assert!(
-    vec![2, 10, 20, 30, 50, 100].contains(&dim),
+    [2, 10, 20, 30, 50, 100].contains(&dim),
     "The dimensions for CEC2017 functions must be 2, 10, 20, 30, 50, or 100."
   );
   assert!(
-    func_num >= 1 && func_num <= 30,
+    (1..=30).contains(&func_num),
     "CEC2017 contains 30 functions from F1 to F30 except for F2."
   );
   assert!(func_num != 2, "CEC2017 F2 has been deprecated.");
