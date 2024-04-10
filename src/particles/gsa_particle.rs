@@ -1,5 +1,5 @@
 extern crate nalgebra as na;
-use crate::particles::traits::{Mass, Particle, Position, Velocity};
+use crate::particles::traits::{Behavior, BehaviorTrait, Edge, Mass, Particle, Position, Velocity};
 use crate::problems;
 use nalgebra::DVector;
 use problems::Problem;
@@ -9,14 +9,16 @@ pub struct GSAParticle {
   pos: DVector<f64>,
   vel: DVector<f64>,
   mass: f64,
+  behavior: Behavior,
 }
 
 impl Particle for GSAParticle {
-  fn new(problem: &mut Problem) -> GSAParticle {
+  fn new(problem: &mut Problem, behavior: Behavior) -> GSAParticle {
     let mut particle = GSAParticle {
       pos: DVector::from_element(problem.dim(), 0.),
       vel: DVector::from_element(problem.dim(), 0.),
       mass: 0.,
+      behavior,
     };
     Position::init(&mut particle, problem);
     Velocity::init(&mut particle, problem);
@@ -43,17 +45,17 @@ impl Velocity for GSAParticle {
     &self.vel
   }
 
-  fn set_vel(&mut self, vel: DVector<f64>, _problem: &mut Problem) {
-    // let mut new_vel = vel;
-    // let v_max = (problem.domain().1 - problem.domain().0) / 2.;
+  fn set_vel(&mut self, vel: DVector<f64>, problem: &mut Problem) {
+    let mut new_vel = vel.clone();
+    let v_max = (problem.domain().1 - problem.domain().0) / 2.;
 
-    // for e in new_vel.iter_mut() {
-    //   if *e > v_max {
-    //     *e = v_max;
-    //   } else if *e < v_max {
-    //     *e = -v_max;
-    //   }
-    // }
+    for e in new_vel.iter_mut() {
+      if *e > v_max {
+        *e = v_max;
+      } else if *e < v_max {
+        *e = -v_max;
+      }
+    }
 
     self.vel = vel;
   }
@@ -90,5 +92,11 @@ impl Mass for GSAParticle {
 
   fn mass(&self) -> f64 {
     self.mass
+  }
+}
+
+impl BehaviorTrait for GSAParticle {
+  fn edge(&self) -> Edge {
+    self.behavior.edge
   }
 }

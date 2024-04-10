@@ -8,14 +8,17 @@ mod parameters;
 mod particles;
 mod problems;
 mod utils;
+use particles::traits::{Behavior, Edge};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
   let dim = 30;
   let iterations = 1000;
   let attempts = 10;
 
-  executers::pso_cec17(iterations, dim, attempts)?;
-  executers::gsa_cec17(iterations, dim, attempts)?;
+  let behavior = Behavior { edge: Edge::Reflect };
+
+  executers::gsa_cec17(iterations, dim, attempts, behavior)?;
+  // executers::gsa_cec17(iterations, dim, attempts, behavior)?;
 
   // executers::grid_search_pso(iterations, dim, attempts)?;
   // executers::grid_search_gsa(iterations, dim, attempts)?;

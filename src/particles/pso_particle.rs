@@ -1,5 +1,5 @@
 extern crate nalgebra as na;
-use crate::particles::traits::{BestPosition, Particle, Position, Velocity};
+use crate::particles::traits::{Behavior, BehaviorTrait, BestPosition, Edge, Particle, Position, Velocity};
 use crate::problems;
 use nalgebra::DVector;
 use problems::Problem;
@@ -9,14 +9,16 @@ pub struct PSOParticle {
   pos: DVector<f64>,
   vel: DVector<f64>,
   best_pos: Option<DVector<f64>>,
+  behavior: Behavior,
 }
 
 impl Particle for PSOParticle {
-  fn new(problem: &mut Problem) -> PSOParticle {
+  fn new(problem: &mut Problem, behavior: Behavior) -> PSOParticle {
     let mut particle = PSOParticle {
       pos: DVector::from_element(problem.dim(), 0.),
       vel: DVector::from_element(problem.dim(), 0.),
       best_pos: None,
+      behavior,
     };
     Position::init(&mut particle, problem);
     BestPosition::init(&mut particle);
@@ -81,5 +83,11 @@ impl Velocity for PSOParticle {
     // This function returns whether the personal best was updated.
     self.set_pos(new_pos);
     self.update_best_pos(problem);
+  }
+}
+
+impl BehaviorTrait for PSOParticle {
+  fn edge(&self) -> Edge {
+    self.behavior.edge
   }
 }

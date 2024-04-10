@@ -1,5 +1,5 @@
 extern crate nalgebra as na;
-use crate::particles::traits::{Mass, Position, Velocity};
+use crate::particles::traits::{Behavior, BehaviorTrait, Edge, Mass, Position, Velocity};
 use crate::problems;
 use nalgebra::DVector;
 use problems::Problem;
@@ -9,14 +9,16 @@ pub struct FDOParticle {
   pos: DVector<f64>,
   vel: DVector<f64>,
   mass: f64,
+  behavior: Behavior,
 }
 
 impl FDOParticle {
-  pub fn new(problem: &mut Problem) -> FDOParticle {
+  pub fn new(problem: &mut Problem, behavior: Behavior) -> FDOParticle {
     let mut particle = FDOParticle {
       pos: DVector::from_element(problem.dim(), 0.),
       vel: DVector::from_element(problem.dim(), 0.),
       mass: 0.,
+      behavior,
     };
     Position::init(&mut particle, problem);
     Velocity::init(&mut particle, problem);
@@ -59,5 +61,11 @@ impl Mass for FDOParticle {
 
   fn mass(&self) -> f64 {
     self.mass
+  }
+}
+
+impl BehaviorTrait for FDOParticle {
+  fn edge(&self) -> Edge {
+    self.behavior.edge
   }
 }

@@ -4,8 +4,20 @@ use crate::utils;
 use nalgebra::DVector;
 use problems::Problem;
 
+#[derive(Clone, Copy)]
+pub struct Behavior {
+  pub edge: Edge,
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Copy)]
+pub enum Edge {
+  Reflect,
+  Pass,
+}
+
 pub trait Particle {
-  fn new(problem: &mut Problem) -> Self;
+  fn new(problem: &mut Problem, behavior: Behavior) -> Self;
 }
 
 pub trait Position {
@@ -34,7 +46,7 @@ pub trait BestPosition: Position {
   }
 }
 
-pub trait Velocity: Position {
+pub trait Velocity: Position + BehaviorTrait {
   fn init(&mut self, problem: &mut Problem) {
     self.set_vel(utils::random_init_vel(problem), problem);
   }
@@ -43,31 +55,42 @@ pub trait Velocity: Position {
   fn set_vel(&mut self, vel: DVector<f64>, problem: &mut Problem);
 
   fn move_pos(&mut self, problem: &mut Problem) {
-    let mut new_pos = self.pos().clone();
-    let mut new_vel = self.vel().clone();
+    match self.edge() {
+      Edge::Reflect => {
+        let mut new_pos = self.pos().clone();
+        let mut new_vel = self.vel().clone();
 
-    // Check wall.
-    for (i, e) in new_pos.iter_mut().enumerate() {
-      if self.pos()[i] + self.vel()[i] < problem.domain().0 {
-        *e = 2. * problem.domain().0 - self.vel()[i] - self.pos()[i];
-        new_vel[i] = -new_vel[i];
-      } else if self.pos()[i] + self.vel()[i] > problem.domain().1 {
-        *e = 2. * problem.domain().1 - self.vel()[i] - self.pos()[i];
-        new_vel[i] = -new_vel[i];
-      } else {
-        *e = self.pos()[i] + self.vel()[i];
+        // Check wall.
+        for (i, e) in new_pos.iter_mut().enumerate() {
+          if self.pos()[i] + self.vel()[i] < problem.domain().0 {
+            *e = 2. * problem.domain().0 - self.vel()[i] - self.pos()[i];
+            new_vel[i] = -new_vel[i];
+          } else if self.pos()[i] + self.vel()[i] > problem.domain().1 {
+            *e = 2. * problem.domain().1 - self.vel()[i] - self.pos()[i];
+            new_vel[i] = -new_vel[i];
+          } else {
+            *e = self.pos()[i] + self.vel()[i];
+          }
+        }
+
+        // Set new velocity, as it may have hit a wall
+        self.set_vel(new_vel, problem);
+
+        // This function returns whether the personal best was updated.
+        self.set_pos(new_pos);
+      }
+      Edge::Pass => {
+        self.set_pos(self.pos().clone() + self.vel().clone());
       }
     }
-
-    // Set new velocity, as it may have hit a wall
-    self.set_vel(new_vel, problem);
-
-    // This function returns whether the personal best was updated.
-    self.set_pos(new_pos);
   }
 }
 
 pub trait Mass {
   fn mass(&self) -> f64;
   fn set_mass(&mut self, mass: f64);
+}
+
+pub trait BehaviorTrait {
+  fn edge(&self) -> Edge;
 }

@@ -58,7 +58,7 @@ GRAPHS = HOME / "graphs" / NAME
 pso = PSO(DATA)
 pso.load_full()
 pso.overview(False, GRAPHS)
-pso.animate(GRAPHS / "animation.gif", 1, 0, 500)
+pso.animate(GRAPHS / "animation.gif", 10, 0, 500)
 
 # NAME = pathlib.Path("test") / "30" / "igsa" / "CEC2017_F01" / "0"
 # DATA = HOME / "data" / NAME

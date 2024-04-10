@@ -2,7 +2,7 @@ use crate::optimizers::traits::{
   Data, DataExporter, GlobalBestPos, Name, OptimizationProblem, Optimizer, ParamValue, Particles,
 };
 use crate::particles::fdo_particle::FDOParticle;
-use crate::particles::traits::{Mass, Position, Velocity};
+use crate::particles::traits::{Behavior, Mass, Position, Velocity};
 use crate::problems;
 use crate::utils;
 use nalgebra::DVector;
@@ -20,6 +20,7 @@ pub struct Fdo<FDOParticle> {
   data: Vec<(f64, Vec<FDOParticle>)>,
   out_directory: PathBuf,
   wf: bool,
+  behavior: Behavior,
 }
 
 impl Optimizer<FDOParticle> for Fdo<FDOParticle> {
@@ -28,6 +29,7 @@ impl Optimizer<FDOParticle> for Fdo<FDOParticle> {
     problem: Problem,
     parameters: HashMap<String, ParamValue>,
     out_directory: PathBuf,
+    behavior: Behavior,
   ) -> Fdo<FDOParticle> {
     assert!(
       parameters.contains_key("particle_count"),
@@ -66,6 +68,7 @@ impl Optimizer<FDOParticle> for Fdo<FDOParticle> {
       data: Vec::new(),
       out_directory,
       wf,
+      behavior,
     };
 
     gsa.init(number_of_particles);
@@ -73,10 +76,11 @@ impl Optimizer<FDOParticle> for Fdo<FDOParticle> {
   }
 
   fn init(&mut self, number_of_particles: usize) {
+    let behavior = self.behavior;
     let problem = &mut self.problem();
     let mut particles: Vec<FDOParticle> = Vec::new();
     for _ in 0..number_of_particles {
-      particles.push(FDOParticle::new(problem));
+      particles.push(FDOParticle::new(problem, behavior));
     }
 
     let mut global_best_pos = None;

@@ -1,7 +1,7 @@
 use crate::optimizers::traits::{
   Data, DataExporter, GlobalBestPos, Name, OptimizationProblem, Optimizer, ParamValue, Particles,
 };
-use crate::particles::traits::{Mass, Particle, Position, Velocity};
+use crate::particles::traits::{Behavior, Mass, Particle, Position, Velocity};
 use crate::problems;
 use crate::rand::Rng;
 use crate::utils;
@@ -23,12 +23,19 @@ pub struct Gsa<T> {
   g: f64,
   data: Vec<(f64, Vec<T>)>,
   out_directory: PathBuf,
+  behavior: Behavior,
   g0: f64,
   alpha: f64,
 }
 
 impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
-  fn new(name: String, problem: Problem, parameters: HashMap<String, ParamValue>, out_directory: PathBuf) -> Gsa<T> {
+  fn new(
+    name: String,
+    problem: Problem,
+    parameters: HashMap<String, ParamValue>,
+    out_directory: PathBuf,
+    behavior: Behavior,
+  ) -> Gsa<T> {
     assert!(
       parameters.contains_key("particle_count"),
       "Key 'particle_count' not found."
@@ -68,6 +75,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
       g: g0,
       data: Vec::new(),
       out_directory,
+      behavior,
       g0,
       alpha,
     };
@@ -77,10 +85,11 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
   }
 
   fn init(&mut self, number_of_particles: usize) {
+    let behavior = self.behavior;
     let problem = &mut self.problem();
     let mut particles: Vec<T> = Vec::new();
     for _ in 0..number_of_particles {
-      particles.push(T::new(problem));
+      particles.push(T::new(problem, behavior));
     }
 
     let mut global_best_pos = None;

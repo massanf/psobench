@@ -1,6 +1,6 @@
 use crate::grid_search;
 use crate::optimizers::traits::{DataExporter, Optimizer, ParamValue};
-use crate::particles::traits::{Position, Velocity};
+use crate::particles::traits::{Behavior, Position, Velocity};
 use crate::problems;
 use indicatif::{ProgressBar, ProgressStyle};
 use nalgebra::DVector;
@@ -87,6 +87,7 @@ pub fn run_attempts<U: Position + Velocity, T: Optimizer<U> + DataExporter<U>>(
   attempts: usize,
   save_data: bool,
   bar: &indicatif::ProgressBar,
+  behavior: Behavior,
 ) -> Result<(), Box<dyn std::error::Error>> {
   (0..attempts).into_par_iter().for_each(|attempt| {
     let mut pso: T = T::new(
@@ -94,6 +95,7 @@ pub fn run_attempts<U: Position + Velocity, T: Optimizer<U> + DataExporter<U>>(
       problem.clone(),
       params.clone(),
       out_directory.join(format!("{}", attempt)),
+      behavior,
     );
     pso.run(iterations);
     let _ = pso.save_summary();
@@ -114,6 +116,7 @@ pub fn check_cec17<T: Velocity, U: Optimizer<T>>(
   params: HashMap<String, ParamValue>,
   attempts: usize,
   out_directory: PathBuf,
+  behavior: Behavior,
 ) -> Result<(), Box<dyn std::error::Error>> {
   // Progress Bar.
   let bar = ProgressBar::new((29 * attempts) as u64);
@@ -144,6 +147,7 @@ pub fn check_cec17<T: Velocity, U: Optimizer<T>>(
       attempts,
       true,
       &bar,
+      behavior,
     );
   });
 
@@ -161,6 +165,7 @@ pub fn run_grid_searches<T: Velocity, U: Optimizer<T>>(
   base_params: HashMap<String, ParamValue>,
   dim: usize,
   out_directory: PathBuf,
+  behavior: Behavior,
 ) -> Result<(), Box<dyn std::error::Error>> {
   for func_num in 1..=30 {
     if func_num == 2 {
@@ -176,6 +181,7 @@ pub fn run_grid_searches<T: Velocity, U: Optimizer<T>>(
       param2.clone(),
       base_params.clone(),
       out_directory.clone(),
+      behavior,
     )?;
   }
   Ok(())

@@ -1,4 +1,4 @@
-use crate::particles::traits::{Position, Velocity};
+use crate::particles::traits::{Behavior, Position, Velocity};
 use crate::problems;
 use nalgebra::DVector;
 use problems::Problem;
@@ -37,7 +37,13 @@ impl Serialize for ParamValue {
 }
 
 pub trait Optimizer<T: Position + Velocity>: Name + OptimizationProblem + Particles<T> + DataExporter<T> {
-  fn new(name: String, problem: Problem, parameters: HashMap<String, ParamValue>, out_directory: PathBuf) -> Self
+  fn new(
+    name: String,
+    problem: Problem,
+    parameters: HashMap<String, ParamValue>,
+    out_directory: PathBuf,
+    behavior: Behavior,
+  ) -> Self
   where
     Self: Sized;
 
