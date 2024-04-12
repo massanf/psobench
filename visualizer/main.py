@@ -23,15 +23,17 @@ def generate_summary(path: pathlib.Path):
     fig, axs = plt.subplots(5, 6, figsize=(12, 10), dpi=300)
     axs = tests.plot_all(axs)
     plt.tight_layout()
+    print(f"Saving: {GRAPHS / f'progress_comparison.png'}")
     plt.savefig(GRAPHS / f"progress_comparison.png")
 
 def generate_overview(name: pathlib.Path, skip=1, end=500):
     data = HOME / "data" / name 
-    graphs = HOME / "graphs" /name 
+    graphs = HOME / "graphs" / name 
     pso = PSO(data)
     pso.load_full()
     pso.overview(False, graphs)
-    pso.animate(GRAPHS / "animation.gif", 1, 0, 500)
+    print(f"Saving: {graphs / 'animation.gif'}")
+    pso.animate(graphs/ "animation.gif", 1, 0, 500)
 
 generate_summary(DATA / "test" / "30")
 
@@ -44,4 +46,5 @@ generate_summary(DATA / "test" / "30")
 # pso_path = pathlib.Path("grid_search") / "30" / "pso"
 # generate_gridmap_collage(pso_path)
 
-# generate_overview(pathlib.Path("test") / "30" / "igsa" / "CEC2017_F01" / "0", 1, 500)
+# generate_overview(pathlib.Path("test") / "30" / "igsa" / "CEC2017_F05" / "0", 1, 500)
+# generate_overview(pathlib.Path("test") / "30" / "igsa" / "CEC2017_F05" / "0", 1, 500)

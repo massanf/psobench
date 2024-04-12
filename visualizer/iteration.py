@@ -24,5 +24,6 @@ class Iteration:
         ax.set_ylim(y_lim)
         ax.set_title(title)
 
+        print(f"Saving: {filename}")
         plt.savefig(filename)
         plt.close()

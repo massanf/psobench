@@ -47,6 +47,7 @@ class GridSearches:
             ax.axis('off')
 
         plt.subplots_adjust(wspace=0.1, hspace=0.1)
+        print(f"Saving: {self.graphs / filename,}")
         plt.savefig(self.graphs / filename, bbox_inches='tight', pad_inches=0.1)
 
     def plot_best_global_progresses(self, axs) -> Any:

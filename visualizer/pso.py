@@ -143,6 +143,7 @@ class PSO:
         plt.rcdefaults()
         plt.plot(self.global_best_fitness_progress())
         plt.gca().autoscale(axis='y', tight=False)
+        print(f"Saving: {out_directory / 'fitness_over_time.png'}")
         plt.savefig(out_directory / "fitness_over_time.png")
         plt.close()
 
@@ -155,15 +156,19 @@ class PSO:
         plt.rcdefaults()
         utils.plot_and_fill(self.fitness())
         plt.gca().autoscale(axis='y', tight=False)
+        print(f"Saving: {out_directory / 'fitness_over_time.png'}")
         plt.savefig(out_directory / "fitness_over_time.png")
         plt.close()
 
         plt.cla()
         plt.rcdefaults()
         utils.plot_and_fill(self.speed())
+
+        print(f"Saving: {out_directory / 'speed_over_time.png'}")
         plt.savefig(out_directory / "speed_over_time.png")
         plt.close()
 
         plt.close()
         if animate:
+            print(f"Saving: {out_directory / 'test.gif'}")
             self.animate(out_directory / "test.gif")

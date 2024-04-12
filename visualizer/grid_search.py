@@ -92,6 +92,7 @@ class GridSearch:
         plt.yscale('log')
         plt.title(f"{self.name}")
         plt.plot(self.best_global_progress())
+        print(f"Saving: {path / 'best_global_progress.png'}")
         plt.savefig(path / "best_global_progress.png", bbox_inches='tight')
 
     def create_image(self, use_all_range: bool, frame: int = -1) -> Tuple[List[List[float]], Any]:
@@ -163,6 +164,7 @@ class GridSearch:
         newax.set_xlabel(self.arg1)
         newax.set_ylabel(self.arg2)
 
+        print(f"Saving: {path / 'grid_search.png'}")
         plt.savefig(path / "grid_search.png", bbox_inches='tight')
         plt.close()
 
