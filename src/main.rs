@@ -20,12 +20,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     vmax: false,
   };
 
-  executers::gsa_cec17(iterations, dim, attempts, behavior)?;
   // executers::gsa_cec17(iterations, dim, attempts, behavior)?;
+  // executers::gsa_cec17(iterations, dim, attempts, behavior)?;
+  executers::igsa_cec17(iterations, dim, attempts, behavior)?;
 
-  // executers::grid_search_pso(iterations, dim, attempts)?;
+  // executers::grid_search_pso(iterations, dim, attempts, behavior)?;
   // executers::grid_search_gsa(iterations, dim, attempts, behavior)?;
-  // executers::grid_search_igsa(iterations, dim, attempts)?;
+  // executers::grid_search_igsa(iterations, dim, attempts, behavior)?;
 
   Ok(())
 }

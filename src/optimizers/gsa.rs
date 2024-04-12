@@ -172,9 +172,6 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
           m_sum += m_i;
         }
 
-        // for idx in 0..self.particles().len() {
-        //   m.push(m_unscaled[idx] / m_sum);
-        // }
         for item in m_unscaled.iter().take(self.particles().len()) {
           m.push(item / m_sum);
         }

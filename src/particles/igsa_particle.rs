@@ -3,18 +3,19 @@ use crate::particles::traits::{Behavior, BehaviorTrait, Edge, Mass, Particle, Po
 use crate::problems;
 use nalgebra::DVector;
 use problems::Problem;
+use std::f64::consts::E;
 
 #[derive(Clone)]
-pub struct GsaParticle {
+pub struct IgsaParticle {
   pos: DVector<f64>,
   vel: DVector<f64>,
   mass: f64,
   behavior: Behavior,
 }
 
-impl Particle for GsaParticle {
-  fn new(problem: &mut Problem, behavior: Behavior) -> GsaParticle {
-    let mut particle = GsaParticle {
+impl Particle for IgsaParticle {
+  fn new(problem: &mut Problem, behavior: Behavior) -> IgsaParticle {
+    let mut particle = IgsaParticle {
       pos: DVector::from_element(problem.dim(), 0.),
       vel: DVector::from_element(problem.dim(), 0.),
       mass: 0.,
@@ -26,7 +27,7 @@ impl Particle for GsaParticle {
   }
 }
 
-impl Position for GsaParticle {
+impl Position for IgsaParticle {
   fn pos(&self) -> &DVector<f64> {
     &self.pos
   }
@@ -36,7 +37,7 @@ impl Position for GsaParticle {
   }
 }
 
-impl Velocity for GsaParticle {
+impl Velocity for IgsaParticle {
   fn init(&mut self, problem: &mut Problem) {
     self.update_vel(DVector::from_element(problem.dim(), 0.), problem);
   }
@@ -50,9 +51,10 @@ impl Velocity for GsaParticle {
   }
 }
 
-impl Mass for GsaParticle {
+impl Mass for IgsaParticle {
   fn set_mass(&mut self, mass: f64) {
-    self.mass = mass;
+    let scale = 1.;
+    self.mass = 1.0 / (1.0 + E.powf(-(scale * mass - scale / 2.)));
   }
 
   fn mass(&self) -> f64 {
@@ -60,7 +62,7 @@ impl Mass for GsaParticle {
   }
 }
 
-impl BehaviorTrait for GsaParticle {
+impl BehaviorTrait for IgsaParticle {
   fn edge(&self) -> Edge {
     self.behavior.edge
   }

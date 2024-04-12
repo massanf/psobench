@@ -14,65 +14,34 @@ HOME = pathlib.Path(__file__).parent.parent
 DATA = HOME / "data"
 GRAPHS = HOME / "graphs"
 
-tests = Tests(DATA / "test" / "30")
-fig, axs = plt.subplots(5, 6, figsize=(12, 10), dpi=300)
-axs = tests.plot_all(axs)
-plt.tight_layout()
-plt.savefig(GRAPHS / f"progress_comparison.png")
+def generate_gridmap_collage(path: pathlib.Path):
+    optimizer = GridSearches(DATA, GRAPHS, path)
+    optimizer.heatmap_collage("grid_search.png", True, True)
 
-# pso_path = pathlib.Path("grid_search") / "30" / "gsa"
-# pso = GridSearches(DATA, GRAPHS, pso_path)
-# pso.heatmap_collage("grid_search.png", True, True)
+def generate_summary(path: pathlib.Path):
+    tests = Tests(path)
+    fig, axs = plt.subplots(5, 6, figsize=(12, 10), dpi=300)
+    axs = tests.plot_all(axs)
+    plt.tight_layout()
+    plt.savefig(GRAPHS / f"progress_comparison.png")
 
-# gsa_path = pathlib.Path("grid_search") / "30" / "igsa"
-# gsa = GridSearches(DATA, GRAPHS, gsa_path)
-# gsa.heatmap_collage("grid_search.png", True, True)
+def generate_overview(name: pathlib.Path, skip=1, end=500):
+    data = HOME / "data" / name 
+    graphs = HOME / "graphs" /name 
+    pso = PSO(data)
+    pso.load_full()
+    pso.overview(False, graphs)
+    pso.animate(GRAPHS / "animation.gif", 1, 0, 500)
 
-# tiled_gsa_path = pathlib.Path("grid_search") / f"tiled_gsa_30"
-# tiled_gsa = GridSearches(DATA, GRAPHS, tiled_gsa_path)
-# tiled_gsa.heatmap_collage("grid_search.png", True, True)
+generate_summary(DATA / "test" / "30")
 
-# pso_path = pathlib.Path("grid_search") / f"pso_30"
-# pso = GridSearches(DATA, GRAPHS, pso_path)
-# pso.heatmap_collage("grid_search.png", False, False)
+# gsa_path = pathlib.Path("grid_search") / "30" / "gsa"
+# generate_gridmap_collage(gsa_path)
 
-# fig, axs = plt.subplots(5, 6, figsize=(12, 10), dpi=300)
-# axs = gsa.plot_best_global_progresses(axs)
-# axs = pso.plot_best_global_progresses(axs)
-# # axs = tiled_gsa.plot_best_global_progress(axs)
-# plt.tight_layout()
-# plt.savefig(GRAPHS / f"progress_comparison.png")
+# igsa_path = pathlib.Path("grid_search") / "30" / "igsa"
+# generate_gridmap_collage(igsa_path)
 
+# pso_path = pathlib.Path("grid_search") / "30" / "pso"
+# generate_gridmap_collage(pso_path)
 
-# NAME = pathlib.Path("test") / "30" / "pso" / "CEC2017_F01" / "0"
-# DATA = HOME / "data" / NAME
-# GRAPHS = HOME / "graphs" / NAME
-# pso = PSO(DATA)
-# pso.load_full()
-# pso.overview(False, GRAPHS)
-# pso.animate(GRAPHS / "animation.gif", 1, 0, 500)
-
-# NAME = pathlib.Path("test") / "30" / "gsa" / "CEC2017_F01" / "0"
-# DATA = HOME / "data" / NAME
-# GRAPHS = HOME / "graphs" / NAME
-# pso = PSO(DATA)
-# pso.load_full()
-# pso.overview(False, GRAPHS)
-# pso.animate(GRAPHS / "animation.gif", 1, 0, 50)
-
-# NAME = pathlib.Path("test") / "30" / "igsa" / "CEC2017_F01" / "0"
-# DATA = HOME / "data" / NAME
-# GRAPHS = HOME / "graphs" / NAME
-# pso = PSO(DATA)
-# pso.load_full()
-# pso.overview(False, GRAPHS)
-# pso.animate(GRAPHS / "animation.gif", 1, 0, 500)
-
-
-# NAME = pathlib.Path("test") / "pso"
-# DATA = HOME / "data" / NAME
-# GRAPHS = HOME / "graphs" / NAME
-# pso = PSO(DATA)
-# pso.load_full()
-# pso.overview(False, GRAPHS)
-# pso.animate(GRAPHS / "animation.gif", 1, 0, 500)
+# generate_overview(pathlib.Path("test") / "30" / "igsa" / "CEC2017_F01" / "0", 1, 500)

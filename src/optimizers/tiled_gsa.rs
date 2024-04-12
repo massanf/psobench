@@ -1,7 +1,7 @@
 use crate::optimizers::traits::{
   Data, DataExporter, GlobalBestPos, Name, OptimizationProblem, Optimizer, ParamValue, Particles,
 };
-use crate::particles::gsa_particle::GSAParticle;
+use crate::particles::gsa_particle::GsaParticle;
 use crate::particles::traits::{Behavior, Mass, Particle, Position, Velocity};
 use crate::problems;
 use crate::rand::Rng;
@@ -15,28 +15,28 @@ use std::mem;
 use std::path::PathBuf;
 
 #[derive(Clone)]
-pub struct TiledGSA<GSAParticle> {
+pub struct TiledGSA<GsaParticle> {
   name: String,
   problem: Problem,
-  particles: Vec<GSAParticle>,
+  particles: Vec<GsaParticle>,
   global_best_pos: Option<DVector<f64>>,
   influences: Vec<bool>,
   g: f64,
-  data: Vec<(f64, Vec<GSAParticle>)>,
+  data: Vec<(f64, Vec<GsaParticle>)>,
   out_directory: PathBuf,
   behavior: Behavior,
   g0: f64,
   alpha: f64,
 }
 
-impl Optimizer<GSAParticle> for TiledGSA<GSAParticle> {
+impl Optimizer<GsaParticle> for TiledGSA<GsaParticle> {
   fn new(
     name: String,
     problem: Problem,
     parameters: HashMap<String, ParamValue>,
     out_directory: PathBuf,
     behavior: Behavior,
-  ) -> TiledGSA<GSAParticle> {
+  ) -> TiledGSA<GsaParticle> {
     assert!(
       parameters.contains_key("particle_count"),
       "Key 'particle_count' not found."
@@ -88,9 +88,9 @@ impl Optimizer<GSAParticle> for TiledGSA<GSAParticle> {
   fn init(&mut self, number_of_particles: usize) {
     let behavior = self.behavior;
     let problem = &mut self.problem();
-    let mut particles: Vec<GSAParticle> = Vec::new();
+    let mut particles: Vec<GsaParticle> = Vec::new();
     for _ in 0..number_of_particles {
-      particles.push(GSAParticle::new(problem, behavior));
+      particles.push(GsaParticle::new(problem, behavior));
     }
 
     let mut global_best_pos = None;
