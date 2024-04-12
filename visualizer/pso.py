@@ -148,6 +148,8 @@ class PSO:
 
     def overview(self, animate: bool, out_directory: pathlib.Path) -> None:
         assert self.fully_loaded
+        plt.close()
+        plt.cla()
         if not out_directory.exists():
             os.makedirs(out_directory)
         plt.rcdefaults()

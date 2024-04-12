@@ -210,7 +210,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
       self.problem().clear_memo();
 
       // Update the position, best and worst.
-      let mut new_global_best_pos = self.global_best_pos.clone().unwrap();
+      let mut new_global_best_pos = None;
       // for (i, m_i) in 0..self.particles().len() {
       for (i, vel) in vels.iter().enumerate().take(self.particles().len()) {
         let mut temp_problem = mem::take(&mut self.problem);
@@ -218,12 +218,14 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
         particle.update_vel(vel.clone(), &mut temp_problem);
         particle.move_pos(&mut temp_problem);
         let pos = particle.pos().clone();
-        if self.problem().f(&pos) < self.problem().f(&new_global_best_pos) {
-          new_global_best_pos = self.particles()[i].pos().clone();
+        if new_global_best_pos.is_none()
+          || (self.problem().f(&pos) < self.problem().f(&new_global_best_pos.clone().unwrap()))
+        {
+          new_global_best_pos = Some(pos);
         }
         self.problem = temp_problem;
       }
-      self.update_global_best_pos(new_global_best_pos);
+      self.update_global_best_pos(new_global_best_pos.unwrap());
 
       // Save the data for current iteration.
       self.add_data();
