@@ -17,8 +17,8 @@ lazy_static! {
   };
   pub static ref GSA_PARAMS: HashMap<String, ParamValue> = {
     let gsa_params: HashMap<String, ParamValue> = [
-      ("g0".to_owned(), ParamValue::Float(5000.0)),
-      ("alpha".to_owned(), ParamValue::Float(5.0)),
+      ("g0".to_owned(), ParamValue::Float(100.0)),
+      ("alpha".to_owned(), ParamValue::Float(20.0)),
       ("particle_count".to_owned(), ParamValue::Int(30)),
     ]
     .iter()

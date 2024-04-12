@@ -138,7 +138,7 @@ impl<T: Particle + Position + Velocity + BestPosition + Clone> Optimizer<T> for 
         let vel = self.calculate_vel(idx);
         let mut temp_problem = mem::take(&mut self.problem);
         let particle = &mut self.particles_mut()[idx];
-        particle.set_vel(vel, &mut temp_problem);
+        particle.update_vel(vel, &mut temp_problem);
         particle.move_pos(&mut temp_problem);
         let best_pos = self.particles()[idx].best_pos().clone();
         if self.problem().f(&best_pos) < self.problem.f(&new_global_best_pos) {

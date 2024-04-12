@@ -38,19 +38,15 @@ impl Position for FDOParticle {
 
 impl Velocity for FDOParticle {
   fn init(&mut self, problem: &mut Problem) {
-    self.set_vel(DVector::from_element(problem.dim(), 0.), problem);
+    self.update_vel(DVector::from_element(problem.dim(), 0.), problem);
   }
 
   fn vel(&self) -> &DVector<f64> {
     &self.vel
   }
 
-  fn set_vel(&mut self, vel: DVector<f64>, _problem: &mut Problem) {
+  fn set_vel(&mut self, vel: DVector<f64>) {
     self.vel = vel;
-  }
-
-  fn move_pos(&mut self, _problem: &mut Problem) {
-    self.set_pos(self.pos().clone() + self.vel().clone());
   }
 }
 
@@ -67,5 +63,9 @@ impl Mass for FDOParticle {
 impl BehaviorTrait for FDOParticle {
   fn edge(&self) -> Edge {
     self.behavior.edge
+  }
+
+  fn vmax(&self) -> bool {
+    self.behavior.vmax
   }
 }

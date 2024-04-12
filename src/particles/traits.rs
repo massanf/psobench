@@ -7,6 +7,7 @@ use problems::Problem;
 #[derive(Clone, Copy)]
 pub struct Behavior {
   pub edge: Edge,
+  pub vmax: bool,
 }
 
 #[allow(dead_code)]
@@ -48,11 +49,19 @@ pub trait BestPosition: Position {
 
 pub trait Velocity: Position + BehaviorTrait {
   fn init(&mut self, problem: &mut Problem) {
-    self.set_vel(utils::random_init_vel(problem), problem);
+    self.update_vel(utils::random_init_vel(problem), problem);
   }
 
   fn vel(&self) -> &DVector<f64>;
-  fn set_vel(&mut self, vel: DVector<f64>, problem: &mut Problem);
+  fn set_vel(&mut self, vel: DVector<f64>);
+  fn update_vel(&mut self, vel: DVector<f64>, problem: &mut Problem) {
+    let vmax = problem.domain().1 - problem.domain().0;
+    if self.vmax() && vel.norm() > vmax {
+      self.set_vel(vel.clone() / vel.norm() * vmax);
+    } else {
+      self.set_vel(vel);
+    }
+  }
 
   fn move_pos(&mut self, problem: &mut Problem) {
     match self.edge() {
@@ -74,7 +83,7 @@ pub trait Velocity: Position + BehaviorTrait {
         }
 
         // Set new velocity, as it may have hit a wall
-        self.set_vel(new_vel, problem);
+        self.update_vel(new_vel, problem);
 
         // This function returns whether the personal best was updated.
         self.set_pos(new_pos);
@@ -93,4 +102,5 @@ pub trait Mass {
 
 pub trait BehaviorTrait {
   fn edge(&self) -> Edge;
+  fn vmax(&self) -> bool;
 }

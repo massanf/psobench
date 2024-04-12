@@ -222,7 +222,7 @@ impl Optimizer<GSAParticle> for TiledGSA<GSAParticle> {
       for (i, v_i) in vels.iter().enumerate().take(self.particles().len()) {
         let mut temp_problem = mem::take(&mut self.problem);
         let particle = &mut self.particles_mut()[i];
-        particle.set_vel(v_i.clone(), &mut temp_problem);
+        particle.update_vel(v_i.clone(), &mut temp_problem);
         particle.move_pos(&mut temp_problem);
         let pos = particle.pos().clone();
         if self.problem().f(&pos) < self.problem().f(&new_global_best_pos) {

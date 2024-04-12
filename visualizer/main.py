@@ -14,11 +14,11 @@ HOME = pathlib.Path(__file__).parent.parent
 DATA = HOME / "data"
 GRAPHS = HOME / "graphs"
 
-# tests = Tests(DATA / "test" / "30")
-# fig, axs = plt.subplots(5, 6, figsize=(12, 10), dpi=300)
-# axs = tests.plot_all(axs)
-# plt.tight_layout()
-# plt.savefig(GRAPHS / f"progress_comparison.png")
+tests = Tests(DATA / "test" / "30")
+fig, axs = plt.subplots(5, 6, figsize=(12, 10), dpi=300)
+axs = tests.plot_all(axs)
+plt.tight_layout()
+plt.savefig(GRAPHS / f"progress_comparison.png")
 
 # pso_path = pathlib.Path("grid_search") / "30" / "gsa"
 # pso = GridSearches(DATA, GRAPHS, pso_path)
@@ -52,13 +52,13 @@ GRAPHS = HOME / "graphs"
 # pso.overview(False, GRAPHS)
 # pso.animate(GRAPHS / "animation.gif", 1, 0, 500)
 
-NAME = pathlib.Path("test") / "30" / "gsa" / "CEC2017_F01" / "0"
-DATA = HOME / "data" / NAME
-GRAPHS = HOME / "graphs" / NAME
-pso = PSO(DATA)
-pso.load_full()
-pso.overview(False, GRAPHS)
-pso.animate(GRAPHS / "animation.gif", 10, 0, 500)
+# NAME = pathlib.Path("test") / "30" / "gsa" / "CEC2017_F01" / "0"
+# DATA = HOME / "data" / NAME
+# GRAPHS = HOME / "graphs" / NAME
+# pso = PSO(DATA)
+# pso.load_full()
+# pso.overview(False, GRAPHS)
+# pso.animate(GRAPHS / "animation.gif", 1, 0, 50)
 
 # NAME = pathlib.Path("test") / "30" / "igsa" / "CEC2017_F01" / "0"
 # DATA = HOME / "data" / NAME
