@@ -9,7 +9,7 @@ import os
 import json
 from particle import Particle
 from iteration import Iteration
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Callable
 
 
 class PSO:
@@ -85,22 +85,34 @@ class PSO:
                                                   ** 2)))
             result.append(iter_result)
         return result
+    
+    def mass(self) -> List[List[float]]:
+        assert self.fully_loaded
+        assert self.has_mass()
+        result: List[List[float]] = []
+        for iteration in self.iterations:
+            iter_result = []
+            for particle in iteration.particles:
+                iter_result.append(particle.mass)
+            result.append(iter_result)
+        return result
 
-    def update_plot_animate(self, frame: int) -> None:
+    def has_mass(self) -> bool:
+        return hasattr(self.iterations[0].particles[0], "mass")
+
+    def update_particles_for_animate(self, frame: int) -> None:
         assert self.fully_loaded
         plt.cla()
         self.progressbar.update(1)
         iteration = self.iterations[frame]
-        has_mass = False
-        if hasattr(iteration.particles[0], "mass"):
-            has_mass = True
+        if self.has_mass():
             masses = []
             for particle in iteration.particles:
                 masses.append(particle.mass)
             max_mass = np.max(masses)
         for particle in iteration.particles:
             assert len(particle.pos) >= 2
-            if has_mass and max_mass != 0.0:
+            if self.has_mass() and max_mass != 0.0:
                 plt.scatter(particle.pos[0], particle.pos[1], s=particle.mass * 50 / max_mass, c='c')
             else:
                 plt.scatter(particle.pos[0], particle.pos[1], c='c')
@@ -112,8 +124,34 @@ class PSO:
                   f" Best: {self.iterations[frame].global_best_fitness:.3e}")
         plt.gca().set_aspect('equal', adjustable='box')
 
-    def animate(self, destination_path: pathlib.Path,
+    def update_mass_for_animate(self, frame: int) -> None:
+        assert self.fully_loaded
+        assert self.has_mass()
+
+        plt.cla()
+        self.progressbar.update(1)
+        iteration = self.iterations[frame]
+
+        mass = []
+        for particle in iteration.particles:
+            mass.append(particle.mass)
+
+        plt.hist(mass, bins=self.bins)
+        plt.ylim(0, self.max_y)
+        plt.title(f"Iteration: {frame}")
+
+    def animate(self, updater: Callable, destination_path: pathlib.Path,
                 skip_frames: int = 50, start=0, end=-1) -> None:
+        fig, ax = plt.subplots()
+        if end == -1:
+            end = len(self.iterations)
+        frames = range(start, end, skip_frames)
+        self.progressbar = tqdm(total=math.ceil((end - start) / skip_frames) + 1)
+        ani = FuncAnimation(fig, updater, frames=frames)
+        ani.save(destination_path, fps=10)
+    
+    def animate_particles(self, destination_path: pathlib.Path,
+                          skip_frames: int = 50, start=0, end=-1) -> None:
         assert self.fully_loaded
         # Find lim
         self.lim = [float('inf'), float('-inf')]
@@ -125,15 +163,27 @@ class PSO:
                 self.lim[1] = max(self.lim[1],
                                   particle.pos[0],
                                   particle.pos[1])
+        self.animate(self.update_particles_for_animate, destination_path, skip_frames, start, end)
 
-        fig, ax = plt.subplots()
-        if end == -1:
-            end = len(self.iterations)
-        frames = range(start, end, skip_frames)
-        self.progressbar = tqdm(total=math.ceil((end - start) / skip_frames) + 1)
-        ani = FuncAnimation(fig, self.update_plot_animate,
-                            frames=frames)
-        ani.save(destination_path, fps=10)
+    def animate_mass(self, destination_path: pathlib.Path,
+                          skip_frames: int = 50, start=0, end=-1) -> None:
+        assert self.fully_loaded
+        mass = []
+        for iteration in self.iterations:
+            mass_ = []
+            for particle in iteration.particles:
+                mass_.append(particle.mass)
+            mass.append(mass_)
+        num_bins = 40
+        flat_mass = np.array(mass).flatten()
+        self.bins = np.linspace(min(flat_mass), max(flat_mass), num_bins + 1)
+        max_y = 0
+        for mass_ in mass:
+            counts, _ = np.histogram(mass_, self.bins)
+            max_y = max(max_y, counts.max())
+        print(max_y)
+        self.max_y = max_y
+        self.animate(self.update_mass_for_animate, destination_path, skip_frames, start, end)
 
     def plot_global_best_fitness_progress(self, out_directory: pathlib.Path) -> None:
         if not out_directory.exists():
@@ -149,12 +199,13 @@ class PSO:
 
     def overview(self, animate: bool, out_directory: pathlib.Path) -> None:
         assert self.fully_loaded
-        plt.close()
-        plt.cla()
         if not out_directory.exists():
             os.makedirs(out_directory)
+        plt.close()
+
+        plt.cla()
         plt.rcdefaults()
-        utils.plot_and_fill(self.fitness())
+        utils.plot_and_fill_log(self.fitness())
         plt.gca().autoscale(axis='y', tight=False)
         print(f"Saving: {out_directory / 'fitness_over_time.png'}")
         plt.savefig(out_directory / "fitness_over_time.png")
@@ -162,13 +213,20 @@ class PSO:
 
         plt.cla()
         plt.rcdefaults()
-        utils.plot_and_fill(self.speed())
-
+        utils.plot_and_fill_log(self.speed())
         print(f"Saving: {out_directory / 'speed_over_time.png'}")
         plt.savefig(out_directory / "speed_over_time.png")
         plt.close()
 
-        plt.close()
+        if self.has_mass():
+            plt.cla()
+            plt.rcdefaults()
+            utils.plot_and_fill(self.mass())
+            print(f"Saving: {out_directory / 'mass_over_time.png'}")
+            plt.savefig(out_directory / "mass_over_time.png")
+            plt.close()
+
         if animate:
             print(f"Saving: {out_directory / 'test.gif'}")
-            self.animate(out_directory / "test.gif")
+            self.animate_particles(out_directory / "test.gif")
+            plt.close()

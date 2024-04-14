@@ -11,7 +11,6 @@ mod utils;
 use particles::traits::{Behavior, Edge};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-  let dim = 30;
   let iterations = 1000;
   let attempts = 10;
 
@@ -20,9 +19,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     vmax: false,
   };
 
-  // executers::gsa_cec17(iterations, dim, attempts, behavior)?;
-  // executers::gsa_cec17(iterations, dim, attempts, behavior)?;
-  executers::igsa_cec17(iterations, dim, attempts, behavior)?;
+  let dims = [10, 30, 50, 100];
+  for dim in dims {
+    executers::pso_cec17(iterations, dim, attempts, behavior)?;
+    executers::gsa_cec17(iterations, dim, attempts, behavior)?;
+    executers::igsa_cec17(iterations, dim, attempts, behavior)?;
+  }
 
   // executers::grid_search_pso(iterations, dim, attempts, behavior)?;
   // executers::grid_search_gsa(iterations, dim, attempts, behavior)?;

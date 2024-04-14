@@ -103,7 +103,6 @@ impl Optimizer<GsaParticle> for TiledGSA<GsaParticle> {
 
     self.particles = particles;
     self.set_global_best_pos(global_best_pos.unwrap());
-    self.add_data();
 
     utils::create_directory(self.out_directory().to_path_buf(), true, false);
   }

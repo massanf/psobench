@@ -53,7 +53,7 @@ impl Velocity for IgsaParticle {
 
 impl Mass for IgsaParticle {
   fn set_mass(&mut self, mass: f64) {
-    let scale = 1.;
+    let scale = 2.;
     self.mass = 1.0 / (1.0 + E.powf(-(scale * mass - scale / 2.)));
   }
 

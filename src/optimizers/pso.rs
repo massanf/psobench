@@ -103,7 +103,6 @@ impl<T: Particle + Position + Velocity + BestPosition + Clone> Optimizer<T> for 
 
     self.particles = particles;
     self.set_global_best_pos(global_best_pos.unwrap());
-    self.add_data();
 
     utils::create_directory(self.out_directory().to_path_buf(), false, true);
   }
@@ -133,20 +132,23 @@ impl<T: Particle + Position + Velocity + BestPosition + Clone> Optimizer<T> for 
     for _ in 0..iterations {
       self.problem().clear_memo();
 
-      let mut new_global_best_pos = self.global_best_pos().clone();
+      let mut new_global_best_pos = None;
       for idx in 0..self.particles().len() {
         let vel = self.calculate_vel(idx);
         let mut temp_problem = mem::take(&mut self.problem);
         let particle = &mut self.particles_mut()[idx];
         particle.update_vel(vel, &mut temp_problem);
         particle.move_pos(&mut temp_problem);
+        particle.update_best_pos(&mut temp_problem);
         let best_pos = self.particles()[idx].best_pos().clone();
-        if self.problem().f(&best_pos) < self.problem.f(&new_global_best_pos) {
-          new_global_best_pos = self.particles()[idx].best_pos().clone();
+        if new_global_best_pos.is_none()
+          || self.problem().f(&best_pos) < self.problem.f(&new_global_best_pos.clone().unwrap())
+        {
+          new_global_best_pos = Some(self.particles()[idx].best_pos().clone());
         }
         self.problem = temp_problem;
       }
-      self.update_global_best_pos(new_global_best_pos);
+      self.update_global_best_pos(new_global_best_pos.unwrap());
 
       // Save the data for current iteration.
       self.add_data();

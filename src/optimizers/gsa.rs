@@ -101,7 +101,6 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
 
     self.particles = particles;
     self.set_global_best_pos(global_best_pos.unwrap());
-    self.add_data();
 
     utils::create_directory(self.out_directory().to_path_buf(), true, false);
   }
@@ -155,7 +154,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
       if best == worst {
         // This is for when all of the particles are at the exact same position.
         // It can happen during grid search when values for g0 are weird.
-        m = vec![0.; self.problem().dim()];
+        m = vec![0.; self.particles().len()];
       } else {
         for idx in 0..self.particles().len() {
           let p = self.particles()[idx].clone();
