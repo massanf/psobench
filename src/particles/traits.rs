@@ -15,6 +15,7 @@ pub struct Behavior {
 pub enum Edge {
   Reflect,
   Pass,
+  Cycle,
 }
 
 pub trait Particle {
@@ -81,15 +82,27 @@ pub trait Velocity: Position + BehaviorTrait {
             *e = self.pos()[i] + self.vel()[i];
           }
         }
+        self.set_pos(new_pos);
 
         // Set new velocity, as it may have hit a wall
         self.update_vel(new_vel, problem);
-
-        // This function returns whether the personal best was updated.
-        self.set_pos(new_pos);
       }
       Edge::Pass => {
         self.set_pos(self.pos().clone() + self.vel().clone());
+      }
+      Edge::Cycle => {
+        let mut new_pos = self.pos().clone() + self.vel().clone();
+
+        // Check wall.
+        for e in new_pos.iter_mut() {
+          if *e < problem.domain().0 {
+            *e += problem.domain().1 - problem.domain().0;
+          } else if *e > problem.domain().1 {
+            *e -= problem.domain().1 - problem.domain().0;
+          }
+        }
+
+        self.set_pos(new_pos);
       }
     }
   }
