@@ -1,4 +1,5 @@
 import pathlib
+from typing import List
 from pso import PSO
 import numpy as np
 
@@ -8,8 +9,15 @@ class Attempts:
         for attempt in path.glob("*"):
             self.data.append(PSO(attempt))
 
-    def average_global_best_progress(self):
+    def average_global_best_progress(self) -> List[float]:
         data = []
         for pso in self.data:
             data.append(pso.global_best_fitness_progress())
         return [sum(group) / len(group) for group in zip(*data)]
+
+    def global_best_progress(self) -> List[List[float]]:
+        data = []
+        for pso in self.data:
+            data.append(pso.global_best_fitness_progress())
+        data = list(map(list, zip(*data)))
+        return data

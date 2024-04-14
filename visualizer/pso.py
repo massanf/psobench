@@ -181,7 +181,6 @@ class PSO:
         for mass_ in mass:
             counts, _ = np.histogram(mass_, self.bins)
             max_y = max(max_y, counts.max())
-        print(max_y)
         self.max_y = max_y
         self.animate(self.update_mass_for_animate, destination_path, skip_frames, start, end)
 
@@ -205,7 +204,8 @@ class PSO:
 
         plt.cla()
         plt.rcdefaults()
-        utils.plot_and_fill_log(self.fitness())
+        fig, ax = plt.subplots()
+        ax = utils.plot_and_fill(ax, self.fitness())
         plt.gca().autoscale(axis='y', tight=False)
         print(f"Saving: {out_directory / 'fitness_over_time.png'}")
         plt.savefig(out_directory / "fitness_over_time.png")
@@ -213,7 +213,8 @@ class PSO:
 
         plt.cla()
         plt.rcdefaults()
-        utils.plot_and_fill_log(self.speed())
+        fig, ax = plt.subplots()
+        ax = utils.plot_and_fill(ax, self.speed())
         print(f"Saving: {out_directory / 'speed_over_time.png'}")
         plt.savefig(out_directory / "speed_over_time.png")
         plt.close()
@@ -221,7 +222,8 @@ class PSO:
         if self.has_mass():
             plt.cla()
             plt.rcdefaults()
-            utils.plot_and_fill(self.mass())
+            fig, ax = plt.subplots()
+            ax = utils.plot_and_fill(ax, self.mass(), False)
             print(f"Saving: {out_directory / 'mass_over_time.png'}")
             plt.savefig(out_directory / "mass_over_time.png")
             plt.close()

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Any
 import pathlib
 from pso import PSO
 import matplotlib.pyplot as plt  # type: ignore
@@ -10,7 +10,8 @@ import matplotlib.pyplot as plt  # type: ignore
 import numpy as np
 from constants import HOME, DATA, GRAPHS
 
-def plot_and_fill_log(iterations: List[List[float]]) -> None:
+def plot_and_fill(ax: Any, iterations: List[List[float]],
+                  log=True, label="") -> None:
     t = np.linspace(0, len(iterations), len(iterations))
     top = []
     bottom = []
@@ -19,22 +20,20 @@ def plot_and_fill_log(iterations: List[List[float]]) -> None:
         top.append(max(iteration))
         bottom.append(min(iteration))
         avg.append(np.average(iteration))
-    plt.fill_between(t, top, bottom, color='skyblue', alpha=0.4)
-    plt.plot(t, avg)
-    plt.yscale("log")
 
-def plot_and_fill(iterations: List[List[float]]) -> None:
-    t = np.linspace(0, len(iterations), len(iterations))
-    top = []
-    bottom = []
-    avg = []
-    for iteration in iterations:
-        top.append(max(iteration))
-        bottom.append(min(iteration))
-        avg.append(np.average(iteration))
-    plt.fill_between(t, top, bottom, color='skyblue', alpha=0.4)
-    plt.plot(t, avg)
-    plt.yscale("linear")
+    if label != "":
+        line, = ax.plot(t, avg, label=label)
+    else:
+        line, = ax.plot(t, avg)
+
+    ax.fill_between(t, top, bottom, color=line.get_color(), alpha=0.15)
+    ax.set_xlim(0, len(iterations))
+
+    if log:
+        ax.set_yscale("log")
+    else:
+        ax.set_yscale("linear")
+    return ax
 
 def generate_gridmap_collage(path: pathlib.Path):
     optimizer = GridSearches(DATA, GRAPHS, path)
@@ -45,7 +44,7 @@ def generate_summary(name: pathlib.Path):
     graphs = HOME / "graphs" / name
     graphs.mkdir(parents=True, exist_ok=True)
     tests = Tests(data)
-    fig, axs = plt.subplots(5, 6, figsize=(12, 10), dpi=300)
+    fig, axs = plt.subplots(5, 6, figsize=(15, 10), dpi=300)
     axs = tests.plot_all(axs)
     plt.tight_layout()
     print(f"Saving: {graphs/ f'progress_comparison.png'}")

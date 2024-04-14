@@ -2,6 +2,7 @@ import pathlib
 from pso import PSO
 from attempts import Attempts
 from tqdm import tqdm
+import utils
 from matplotlib.ticker import LogLocator, LogFormatterMathtext
 
 class Tests:
@@ -19,8 +20,8 @@ class Tests:
         for i, function in enumerate(tqdm(sorted(self.data[pso_type]))):
             attempts = self.data[pso_type][function]
             axs[i].yaxis.set_major_locator(LogLocator(base=10.0))
-            axs[i].yaxis.set_major_formatter(LogFormatterMathtext(base=10.0, labelOnlyBase=False))
-            axs[i].plot(attempts.average_global_best_progress(), label=pso_type)
+            axs[i].yaxis.set_major_formatter(LogFormatterMathtext(base=10.0, labelOnlyBase=True))
+            utils.plot_and_fill(axs[i], attempts.global_best_progress(), label=pso_type)
             axs[i].set_title(function)
             if i == 0:
                 axs[i].legend()

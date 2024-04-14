@@ -12,7 +12,7 @@ use particles::traits::{Behavior, Edge};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
   let iterations = 1000;
-  let attempts = 10;
+  let attempts = 30;
 
   let behavior = Behavior {
     edge: Edge::Pass,
