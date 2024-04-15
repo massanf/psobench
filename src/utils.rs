@@ -110,14 +110,15 @@ pub fn run_attempts<U: Position + Velocity, T: Optimizer<U> + DataExporter<U>>(
 
 #[allow(dead_code)]
 pub fn check_cec17<T: Velocity, U: Optimizer<T>>(
-  name: String,
+  name: &str,
   iterations: usize,
   dim: usize,
-  params: HashMap<String, ParamValue>,
   attempts: usize,
-  out_directory: PathBuf,
   behavior: Behavior,
+  params_in_vec: Vec<(&str, ParamValue)>,
+  out_directory: String,
 ) -> Result<(), Box<dyn std::error::Error>> {
+  let params = param_hashmap_generator(params_in_vec);
   // Progress Bar.
   let bar = ProgressBar::new((29 * attempts) as u64);
   bar.set_style(
@@ -126,7 +127,7 @@ pub fn check_cec17<T: Velocity, U: Optimizer<T>>(
       .unwrap()
       .progress_chars("#>-"),
   );
-  bar.set_message(format!("{}...   ", name.clone()));
+  bar.set_message(format!("{}...   ", name));
 
   let mut func_nums = Vec::new();
   for func_num in 1..=30 {
@@ -140,9 +141,9 @@ pub fn check_cec17<T: Velocity, U: Optimizer<T>>(
     let problem = problems::cec17(func_num, dim);
     let _ = run_attempts::<T, U>(
       params.clone(),
-      name.clone(),
+      name.to_owned().clone(),
       problem.clone(),
-      out_directory.join(problem.clone().name()),
+      PathBuf::from(out_directory.clone()).join(problem.clone().name()),
       iterations,
       attempts,
       true,
@@ -160,29 +161,40 @@ pub fn run_grid_searches<T: Velocity, U: Optimizer<T>>(
   name: String,
   attempts: usize,
   iterations: usize,
+  dim: usize,
   param1: (String, Vec<ParamValue>),
   param2: (String, Vec<ParamValue>),
-  base_params: HashMap<String, ParamValue>,
-  dim: usize,
-  out_directory: PathBuf,
+  base_params_in_vec: Vec<(&str, ParamValue)>,
+  out_directory: String,
   behavior: Behavior,
 ) -> Result<(), Box<dyn std::error::Error>> {
+  let base_params = param_hashmap_generator(base_params_in_vec);
+
   for func_num in 1..=30 {
     if func_num == 2 {
       continue;
     }
 
     grid_search::grid_search::<T, U>(
-      name.clone(),
+      name.to_owned().clone(),
       iterations,
       problems::cec17(func_num, dim),
       attempts,
       param1.clone(),
       param2.clone(),
       base_params.clone(),
-      out_directory.clone(),
+      PathBuf::from(out_directory.clone()),
       behavior,
     )?;
   }
   Ok(())
+}
+
+#[allow(dead_code)]
+pub fn param_hashmap_generator(params: Vec<(&str, ParamValue)>) -> HashMap<String, ParamValue> {
+  let mut vec = Vec::new();
+  for param in params {
+    vec.push((param.0.to_owned(), param.1));
+  }
+  vec.iter().cloned().collect()
 }

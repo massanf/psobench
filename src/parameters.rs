@@ -26,18 +26,6 @@ lazy_static! {
     .collect();
     gsa_params
   };
-  pub static ref TILED_GSA_PARAMS: HashMap<String, ParamValue> = {
-    let tiled_gsa_params: HashMap<String, ParamValue> = [
-      ("g0".to_owned(), ParamValue::Float(5000.0)),
-      ("alpha".to_owned(), ParamValue::Float(5.0)),
-      ("particle_count".to_owned(), ParamValue::Int(30)),
-    ]
-    .iter()
-    .cloned()
-    .collect();
-    tiled_gsa_params
-  };
-  // pub static ref PHI_P_PARAMS: (String, Vec<ParamValue>) = {
   pub static ref PSO_PHI_P_OPTIONS: (String, Vec<ParamValue>) = {
     let phi_p: Vec<ParamValue> = vec![
       ParamValue::Float(-4.0),

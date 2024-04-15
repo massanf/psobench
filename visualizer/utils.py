@@ -11,7 +11,7 @@ import numpy as np
 from constants import HOME, DATA, GRAPHS
 
 def plot_and_fill(ax: Any, iterations: List[List[float]],
-                  log=True, label="") -> None:
+                  log=True, label="", alpha=0.15) -> None:
     t = np.linspace(0, len(iterations), len(iterations))
     top = []
     bottom = []
@@ -26,7 +26,7 @@ def plot_and_fill(ax: Any, iterations: List[List[float]],
     else:
         line, = ax.plot(t, avg)
 
-    ax.fill_between(t, top, bottom, color=line.get_color(), alpha=0.15)
+    ax.fill_between(t, top, bottom, color=line.get_color(), alpha=alpha)
     ax.set_xlim(0, len(iterations))
 
     if log:
