@@ -108,19 +108,34 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for TiledGsa
     utils::create_directory(self.out_directory().to_path_buf(), true, false);
   }
 
-  fn calculate_vel(&mut self, idx: usize) -> DVector<f64> {
-    assert!(idx < self.particles().len());
+  fn calculate_vel(&mut self, i: usize) -> DVector<f64> {
+    assert!(i < self.particles().len());
 
     let mut a: DVector<f64> = DVector::from_element(self.problem().dim(), 0.);
 
     let mut rng = rand::thread_rng();
 
+    let width = self.problem().domain().1 - self.problem().domain().0;
     for j in 0..self.particles().len() {
-      if idx == j || !self.influences[j] {
+      if i == j || !self.influences[j] {
         continue;
       }
-      let r = self.particles()[j].pos() - self.particles()[idx].pos();
-      let mut a_delta = self.g * self.particles()[j].mass() / (r.norm() + std::f64::EPSILON) * r;
+
+      let i = self.particles()[i].clone();
+      let j = self.particles()[j].clone();
+
+      let mut closest_j = j.pos().clone();
+
+      for (idx, x) in closest_j.iter_mut().enumerate() {
+        if (*x - width - i.pos()[idx]).abs() < (*x - i.pos()[idx]).abs() {
+          *x -= width;
+        } else if (*x + width - i.pos()[idx]).abs() < (*x - i.pos()[idx]).abs() {
+          *x += width;
+        }
+      }
+
+      let r = closest_j - i.pos().clone();
+      let mut a_delta = self.g * j.mass() / (r.norm() + std::f64::EPSILON) * r;
 
       for e in a_delta.iter_mut() {
         let rand: f64 = rng.gen_range(0.0..1.0);
@@ -131,7 +146,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for TiledGsa
     }
 
     let rand: f64 = rng.gen_range(0.0..1.0);
-    rand * self.particles()[idx].vel() + a
+    rand * self.particles()[i].vel() + a
   }
 
   fn run(&mut self, iterations: usize) {

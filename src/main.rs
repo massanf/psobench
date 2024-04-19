@@ -31,7 +31,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   for dim in dims {
     println!("{}", dim);
     let scale = 10;
-    let pc: isize = dim as isize * scale;
+    // let pc: isize = dim as isize * scale;
+    let pc = 30;
 
     // gsa
     utils::check_cec17::<GsaParticle, Gsa<GsaParticle>>(
