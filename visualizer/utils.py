@@ -8,6 +8,7 @@ from matplotlib.animation import FuncAnimation  # type: ignore
 import pathlib
 import matplotlib.pyplot as plt  # type: ignore
 import numpy as np
+from matplotlib import cycler
 from constants import HOME, DATA, GRAPHS
 
 def plot_and_fill(ax: Any, iterations: List[List[float]],
@@ -39,7 +40,12 @@ def generate_gridmap_collage(path: pathlib.Path):
     optimizer = GridSearches(DATA, GRAPHS, path)
     optimizer.heatmap_collage("grid_search.png", True, True)
 
-def generate_summary(name: pathlib.Path):
+def generate_progress_comparison(name: pathlib.Path):
+    color_cycle = ['#377eb8', '#ff7f00', '#4daf4a',
+                '#f781bf', '#a65628', '#984ea3',
+                '#999999', '#e41a1c', '#dede00']
+    color_cycler = cycler(color=color_cycle)
+    plt.rc('axes', prop_cycle=(color_cycler))
     data = HOME / "data" / name
     graphs = HOME / "graphs" / name
     graphs.mkdir(parents=True, exist_ok=True)
@@ -50,14 +56,25 @@ def generate_summary(name: pathlib.Path):
     print(f"Saving: {graphs/ f'progress_comparison.png'}")
     plt.savefig(graphs / f"progress_comparison.png")
 
-def generate_overview(name: pathlib.Path, skip=1, end=500):
+def generate_entropy_comparison(name: pathlib.Path):
+    data = HOME / "data" / name
+    graphs = HOME / "graphs" / name
+    graphs.mkdir(parents=True, exist_ok=True)
+    tests = Tests(data)
+    fig, axs = plt.subplots(5, 6, figsize=(15, 10), dpi=300)
+    axs = tests.plot_all_entropy(axs)
+    plt.tight_layout()
+    print(f"Saving: {graphs/ f'entropy_comparison.png'}")
+    plt.savefig(graphs / f"entropy_comparison.png")
+
+def generate_overview(name: pathlib.Path, skip=1, end=500, animate_mass=False):
     data = HOME / "data" / name 
     graphs = HOME / "graphs" / name 
     graphs.mkdir(parents=True, exist_ok=True)
     pso = PSO(data)
     pso.load_full()
     pso.overview(False, graphs)
-    if pso.has_mass():
+    if pso.has_mass() and animate_mass:
         pso.animate_mass(graphs / "mass.gif", skip, 0, end)
     print(f"Saving: {graphs / 'animation.gif'}")
     pso.animate_particles(graphs/ "animation.gif", skip, 0, end)

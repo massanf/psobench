@@ -26,6 +26,7 @@ pub struct Gsa<T> {
   behavior: Behavior,
   g0: f64,
   alpha: f64,
+  save: bool,
 }
 
 impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
@@ -35,6 +36,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
     parameters: HashMap<String, ParamValue>,
     out_directory: PathBuf,
     behavior: Behavior,
+    save: bool,
   ) -> Gsa<T> {
     assert!(
       parameters.contains_key("particle_count"),
@@ -270,10 +272,14 @@ impl<T: Clone> Data<T> for Gsa<T> {
     &self.data
   }
 
-  fn add_data(&mut self) {
+  fn add_data(&mut self, save: bool) {
     let gbest = self.problem.f(&self.global_best_pos());
     let particles = self.particles.clone();
-    self.data.push((gbest, particles));
+    if save {
+      self.data.push((gbest, particles));
+    } else {
+      self.data.push((gbest, None));
+    }
   }
 }
 

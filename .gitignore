@@ -16,3 +16,4 @@ lib64
 share/
 pyvenv.cfg
 Pipfile.lock
+nohup.out

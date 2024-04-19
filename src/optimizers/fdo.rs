@@ -21,6 +21,7 @@ pub struct Fdo<FDOParticle> {
   out_directory: PathBuf,
   wf: bool,
   behavior: Behavior,
+  save: bool,
 }
 
 impl Optimizer<FDOParticle> for Fdo<FDOParticle> {
@@ -30,6 +31,7 @@ impl Optimizer<FDOParticle> for Fdo<FDOParticle> {
     parameters: HashMap<String, ParamValue>,
     out_directory: PathBuf,
     behavior: Behavior,
+    save: bool,
   ) -> Fdo<FDOParticle> {
     assert!(
       parameters.contains_key("particle_count"),
@@ -69,6 +71,7 @@ impl Optimizer<FDOParticle> for Fdo<FDOParticle> {
       out_directory,
       wf,
       behavior,
+      save,
     };
 
     gsa.init(number_of_particles);
@@ -217,7 +220,7 @@ impl<T: Clone> Data<T> for Fdo<T> {
     &self.data
   }
 
-  fn add_data(&mut self) {
+  fn add_data(&mut self, save: bool) {
     let gbest = self.problem.f(&self.global_best_pos());
     let particles = self.particles.clone();
     self.data.push((gbest, particles));

@@ -94,11 +94,13 @@ pub trait Velocity: Position + BehaviorTrait {
         let mut new_pos = self.pos().clone() + self.vel().clone();
 
         // Check wall.
+        let width = problem.domain().1 - problem.domain().0;
         for e in new_pos.iter_mut() {
-          if *e < problem.domain().0 {
-            *e += problem.domain().1 - problem.domain().0;
-          } else if *e > problem.domain().1 {
-            *e -= problem.domain().1 - problem.domain().0;
+          while *e < problem.domain().0 {
+            *e += width;
+          }
+          while *e > problem.domain().1 {
+            *e -= width;
           }
         }
 

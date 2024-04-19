@@ -164,7 +164,6 @@ class GridSearch:
         newax.set_xlabel(self.arg1)
         newax.set_ylabel(self.arg2)
 
-        print(f"Saving: {path / 'grid_search.png'}")
         plt.savefig(path / "grid_search.png", bbox_inches='tight')
         plt.close()
 

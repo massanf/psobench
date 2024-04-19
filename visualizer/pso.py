@@ -1,5 +1,6 @@
 import pathlib
 from matplotlib.animation import FuncAnimation  # type: ignore
+from scipy.spatial import distance_matrix
 import matplotlib.pyplot as plt  # type: ignore
 from tqdm import tqdm  # type: ignore
 import utils
@@ -15,7 +16,7 @@ from typing import List, Dict, Any, Callable
 class PSO:
     def __init__(self, experiment_path: pathlib.Path) -> None:
         self.experiment_path = experiment_path
-        self.full_loaded = False
+        self.fully_loaded = False
 
         # Config
         with open(experiment_path / "config.json", 'r') as file:
@@ -42,6 +43,11 @@ class PSO:
                 particles.append(Particle(particle))
             iterations.append(Iteration(global_best_fitness, particles))
         self.iterations = iterations
+
+    def unload(self) -> None:
+        # Data
+        self.fully_loaded = False
+        del self.iterations
 
     def global_best_fitness_progress(self) -> List[float]:
         result = self.summary["global_best_fitness"]
@@ -85,6 +91,25 @@ class PSO:
                                                   ** 2)))
             result.append(iter_result)
         return result
+
+    def entropy(self) -> List[float]:
+        assert self.fully_loaded
+        entropies = []
+        for iteration in self.iterations:
+            positions = []
+            velocities = []
+            for particle in iteration.particles:
+                positions.append(particle.pos)
+                velocities.append(particle.vel)
+            data = np.hstack([positions, velocities])
+            distances = distance_matrix(data, data)
+            np.fill_diagonal(distances, np.inf)
+            k = 10
+            k_nearest_distances = np.sort(distances, axis=1)[:, :k]
+            k_distances = k_nearest_distances[:, k-1]
+            entropy_estimate = np.mean(np.log(k_distances))
+            entropies.append(entropy_estimate)
+        return entropies
     
     def mass(self) -> List[List[float]]:
         assert self.fully_loaded
@@ -218,6 +243,15 @@ class PSO:
         print(f"Saving: {out_directory / 'speed_over_time.png'}")
         plt.savefig(out_directory / "speed_over_time.png")
         plt.close()
+
+        plt.cla()
+        plt.rcdefaults()
+        fig, ax = plt.subplots()
+        ax.plot(self.entropy())
+        print(f"Saving: {out_directory / 'entropy_over_time.png'}")
+        plt.savefig(out_directory / "entropy_over_time.png")
+        plt.close()
+
 
         if self.has_mass():
             plt.cla()

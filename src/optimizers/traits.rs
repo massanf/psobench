@@ -43,6 +43,7 @@ pub trait Optimizer<T: Position + Velocity>: Name + OptimizationProblem + Partic
     parameters: HashMap<String, ParamValue>,
     out_directory: PathBuf,
     behavior: Behavior,
+    save: bool,
   ) -> Self
   where
     Self: Sized;
@@ -79,7 +80,7 @@ pub trait OptimizationProblem {
 
 pub trait Data<T>: OptimizationProblem + GlobalBestPos {
   fn data(&self) -> &Vec<(f64, Vec<T>)>;
-  fn add_data(&mut self);
+  fn add_data(&mut self, save: bool);
 }
 
 pub trait DataExporter<T: Position + Velocity>: Data<T> + Name + OptimizationProblem {

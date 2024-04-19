@@ -27,7 +27,29 @@ class Tests:
                 axs[i].legend()
         return axs
 
+    def plot_entropy(self, axs, pso_type: str):
+        axs = axs.flatten()
+        for i, function in enumerate(tqdm(sorted(self.data[pso_type]))):
+            attempts = self.data[pso_type][function]
+            # axs[i].yaxis.set_major_locator(LogLocator(base=10.0))
+            # axs[i].yaxis.set_major_formatter(LogFormatterMathtext(base=10.0, labelOnlyBase=True))
+            axs[i].plot(attempts.entropy(), label=pso_type)
+            axs[i].set_title(function)
+            axs[i].set_yscale("linear")
+            if i == 0:
+                axs[i].legend()
+        return axs
+
     def plot_all(self, axs):
         for pso_type in sorted(self.data):
+            if pso_type[0] == '_':
+                continue
             axs = self.plot_best_global_progress(axs, pso_type)
+        return axs
+
+    def plot_all_entropy(self, axs):
+        for pso_type in sorted(self.data):
+            if pso_type[0] == '_':
+                continue
+            axs = self.plot_entropy(axs, pso_type)
         return axs

@@ -5,6 +5,7 @@ use crate::problems;
 use indicatif::{ProgressBar, ProgressStyle};
 use nalgebra::DVector;
 use problems::Problem;
+extern crate chrono;
 use rand::distributions::{Distribution, Uniform};
 use rayon::prelude::*;
 use std::{collections::HashMap, fs, io, path::PathBuf};
@@ -100,7 +101,7 @@ pub fn run_attempts<U: Position + Velocity, T: Optimizer<U> + DataExporter<U>>(
     pso.run(iterations);
     let _ = pso.save_summary();
     let _ = pso.save_config(&params);
-    if save_data {
+    if save_data && attempt < 1 {
       let _ = pso.save_data();
     }
     bar.inc(1);
@@ -110,13 +111,14 @@ pub fn run_attempts<U: Position + Velocity, T: Optimizer<U> + DataExporter<U>>(
 
 #[allow(dead_code)]
 pub fn check_cec17<T: Velocity, U: Optimizer<T>>(
-  name: &str,
+  test_name: &str,
+  optimizer_name: &str,
   iterations: usize,
   dim: usize,
   attempts: usize,
   behavior: Behavior,
   params_in_vec: Vec<(&str, ParamValue)>,
-  out_directory: String,
+  // out_directory: String,
 ) -> Result<(), Box<dyn std::error::Error>> {
   let params = param_hashmap_generator(params_in_vec);
   // Progress Bar.
@@ -127,7 +129,7 @@ pub fn check_cec17<T: Velocity, U: Optimizer<T>>(
       .unwrap()
       .progress_chars("#>-"),
   );
-  bar.set_message(format!("{}...   ", name));
+  bar.set_message(format!("{}...   ", optimizer_name));
 
   let mut func_nums = Vec::new();
   for func_num in 1..=30 {
@@ -137,13 +139,15 @@ pub fn check_cec17<T: Velocity, U: Optimizer<T>>(
     func_nums.push(func_num);
   }
 
+  let out_directory = generate_out_directory(test_name, dim, optimizer_name);
+
   func_nums.into_par_iter().for_each(|func_num: usize| {
     let problem = problems::cec17(func_num, dim);
     let _ = run_attempts::<T, U>(
       params.clone(),
-      name.to_owned().clone(),
+      optimizer_name.to_owned().clone(),
       problem.clone(),
-      PathBuf::from(out_directory.clone()).join(problem.clone().name()),
+      out_directory.join(problem.clone().name()),
       iterations,
       attempts,
       true,
@@ -158,17 +162,17 @@ pub fn check_cec17<T: Velocity, U: Optimizer<T>>(
 #[allow(dead_code)]
 #[allow(clippy::too_many_arguments)]
 pub fn run_grid_searches<T: Velocity, U: Optimizer<T>>(
-  name: String,
+  optimizer_name: &str,
   attempts: usize,
   iterations: usize,
   dim: usize,
   param1: (String, Vec<ParamValue>),
   param2: (String, Vec<ParamValue>),
   base_params_in_vec: Vec<(&str, ParamValue)>,
-  out_directory: String,
   behavior: Behavior,
 ) -> Result<(), Box<dyn std::error::Error>> {
   let base_params = param_hashmap_generator(base_params_in_vec);
+  let out_directory = generate_out_directory("grid_search", dim, optimizer_name);
 
   for func_num in 1..=30 {
     if func_num == 2 {
@@ -176,7 +180,7 @@ pub fn run_grid_searches<T: Velocity, U: Optimizer<T>>(
     }
 
     grid_search::grid_search::<T, U>(
-      name.to_owned().clone(),
+      optimizer_name.to_owned().clone(),
       iterations,
       problems::cec17(func_num, dim),
       attempts,
@@ -197,4 +201,9 @@ pub fn param_hashmap_generator(params: Vec<(&str, ParamValue)>) -> HashMap<Strin
     vec.push((param.0.to_owned(), param.1));
   }
   vec.iter().cloned().collect()
+}
+
+#[allow(dead_code)]
+pub fn generate_out_directory(test_name: &str, dim: usize, type_name: &str) -> PathBuf {
+  PathBuf::from(format!("data/{}/{}/{}", test_name, dim, type_name))
 }

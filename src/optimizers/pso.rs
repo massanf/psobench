@@ -30,6 +30,7 @@ impl<T: Particle + Position + Velocity + BestPosition + Clone> Optimizer<T> for 
     parameters: HashMap<String, ParamValue>,
     out_directory: PathBuf,
     behavior: Behavior,
+    save: bool,
   ) -> Pso<T> {
     assert!(
       parameters.contains_key("particle_count"),
@@ -197,7 +198,7 @@ impl<T: Clone> Data<T> for Pso<T> {
     &self.data
   }
 
-  fn add_data(&mut self) {
+  fn add_data(&mut self, save: bool) {
     let gbest = self.problem.f(&self.global_best_pos());
     let particles = self.particles.clone();
     self.data.push((gbest, particles));

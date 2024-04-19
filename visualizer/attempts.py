@@ -21,3 +21,11 @@ class Attempts:
             data.append(pso.global_best_fitness_progress())
         data = list(map(list, zip(*data)))
         return data
+
+    def entropy(self) -> List[float]:
+        data = []
+        for pso in self.data:
+            pso.load_full()
+            data.append(pso.entropy())
+            pso.unload()
+        return [sum(group) / len(group) for group in zip(*data)]
