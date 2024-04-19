@@ -9,7 +9,7 @@ mod problems;
 mod utils;
 use crate::optimizers::traits::ParamValue;
 #[allow(unused_imports)]
-use optimizers::{gsa::Gsa, pso::Pso, tiled_gsa::TiledGsa};
+use optimizers::{gsa::Gsa, pso::Pso, tiledgsa::TiledGsa};
 #[allow(unused_imports)]
 use particles::{
   gsa_particle::GsaParticle,

@@ -14,7 +14,7 @@ use std::mem;
 use std::path::PathBuf;
 
 #[derive(Clone)]
-pub struct Gsa<T> {
+pub struct TiledGsa<T> {
   name: String,
   problem: Problem,
   particles: Vec<T>,
@@ -29,7 +29,7 @@ pub struct Gsa<T> {
   save: bool,
 }
 
-impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
+impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for TiledGsa<T> {
   fn new(
     name: String,
     problem: Problem,
@@ -37,7 +37,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
     out_directory: PathBuf,
     behavior: Behavior,
     save: bool,
-  ) -> Gsa<T> {
+  ) -> TiledGsa<T> {
     assert!(
       parameters.contains_key("particle_count"),
       "Key 'particle_count' not found."
@@ -68,7 +68,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
       }
     };
 
-    let mut gsa = Gsa {
+    let mut gsa = TiledGsa {
       name,
       problem,
       particles: Vec::new(),
@@ -234,7 +234,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
   }
 }
 
-impl<T> Particles<T> for Gsa<T> {
+impl<T> Particles<T> for TiledGsa<T> {
   fn particles(&self) -> &Vec<T> {
     &self.particles
   }
@@ -244,7 +244,7 @@ impl<T> Particles<T> for Gsa<T> {
   }
 }
 
-impl<T> GlobalBestPos for Gsa<T> {
+impl<T> GlobalBestPos for TiledGsa<T> {
   fn global_best_pos(&self) -> DVector<f64> {
     self.global_best_pos.clone().unwrap()
   }
@@ -258,19 +258,19 @@ impl<T> GlobalBestPos for Gsa<T> {
   }
 }
 
-impl<T> OptimizationProblem for Gsa<T> {
+impl<T> OptimizationProblem for TiledGsa<T> {
   fn problem(&mut self) -> &mut Problem {
     &mut self.problem
   }
 }
 
-impl<T> Name for Gsa<T> {
+impl<T> Name for TiledGsa<T> {
   fn name(&self) -> &String {
     &self.name
   }
 }
 
-impl<T: Clone> Data<T> for Gsa<T> {
+impl<T: Clone> Data<T> for TiledGsa<T> {
   fn data(&self) -> &Vec<(f64, Option<Vec<T>>)> {
     &self.data
   }
@@ -280,7 +280,7 @@ impl<T: Clone> Data<T> for Gsa<T> {
   }
 }
 
-impl<T: Position + Velocity + Mass + Clone> DataExporter<T> for Gsa<T> {
+impl<T: Position + Velocity + Mass + Clone> DataExporter<T> for TiledGsa<T> {
   fn out_directory(&self) -> &PathBuf {
     &self.out_directory
   }

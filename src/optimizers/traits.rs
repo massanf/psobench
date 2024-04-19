@@ -36,7 +36,9 @@ impl Serialize for ParamValue {
   }
 }
 
-pub trait Optimizer<T: Position + Velocity>: Name + OptimizationProblem + Particles<T> + DataExporter<T> {
+pub trait Optimizer<U: Position + Velocity + Clone>:
+  Name + OptimizationProblem + Particles<U> + DataExporter<U>
+{
   fn new(
     name: String,
     problem: Problem,
@@ -79,23 +81,31 @@ pub trait OptimizationProblem {
 }
 
 pub trait Data<T>: OptimizationProblem + GlobalBestPos {
-  fn data(&self) -> &Vec<(f64, Vec<T>)>;
-  fn add_data(&mut self, save: bool);
+  fn data(&self) -> &Vec<(f64, Option<Vec<T>>)>;
+  fn add_data(&mut self, save: bool, gbest: f64, particles: Vec<T>) {
+    if save {
+      self.add_data_impl((gbest, Some(particles)));
+    } else {
+      self.add_data_impl((gbest, None));
+    }
+  }
+  fn add_data_impl(&mut self, datum: (f64, Option<Vec<T>>));
 }
 
-pub trait DataExporter<T: Position + Velocity>: Data<T> + Name + OptimizationProblem {
+pub trait DataExporter<T: Position + Velocity + Clone>: Data<T> + Name + OptimizationProblem {
   fn out_directory(&self) -> &PathBuf;
   fn save_data(&mut self) -> Result<(), Box<dyn std::error::Error>> {
     // Serialize it to a JSON string
     let mut vec_data = Vec::new();
     for t in 0..self.data().len() {
       let mut iter_data = Vec::new();
-      for i in 0..self.data()[t].1.len() {
-        let pos = self.data()[t].1[i].pos().clone();
+      let datum = self.data()[t].1.clone().unwrap();
+      for particle_datum in &datum {
+        let pos = particle_datum.pos().clone();
         iter_data.push(json!({
           "fitness": self.problem().f_no_memo(&pos),
-          "vel": self.data()[t].1[i].vel().as_slice(),
-          "pos": self.data()[t].1[i].pos().as_slice(),
+          "vel": particle_datum.vel().as_slice(),
+          "pos": particle_datum.pos().as_slice(),
         }));
       }
       vec_data.push(json!({

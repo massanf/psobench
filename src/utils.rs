@@ -79,7 +79,7 @@ pub fn create_directory(path: PathBuf, addable: bool, ask_clear: bool) {
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn run_attempts<U: Position + Velocity, T: Optimizer<U> + DataExporter<U>>(
+pub fn run_attempts<U: Position + Velocity + Clone, T: Optimizer<U> + DataExporter<U>>(
   params: HashMap<String, ParamValue>,
   name: String,
   problem: Problem,
@@ -91,17 +91,19 @@ pub fn run_attempts<U: Position + Velocity, T: Optimizer<U> + DataExporter<U>>(
   behavior: Behavior,
 ) -> Result<(), Box<dyn std::error::Error>> {
   (0..attempts).into_par_iter().for_each(|attempt| {
+    let save = save_data && attempt < 1;
     let mut pso: T = T::new(
       name.clone(),
       problem.clone(),
       params.clone(),
       out_directory.join(format!("{}", attempt)),
       behavior,
+      save,
     );
     pso.run(iterations);
     let _ = pso.save_summary();
     let _ = pso.save_config(&params);
-    if save_data && attempt < 1 {
+    if save {
       let _ = pso.save_data();
     }
     bar.inc(1);
@@ -110,7 +112,7 @@ pub fn run_attempts<U: Position + Velocity, T: Optimizer<U> + DataExporter<U>>(
 }
 
 #[allow(dead_code)]
-pub fn check_cec17<T: Velocity, U: Optimizer<T>>(
+pub fn check_cec17<T: Velocity + Clone, U: Optimizer<T>>(
   test_name: &str,
   optimizer_name: &str,
   iterations: usize,
@@ -161,7 +163,7 @@ pub fn check_cec17<T: Velocity, U: Optimizer<T>>(
 
 #[allow(dead_code)]
 #[allow(clippy::too_many_arguments)]
-pub fn run_grid_searches<T: Velocity, U: Optimizer<T>>(
+pub fn run_grid_searches<T: Velocity + Clone, U: Optimizer<T>>(
   optimizer_name: &str,
   attempts: usize,
   iterations: usize,
@@ -187,7 +189,7 @@ pub fn run_grid_searches<T: Velocity, U: Optimizer<T>>(
       param1.clone(),
       param2.clone(),
       base_params.clone(),
-      PathBuf::from(out_directory.clone()),
+      out_directory.clone(),
       behavior,
     )?;
   }

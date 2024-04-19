@@ -15,12 +15,13 @@ pub struct Pso<T> {
   problem: Problem,
   particles: Vec<T>,
   global_best_pos: Option<DVector<f64>>,
-  data: Vec<(f64, Vec<T>)>,
+  data: Vec<(f64, Option<Vec<T>>)>,
   out_directory: PathBuf,
   behavior: Behavior,
   w: f64,
   phi_p: f64,
   phi_g: f64,
+  save: bool,
 }
 
 impl<T: Particle + Position + Velocity + BestPosition + Clone> Optimizer<T> for Pso<T> {
@@ -82,6 +83,7 @@ impl<T: Particle + Position + Velocity + BestPosition + Clone> Optimizer<T> for 
       w,
       phi_p,
       phi_g,
+      save,
     };
 
     pso.init(number_of_particles);
@@ -152,7 +154,9 @@ impl<T: Particle + Position + Velocity + BestPosition + Clone> Optimizer<T> for 
       self.update_global_best_pos(new_global_best_pos.unwrap());
 
       // Save the data for current iteration.
-      self.add_data();
+      let gbest = self.problem.f(&self.global_best_pos());
+      let particles = self.particles.clone();
+      self.add_data(self.save, gbest, particles);
     }
   }
 }
@@ -194,14 +198,12 @@ impl<T> Name for Pso<T> {
 }
 
 impl<T: Clone> Data<T> for Pso<T> {
-  fn data(&self) -> &Vec<(f64, Vec<T>)> {
+  fn data(&self) -> &Vec<(f64, Option<Vec<T>>)> {
     &self.data
   }
 
-  fn add_data(&mut self, save: bool) {
-    let gbest = self.problem.f(&self.global_best_pos());
-    let particles = self.particles.clone();
-    self.data.push((gbest, particles));
+  fn add_data_impl(&mut self, datum: (f64, Option<Vec<T>>)) {
+    self.data.push(datum);
   }
 }
 

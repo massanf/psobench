@@ -28,7 +28,7 @@ fn save_grid_search_config(
 
 #[allow(dead_code)]
 #[allow(clippy::too_many_arguments)]
-pub fn grid_search<U: Position + Velocity, T: Optimizer<U> + DataExporter<U>>(
+pub fn grid_search<U: Position + Velocity + Clone, T: Optimizer<U> + DataExporter<U>>(
   name: String,
   iterations: usize,
   problem: Problem,
@@ -78,7 +78,7 @@ pub fn grid_search<U: Position + Velocity, T: Optimizer<U> + DataExporter<U>>(
 
 #[allow(dead_code)]
 #[allow(clippy::too_many_arguments)]
-pub fn grid_search_dim<U: Position + Velocity, T: Optimizer<U> + DataExporter<U>>(
+pub fn grid_search_dim<U: Position + Velocity + Clone, T: Optimizer<U> + DataExporter<U>>(
   name: String,
   iterations: usize,
   problem_type: Arc<dyn Fn(usize) -> Problem + Sync + Send>,

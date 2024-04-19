@@ -17,7 +17,7 @@ pub struct Fdo<FDOParticle> {
   problem: Problem,
   particles: Vec<FDOParticle>,
   global_best_pos: Option<DVector<f64>>,
-  data: Vec<(f64, Vec<FDOParticle>)>,
+  data: Vec<(f64, Option<Vec<FDOParticle>>)>,
   out_directory: PathBuf,
   wf: bool,
   behavior: Behavior,
@@ -96,7 +96,10 @@ impl Optimizer<FDOParticle> for Fdo<FDOParticle> {
 
     self.particles = particles;
     self.set_global_best_pos(global_best_pos.unwrap());
-    self.add_data();
+
+    let gbest = self.problem.f(&self.global_best_pos());
+    let particles = self.particles.clone();
+    self.add_data(true, gbest, particles);
 
     utils::create_directory(self.out_directory().to_path_buf(), true, false);
   }
@@ -174,7 +177,9 @@ impl Optimizer<FDOParticle> for Fdo<FDOParticle> {
       self.problem = problem;
 
       // Save the data for current iteration.
-      self.add_data();
+      let gbest = self.problem.f(&self.global_best_pos());
+      let particles = self.particles.clone();
+      self.add_data(self.save, gbest, particles);
     }
   }
 }
@@ -216,14 +221,12 @@ impl<T> Name for Fdo<T> {
 }
 
 impl<T: Clone> Data<T> for Fdo<T> {
-  fn data(&self) -> &Vec<(f64, Vec<T>)> {
+  fn data(&self) -> &Vec<(f64, Option<Vec<T>>)> {
     &self.data
   }
 
-  fn add_data(&mut self, save: bool) {
-    let gbest = self.problem.f(&self.global_best_pos());
-    let particles = self.particles.clone();
-    self.data.push((gbest, particles));
+  fn add_data_impl(&mut self, datum: (f64, Option<Vec<T>>)) {
+    self.data.push(datum);
   }
 }
 
@@ -237,13 +240,14 @@ impl<T: Position + Velocity + Mass + Clone> DataExporter<T> for Fdo<T> {
     let mut vec_data = Vec::new();
     for t in 0..self.data().len() {
       let mut iter_data = Vec::new();
-      for i in 0..self.data()[t].1.len() {
-        let pos = self.data()[t].1[i].pos().clone();
+      let datum = self.data()[t].1.clone().unwrap();
+      for particle_datum in &datum {
+        let pos = particle_datum.pos().clone();
         iter_data.push(json!({
           "fitness": self.problem().f_no_memo(&pos),
-          "vel": self.data()[t].1[i].vel().as_slice(),
-          "pos": self.data()[t].1[i].pos().as_slice(),
-          "mass": self.data()[t].1[i].mass(),
+          "vel": particle_datum.vel().as_slice(),
+          "pos": particle_datum.pos().as_slice(),
+          "mass": particle_datum.mass(),
         }));
       }
       vec_data.push(json!({
