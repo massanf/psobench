@@ -1,5 +1,5 @@
 extern crate nalgebra as na;
-use crate::particles::traits::{Behavior, BehaviorTrait, BestPosition, Edge, Particle, Position, Velocity};
+use crate::particles::traits::{Behavior, BehaviorTrait, BestPosition, Particle, Position, Velocity};
 use crate::problems;
 use nalgebra::DVector;
 use problems::Problem;
@@ -62,11 +62,7 @@ impl Velocity for PsoParticle {
 }
 
 impl BehaviorTrait for PsoParticle {
-  fn edge(&self) -> Edge {
-    self.behavior.edge
-  }
-
-  fn vmax(&self) -> bool {
-    self.behavior.vmax
+  fn behavior(&self) -> Behavior {
+    self.behavior
   }
 }

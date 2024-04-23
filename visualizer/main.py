@@ -20,6 +20,7 @@ for path in (DATA / test_name).glob("*"):
 # pso_path = pathlib.Path("grid_search") / "50" / "tiledigsa"
 # utils.generate_gridmap_collage(pso_path)
 
+utils.generate_overview(pathlib.Path("test_50") / "10" / "gsa" / "CEC2017_F10" / "0", 1, 300)
 # utils.generate_overview(pathlib.Path("test_1000") / "30" / "tiledgsa" / "CEC2017_F10" / "0", 1, 300)
 # utils.generate_overview(pathlib.Path("test_1000") / "100" / "igsa" / "CEC2017_F30" / "0", 1, 300)
 # utils.generate_overview(pathlib.Path("test_1000") / "100" / "tiledigsa" / "CEC2017_F30" / "0", 1, 300)

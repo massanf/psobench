@@ -1,5 +1,5 @@
 extern crate nalgebra as na;
-use crate::particles::traits::{Behavior, BehaviorTrait, Edge, Mass, Position, Velocity};
+use crate::particles::traits::{Behavior, BehaviorTrait, Mass, Position, Velocity};
 use crate::problems;
 use nalgebra::DVector;
 use problems::Problem;
@@ -61,11 +61,7 @@ impl Mass for FDOParticle {
 }
 
 impl BehaviorTrait for FDOParticle {
-  fn edge(&self) -> Edge {
-    self.behavior.edge
-  }
-
-  fn vmax(&self) -> bool {
-    self.behavior.vmax
+  fn behavior(&self) -> Behavior {
+    self.behavior
   }
 }

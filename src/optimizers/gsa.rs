@@ -1,7 +1,10 @@
 use crate::optimizers::traits::{
   Data, DataExporter, GlobalBestPos, Name, OptimizationProblem, Optimizer, ParamValue, Particles,
 };
-use crate::particles::traits::{Behavior, Mass, Particle, Position, Velocity};
+use crate::particles::{
+  gsa_particle::Normalizer,
+  traits::{Behavior, Mass, Particle, Position, Velocity},
+};
 use crate::problems;
 use crate::rand::Rng;
 use crate::utils;
@@ -23,10 +26,10 @@ pub struct Gsa<T> {
   g: f64,
   data: Vec<(f64, Option<Vec<T>>)>,
   out_directory: PathBuf,
-  behavior: Behavior,
   g0: f64,
   alpha: f64,
   save: bool,
+  normalizer: Normalizer,
 }
 
 impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
@@ -68,6 +71,15 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
       }
     };
 
+    assert!(parameters.contains_key("normalizer"), "Key 'normalizer' not found.");
+    let normalizer = match parameters["normalizer"] {
+      ParamValue::Normalizer(val) => val,
+      _ => {
+        eprintln!("Error: parameter 'normalizer' should be of type Param::Normalizer.");
+        std::process::exit(1);
+      }
+    };
+
     let mut gsa = Gsa {
       name,
       problem,
@@ -77,18 +89,17 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
       g: g0,
       data: Vec::new(),
       out_directory,
-      behavior,
       g0,
       alpha,
       save,
+      normalizer,
     };
 
-    gsa.init(number_of_particles);
+    gsa.init(number_of_particles, behavior);
     gsa
   }
 
-  fn init(&mut self, number_of_particles: usize) {
-    let behavior = self.behavior;
+  fn init(&mut self, number_of_particles: usize, behavior: Behavior) {
     let problem = &mut self.problem();
     let mut particles: Vec<T> = Vec::new();
     for _ in 0..number_of_particles {
@@ -138,65 +149,32 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
     for iter in 0..iterations {
       self.g = self.g0 * (-self.alpha * iter as f64 / iterations as f64).exp();
 
-      // Calculate M
-      let mut m_unscaled = Vec::new();
-      let mut m_sum = 0.;
-      let mut best = None;
-      let mut worst = None;
+      let mut fitness = Vec::new();
       for idx in 0..self.particles().len() {
         let pos = self.particles()[idx].pos().clone();
-        if best.is_none() || self.problem().f(&pos) < self.problem().f(best.as_ref().unwrap()) {
-          best = Some(pos.clone());
-        }
-        if worst.is_none() || self.problem().f(&pos) > self.problem().f(worst.as_ref().unwrap()) {
-          worst = Some(pos.clone());
-        }
+        fitness.push(self.problem().f(&pos));
       }
 
-      let mut m: Vec<f64> = Vec::new();
-      if best == worst {
-        // This is for when all of the particles are at the exact same position.
-        // It can happen during grid search when values for g0 are weird.
-        m = vec![0.; self.particles().len()];
-      } else {
-        for idx in 0..self.particles().len() {
-          let p = self.particles()[idx].clone();
-          let numerator = self.problem().f(p.pos()) - self.problem().f(worst.as_ref().unwrap());
-          let denominator = self.problem().f(best.as_ref().unwrap()) - self.problem().f(worst.as_ref().unwrap());
-          assert!(
-            numerator <= 0.,
-            "Numerator must be less than or equal to 0: {}",
-            numerator
-          );
-          assert!(denominator < 0., "Denominator must be less than 0: {}", denominator);
-          let m_i = numerator / denominator;
-          m_unscaled.push(m_i);
-          m_sum += m_i;
-        }
-
-        for item in m_unscaled.iter().take(self.particles().len()) {
-          m.push(item / m_sum);
-        }
-
-        // Only use k largest values. Set others to 0.
-        let mut m_sorted = m.clone();
-        m_sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
-
-        let particle_count = self.particles().len();
-        let mut k = (-(particle_count as f64) / (iterations as f64) * iter as f64 + particle_count as f64) as usize;
-        k = std::cmp::max(k, 1);
-        k = std::cmp::min(k, particle_count);
-
-        for (i, m_i) in m.iter().enumerate().take(particle_count) {
-          let loc = match m_sorted.binary_search_by(|v| v.partial_cmp(m_i).expect("Couldn't compare values")) {
-            Ok(val) => val,
-            Err(val) => val,
-          };
-          self.influences[i] = (particle_count - loc) <= k;
-        }
+      let m = utils::original_gsa_normalize(fitness);
+      for (mass, particle) in m.iter().zip(self.particles_mut().iter_mut()) {
+        particle.set_mass(*mass);
       }
-      for (idx, particle) in self.particles_mut().iter_mut().enumerate() {
-        particle.calculate_and_set_mass(m[idx]);
+
+      // Only use k largest values. Make others not influence.
+      let mut m_sorted = m.clone();
+      m_sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+      let particle_count = self.particles().len();
+      let mut k = (-(particle_count as f64) / (iterations as f64) * iter as f64 + particle_count as f64) as usize;
+      k = std::cmp::max(k, 1);
+      k = std::cmp::min(k, particle_count);
+
+      for (i, m_i) in m.iter().enumerate().take(particle_count) {
+        let loc = match m_sorted.binary_search_by(|v| v.partial_cmp(m_i).expect("Couldn't compare values")) {
+          Ok(val) => val,
+          Err(val) => val,
+        };
+        self.influences[i] = (particle_count - loc) <= k;
       }
 
       // Calculate vels.

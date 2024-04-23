@@ -23,7 +23,6 @@ pub struct TiledGsa<T> {
   g: f64,
   data: Vec<(f64, Option<Vec<T>>)>,
   out_directory: PathBuf,
-  behavior: Behavior,
   g0: f64,
   alpha: f64,
   save: bool,
@@ -77,18 +76,16 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for TiledGsa
       g: g0,
       data: Vec::new(),
       out_directory,
-      behavior,
       g0,
       alpha,
       save,
     };
 
-    gsa.init(number_of_particles);
+    gsa.init(number_of_particles, behavior);
     gsa
   }
 
-  fn init(&mut self, number_of_particles: usize) {
-    let behavior = self.behavior;
+  fn init(&mut self, number_of_particles: usize, behavior: Behavior) {
     let problem = &mut self.problem();
     let mut particles: Vec<T> = Vec::new();
     for _ in 0..number_of_particles {
@@ -211,7 +208,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for TiledGsa
         }
       }
       for (idx, particle) in self.particles_mut().iter_mut().enumerate() {
-        particle.calculate_and_set_mass(m[idx]);
+        particle.set_mass(m[idx]);
       }
 
       // Calculate vels.

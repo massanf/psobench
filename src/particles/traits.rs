@@ -9,7 +9,6 @@ use problems::Problem;
 pub struct Behavior {
   pub edge: Edge,
   pub vmax: bool,
-  pub mass_normalizer: Option<Normalizer>,
 }
 
 #[allow(dead_code)]
@@ -59,7 +58,7 @@ pub trait Velocity: Position + BehaviorTrait {
   fn set_vel(&mut self, vel: DVector<f64>);
   fn update_vel(&mut self, vel: DVector<f64>, problem: &mut Problem) {
     let vmax = problem.domain().1 - problem.domain().0;
-    if self.vmax() && vel.norm() > vmax {
+    if self.behavior().vmax && vel.norm() > vmax {
       self.set_vel(vel.clone() / vel.norm() * vmax);
     } else {
       self.set_vel(vel);
@@ -67,7 +66,7 @@ pub trait Velocity: Position + BehaviorTrait {
   }
 
   fn move_pos(&mut self, problem: &mut Problem) {
-    match self.edge() {
+    match self.behavior().edge {
       Edge::Reflect => {
         let mut new_pos = self.pos().clone();
         let mut new_vel = self.vel().clone();
@@ -112,16 +111,11 @@ pub trait Velocity: Position + BehaviorTrait {
   }
 }
 
-pub trait Mass {
-  fn calculate_and_set_mass(&mut self, mass: f64) {
-    self.set_mass(mass);
-  }
-
+pub trait Mass: BehaviorTrait {
   fn mass(&self) -> f64;
   fn set_mass(&mut self, mass: f64);
 }
 
 pub trait BehaviorTrait {
-  fn edge(&self) -> Edge;
-  fn vmax(&self) -> bool;
+  fn behavior(&self) -> Behavior;
 }

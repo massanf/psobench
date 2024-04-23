@@ -1,4 +1,7 @@
-use crate::particles::traits::{Behavior, Position, Velocity};
+use crate::particles::{
+  gsa_particle::Normalizer,
+  traits::{Behavior, Position, Velocity},
+};
 use crate::problems;
 use nalgebra::DVector;
 use problems::Problem;
@@ -13,6 +16,7 @@ use std::path::PathBuf;
 pub enum ParamValue {
   Float(f64),
   Int(isize),
+  Normalizer(Normalizer),
 }
 
 impl fmt::Display for ParamValue {
@@ -20,6 +24,9 @@ impl fmt::Display for ParamValue {
     match self {
       ParamValue::Float(n) => write!(f, "{:.2}", n),
       ParamValue::Int(c) => write!(f, "{}", c),
+      _ => {
+        todo!()
+      }
     }
   }
 }
@@ -32,6 +39,15 @@ impl Serialize for ParamValue {
     match *self {
       ParamValue::Float(ref n) => serializer.serialize_f64(*n),
       ParamValue::Int(ref c) => serializer.serialize_u64(*c as u64),
+      ParamValue::Normalizer(value) => match value {
+        Normalizer::MinMax => serializer.serialize_str("MinMax"),
+        Normalizer::Sigmoid => serializer.serialize_str("Sigmoid"),
+        Normalizer::ZScore => serializer.serialize_str("ZScore"),
+        Normalizer::Decimal => serializer.serialize_str("Decimal"),
+        Normalizer::Logarithmic => serializer.serialize_str("Logarithmic"),
+        Normalizer::Softmax => serializer.serialize_str("Softmax"),
+        Normalizer::Rank => serializer.serialize_str("Rank"),
+      },
     }
   }
 }
@@ -50,7 +66,7 @@ pub trait Optimizer<U: Position + Velocity + Clone>:
   where
     Self: Sized;
 
-  fn init(&mut self, number_of_particles: usize);
+  fn init(&mut self, number_of_particles: usize, behavior: Behavior);
   fn calculate_vel(&mut self, idx: usize) -> DVector<f64>;
   fn run(&mut self, iterations: usize);
 }

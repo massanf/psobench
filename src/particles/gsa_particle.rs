@@ -1,5 +1,5 @@
 extern crate nalgebra as na;
-use crate::particles::traits::{Behavior, BehaviorTrait, Edge, Mass, Particle, Position, Velocity};
+use crate::particles::traits::{Behavior, BehaviorTrait, Mass, Particle, Position, Velocity};
 use crate::problems;
 use nalgebra::DVector;
 use problems::Problem;
@@ -25,7 +25,6 @@ pub struct GsaParticle {
 
 impl Particle for GsaParticle {
   fn new(problem: &mut Problem, behavior: Behavior) -> GsaParticle {
-    assert!(behavior.mass_normalizer.is_some());
     let mut particle = GsaParticle {
       pos: DVector::from_element(problem.dim(), 0.),
       vel: DVector::from_element(problem.dim(), 0.),
@@ -73,11 +72,7 @@ impl Mass for GsaParticle {
 }
 
 impl BehaviorTrait for GsaParticle {
-  fn edge(&self) -> Edge {
-    self.behavior.edge
-  }
-
-  fn vmax(&self) -> bool {
-    self.behavior.vmax
+  fn behavior(&self) -> Behavior {
+    self.behavior
   }
 }

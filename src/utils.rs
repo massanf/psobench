@@ -209,3 +209,24 @@ pub fn param_hashmap_generator(params: Vec<(&str, ParamValue)>) -> HashMap<Strin
 pub fn generate_out_directory(test_name: &str, dim: usize, type_name: &str) -> PathBuf {
   PathBuf::from(format!("data/{}/{}/{}", test_name, dim, type_name))
 }
+
+pub fn original_gsa_normalize(input: Vec<f64>) -> Vec<f64> {
+  let input = min_max_normalize(input);
+  let sum: f64 = input.iter().sum();
+  input.iter().map(|&x| x / sum).collect()
+}
+
+pub fn min_max_normalize(input: Vec<f64>) -> Vec<f64> {
+  if input.is_empty() {
+    return Vec::new(); // Return an empty vector if input is empty
+  }
+
+  let min = input.iter().fold(f64::INFINITY, |a, &b| a.min(b));
+  let max = input.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
+
+  if (max - min).abs() < f64::EPSILON {
+    return vec![0.0; input.len()]; // Return zero vector if all elements are the same
+  }
+
+  input.into_iter().map(|x| (x - max) / (min - max)).collect()
+}

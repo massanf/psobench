@@ -20,7 +20,6 @@ pub struct Fdo<FDOParticle> {
   data: Vec<(f64, Option<Vec<FDOParticle>>)>,
   out_directory: PathBuf,
   wf: bool,
-  behavior: Behavior,
   save: bool,
 }
 
@@ -70,16 +69,14 @@ impl Optimizer<FDOParticle> for Fdo<FDOParticle> {
       data: Vec::new(),
       out_directory,
       wf,
-      behavior,
       save,
     };
 
-    gsa.init(number_of_particles);
+    gsa.init(number_of_particles, behavior);
     gsa
   }
 
-  fn init(&mut self, number_of_particles: usize) {
-    let behavior = self.behavior;
+  fn init(&mut self, number_of_particles: usize, behavior: Behavior) {
     let problem = &mut self.problem();
     let mut particles: Vec<FDOParticle> = Vec::new();
     for _ in 0..number_of_particles {

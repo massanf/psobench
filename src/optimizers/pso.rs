@@ -17,7 +17,6 @@ pub struct Pso<T> {
   global_best_pos: Option<DVector<f64>>,
   data: Vec<(f64, Option<Vec<T>>)>,
   out_directory: PathBuf,
-  behavior: Behavior,
   w: f64,
   phi_p: f64,
   phi_g: f64,
@@ -79,19 +78,17 @@ impl<T: Particle + Position + Velocity + BestPosition + Clone> Optimizer<T> for 
       global_best_pos: None,
       data: Vec::new(),
       out_directory,
-      behavior,
       w,
       phi_p,
       phi_g,
       save,
     };
 
-    pso.init(number_of_particles);
+    pso.init(number_of_particles, behavior);
     pso
   }
 
-  fn init(&mut self, number_of_particles: usize) {
-    let behavior = self.behavior;
+  fn init(&mut self, number_of_particles: usize, behavior: Behavior) {
     let problem = &mut self.problem();
     let mut particles: Vec<T> = Vec::new();
     for _ in 0..number_of_particles {
