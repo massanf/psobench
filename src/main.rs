@@ -41,6 +41,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
       Behavior {
         edge: Edge::Pass,
         vmax: false,
+        mass_normalizer: None,
       },
       vec![("g0", f(1000.0)), ("alpha", f(5.0)), ("particle_count", i(pc))],
     )?;
@@ -55,6 +56,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
       Behavior {
         edge: Edge::Cycle,
         vmax: false,
+        mass_normalizer: None,
       },
       vec![("g0", f(1000.0)), ("alpha", f(5.0)), ("particle_count", i(pc))],
     )?;
@@ -69,6 +71,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
       Behavior {
         edge: Edge::Pass,
         vmax: false,
+        mass_normalizer: None,
       },
       vec![("g0", f(100.0)), ("alpha", f(5.0)), ("particle_count", i(pc))],
     )?;
@@ -83,6 +86,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
       Behavior {
         edge: Edge::Cycle,
         vmax: false,
+        mass_normalizer: None,
       },
       vec![("g0", f(100.0)), ("alpha", f(5.0)), ("particle_count", i(pc))],
     )?;

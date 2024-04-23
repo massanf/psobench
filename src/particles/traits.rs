@@ -1,4 +1,5 @@
 extern crate nalgebra as na;
+use crate::particles::gsa_particle::Normalizer;
 use crate::problems;
 use crate::utils;
 use nalgebra::DVector;
@@ -8,6 +9,7 @@ use problems::Problem;
 pub struct Behavior {
   pub edge: Edge,
   pub vmax: bool,
+  pub mass_normalizer: Option<Normalizer>,
 }
 
 #[allow(dead_code)]
@@ -111,6 +113,10 @@ pub trait Velocity: Position + BehaviorTrait {
 }
 
 pub trait Mass {
+  fn calculate_and_set_mass(&mut self, mass: f64) {
+    self.set_mass(mass);
+  }
+
   fn mass(&self) -> f64;
   fn set_mass(&mut self, mass: f64);
 }

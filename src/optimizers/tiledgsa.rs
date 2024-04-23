@@ -211,7 +211,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for TiledGsa
         }
       }
       for (idx, particle) in self.particles_mut().iter_mut().enumerate() {
-        particle.set_mass(m[idx]);
+        particle.calculate_and_set_mass(m[idx]);
       }
 
       // Calculate vels.
