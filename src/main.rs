@@ -13,7 +13,6 @@ use optimizers::{gsa::Gsa, pso::Pso, tiledgsa::TiledGsa};
 #[allow(unused_imports)]
 use particles::{
   gsa_particle::GsaParticle,
-  igsa_particle::IgsaParticle,
   pso_particle::PsoParticle,
   traits::{Behavior, Edge},
 };
@@ -30,13 +29,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
   for dim in dims {
     println!("{}", dim);
-    let scale = 10;
-    // let pc: isize = dim as isize * scale;
-    let pc = 30;
+    let pc: isize = 50;
 
     // gsa
     utils::check_cec17::<GsaParticle, Gsa<GsaParticle>>(
-      format!("test_{}", iterations).as_str(),
+      format!("test_{}", pc).as_str(),
       "gsa",
       iterations,
       dim,
@@ -45,12 +42,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         edge: Edge::Pass,
         vmax: false,
       },
-      vec![("g0", f(500.0)), ("alpha", f(5.0)), ("particle_count", i(pc))],
+      vec![("g0", f(1000.0)), ("alpha", f(5.0)), ("particle_count", i(pc))],
     )?;
 
     // tiled gsa
     utils::check_cec17::<GsaParticle, TiledGsa<GsaParticle>>(
-      format!("test_{}", iterations).as_str(),
+      format!("test_{}", pc).as_str(),
       "tiledgsa",
       iterations,
       dim,
@@ -62,44 +59,92 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
       vec![("g0", f(1000.0)), ("alpha", f(5.0)), ("particle_count", i(pc))],
     )?;
 
-    //   // igsa
-    //   utils::check_cec17::<IgsaParticle, Gsa<IgsaParticle>>(
-    //     format!("test_{}", iterations).as_str(),
-    //     "igsa",
-    //     iterations,
-    //     dim,
-    //     attempts,
-    //     Behavior {
-    //       edge: Edge::Pass,
-    //       vmax: false,
-    //     },
-    //     vec![("g0", f(500.0)), ("alpha", f(5.0)), ("particle_count", i(pc))],
-    //   )?;
+    // igsa
+    utils::check_cec17::<GsaParticle, Gsa<GsaParticle>>(
+      format!("test_{}", pc).as_str(),
+      "igsa",
+      iterations,
+      dim,
+      attempts,
+      Behavior {
+        edge: Edge::Pass,
+        vmax: false,
+      },
+      vec![("g0", f(100.0)), ("alpha", f(5.0)), ("particle_count", i(pc))],
+    )?;
 
-    //   // tiled igsa
-    //   utils::check_cec17::<IgsaParticle, TiledGsa<IgsaParticle>>(
-    //     format!("test_{}", iterations).as_str(),
-    //     "tiledigsa",
-    //     iterations,
-    //     dim,
-    //     attempts,
-    //     Behavior {
-    //       edge: Edge::Cycle,
-    //       vmax: false,
-    //     },
-    //     vec![("g0", f(1000.0)), ("alpha", f(5.0)), ("particle_count", i(pc))],
-    //   )?;
+    // tiled igsa
+    utils::check_cec17::<GsaParticle, TiledGsa<GsaParticle>>(
+      format!("test_{}", pc).as_str(),
+      "tiledigsa",
+      iterations,
+      dim,
+      attempts,
+      Behavior {
+        edge: Edge::Cycle,
+        vmax: false,
+      },
+      vec![("g0", f(100.0)), ("alpha", f(5.0)), ("particle_count", i(pc))],
+    )?;
   }
 
-  // utils::check_cec17::<GsaParticle, Gsa<GsaParticle>>(
-  //   format!("test_{}", iterations).as_str(),
-  //   "gsa",
-  //   iterations,
-  //   dim,
-  //   attempts,
-  //   behavior,
-  //   vec![("g0", f(100.0)), ("alpha", f(20.0)), ("particle_count", i(30))],
-  // )?;
+  // for dim in dims {
+  //   utils::run_grid_searches::<GsaParticle, Gsa<GsaParticle>>(
+  //     "gsa",
+  //     attempts,
+  //     iterations,
+  //     dim,
+  //     parameters::GSA_G0_OPTIONS.clone(),
+  //     parameters::GSA_ALPHA_OPTIONS.clone(),
+  //     vec![("particle_count", i(100))],
+  //     Behavior {
+  //       edge: Edge::Reflect,
+  //       vmax: false,
+  //     },
+  //   )?;
+
+  //   utils::run_grid_searches::<GsaParticle, Gsa<GsaParticle>>(
+  //     "igsa",
+  //     attempts,
+  //     iterations,
+  //     dim,
+  //     parameters::GSA_G0_OPTIONS.clone(),
+  //     parameters::GSA_ALPHA_OPTIONS.clone(),
+  //     vec![("particle_count", i(100))],
+  //     Behavior {
+  //       edge: Edge::Reflect,
+  //       vmax: false,
+  //     },
+  //   )?;
+
+  //   utils::run_grid_searches::<GsaParticle, TiledGsa<GsaParticle>>(
+  //     "tiledgsa",
+  //     attempts,
+  //     iterations,
+  //     dim,
+  //     parameters::GSA_G0_OPTIONS.clone(),
+  //     parameters::GSA_ALPHA_OPTIONS.clone(),
+  //     vec![("particle_count", i(100))],
+  //     Behavior {
+  //       edge: Edge::Cycle,
+  //       vmax: false,
+  //     },
+  //   )?;
+
+  //   utils::run_grid_searches::<GsaParticle, TiledGsa<GsaParticle>>(
+  //     "tiledigsa",
+  //     attempts,
+  //     iterations,
+  //     dim,
+  //     parameters::GSA_G0_OPTIONS.clone(),
+  //     parameters::GSA_ALPHA_OPTIONS.clone(),
+  //     vec![("particle_count", i(100))],
+  //     Behavior {
+  //       edge: Edge::Cycle,
+  //       vmax: false,
+  //     },
+  //   )?;
+  // }
 
   // utils::check_cec17::<GsaParticle, TiledGsa<GsaParticle>>(
   //   format!("test_{}", iterations).as_str(),

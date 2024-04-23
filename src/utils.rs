@@ -152,7 +152,7 @@ pub fn check_cec17<T: Velocity + Clone, U: Optimizer<T>>(
       out_directory.join(problem.clone().name()),
       iterations,
       attempts,
-      true,
+      false,
       &bar,
       behavior,
     );

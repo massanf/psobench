@@ -2,18 +2,22 @@ import utils
 import pathlib
 from constants import DATA
 
-for path in (DATA / "test_1000").glob("*"):
+test_name = "test_50"
+for path in (DATA / test_name).glob("*"):
     # utils.generate_entropy_comparison(pathlib.Path("test") / path.name)
     # print(path)
-    utils.generate_progress_comparison(pathlib.Path("test_1000") / path.name)
+    utils.generate_progress_comparison(pathlib.Path(test_name) / path.name)
 
-# gsa_path = pathlib.Path("grid_search") / "30" / "gsa"
-# generate_gridmap_collage(gsa_path)
+# gsa_path = pathlib.Path("grid_search") / "50" / "gsa"
+# utils.generate_gridmap_collage(gsa_path)
 
-# igsa_path = pathlib.Path("grid_search") / "30" / "igsa_const_k"
+# igsa_path = pathlib.Path("grid_search") / "50" / "igsa"
 # utils.generate_gridmap_collage(igsa_path)
 
-# pso_path = pathlib.Path("grid_search") / "30" / "gsa"
+# pso_path = pathlib.Path("grid_search") / "50" / "tiledgsa"
+# utils.generate_gridmap_collage(pso_path)
+
+# pso_path = pathlib.Path("grid_search") / "50" / "tiledigsa"
 # utils.generate_gridmap_collage(pso_path)
 
 # utils.generate_overview(pathlib.Path("test_1000") / "30" / "tiledgsa" / "CEC2017_F10" / "0", 1, 300)
