@@ -7,12 +7,12 @@ mod parameters;
 mod particles;
 mod problems;
 mod utils;
-use crate::optimizers::traits::ParamValue;
+use crate::optimizers::{gsa::Normalizer, traits::ParamValue};
 #[allow(unused_imports)]
 use optimizers::{gsa::Gsa, pso::Pso};
 #[allow(unused_imports)]
 use particles::{
-  gsa_particle::{GsaParticle, Normalizer},
+  gsa_particle::GsaParticle,
   pso_particle::PsoParticle,
   traits::{Behavior, Edge},
 };

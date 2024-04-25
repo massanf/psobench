@@ -1,5 +1,4 @@
 extern crate nalgebra as na;
-use crate::particles::gsa_particle::Normalizer;
 use crate::problems;
 use crate::utils;
 use nalgebra::DVector;

@@ -1,10 +1,7 @@
 use crate::optimizers::traits::{
   Data, DataExporter, GlobalBestPos, Name, OptimizationProblem, Optimizer, ParamValue, Particles,
 };
-use crate::particles::{
-  gsa_particle::Normalizer,
-  traits::{Behavior, Mass, Particle, Position, Velocity},
-};
+use crate::particles::traits::{Behavior, Mass, Particle, Position, Velocity};
 use crate::problems;
 use crate::rand::Rng;
 use crate::utils;
@@ -15,6 +12,16 @@ use std::collections::HashMap;
 use std::fs;
 use std::mem;
 use std::path::PathBuf;
+
+#[derive(Clone, Copy)]
+pub enum Normalizer {
+  MinMax,
+  Sigmoid,
+  Decimal,
+  Logarithmic,
+  Softmax,
+  Rank,
+}
 
 #[derive(Clone)]
 pub struct Gsa<T> {

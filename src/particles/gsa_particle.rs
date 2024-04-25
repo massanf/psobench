@@ -4,17 +4,6 @@ use crate::problems;
 use nalgebra::DVector;
 use problems::Problem;
 
-#[derive(Clone, Copy)]
-pub enum Normalizer {
-  MinMax,
-  Sigmoid,
-  ZScore,
-  Decimal,
-  Logarithmic,
-  Softmax,
-  Rank,
-}
-
 #[derive(Clone)]
 pub struct GsaParticle {
   pos: DVector<f64>,

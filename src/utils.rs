@@ -230,3 +230,14 @@ pub fn min_max_normalize(input: Vec<f64>) -> Vec<f64> {
 
   input.into_iter().map(|x| (x - max) / (min - max)).collect()
 }
+
+pub fn z_score_normalize(input: Vec<f64>) -> Vec<f64> {
+  let mean = input.iter().sum::<f64>() / input.len() as f64;
+  let std = (input.iter().map(|&x| (x - mean).powi(2)).sum::<f64>() / input.len() as f64).sqrt();
+
+  input.iter().map(|&x| (x - mean) / std).collect()
+}
+
+pub fn sigmoid_normalize(input: Vec<f64>) -> Vec<f64> {
+  z_score_normalize(input).into_iter().map(|x| 1.0 / (1.0 + (-2. * x).exp())).collect()
+}

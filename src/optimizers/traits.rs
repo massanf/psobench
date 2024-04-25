@@ -1,7 +1,5 @@
-use crate::particles::{
-  gsa_particle::Normalizer,
-  traits::{Behavior, Position, Velocity},
-};
+use crate::optimizers::gsa::Normalizer;
+use crate::particles::traits::{Behavior, Position, Velocity};
 use crate::problems;
 use nalgebra::DVector;
 use problems::Problem;
@@ -43,7 +41,6 @@ impl Serialize for ParamValue {
       ParamValue::Normalizer(value) => match value {
         Normalizer::MinMax => serializer.serialize_str("MinMax"),
         Normalizer::Sigmoid => serializer.serialize_str("Sigmoid"),
-        Normalizer::ZScore => serializer.serialize_str("ZScore"),
         Normalizer::Decimal => serializer.serialize_str("Decimal"),
         Normalizer::Logarithmic => serializer.serialize_str("Logarithmic"),
         Normalizer::Softmax => serializer.serialize_str("Softmax"),
