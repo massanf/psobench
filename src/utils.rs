@@ -241,3 +241,21 @@ pub fn original_gsa_normalize(input: Vec<f64>) -> Vec<f64> {
 pub fn sigmoid_normalize(input: Vec<f64>) -> Vec<f64> {
   z_score_normalize(input).into_iter().map(|x| 1.0 / (1.0 + (-2. * x).exp())).collect()
 }
+
+pub fn softmax_normalize(input: Vec<f64>) -> Vec<f64> {
+  let max = input.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
+  let exps: Vec<f64> = input.iter().map(|&x| ((x - max).exp()).min(f64::MAX)).collect();
+  let sum_exps: f64 = exps.iter().sum();
+
+  exps.iter().map(|&exp| exp / sum_exps).collect()
+}
+
+pub fn rank_normalize(input: Vec<f64>) -> Vec<f64> {
+  let mut sorted_input: Vec<_> = input.iter().enumerate().collect();
+  sorted_input.sort_by(|i, j| i.1.partial_cmp(j.1).unwrap());
+  let mut mp: HashMap<usize, usize> = HashMap::new();
+  for (idx, (i, _x)) in sorted_input.iter().enumerate() {
+    mp.insert(*i, idx);
+  }
+  input.iter().enumerate().map(|(i, _)| mp[&i] as f64 / input.len() as f64).collect()
+}

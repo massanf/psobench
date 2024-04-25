@@ -13,12 +13,11 @@ use std::fs;
 use std::mem;
 use std::path::PathBuf;
 
+#[allow(dead_code)]
 #[derive(Clone, Copy)]
 pub enum Normalizer {
   MinMax,
   Sigmoid,
-  Decimal,
-  Logarithmic,
   Softmax,
   Rank,
 }
@@ -194,7 +193,8 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
       let m = match self.normalizer {
         Normalizer::MinMax => utils::original_gsa_normalize(fitness),
         Normalizer::Sigmoid => utils::sigmoid_normalize(fitness),
-        _ => todo!(),
+        Normalizer::Softmax => utils::softmax_normalize(fitness),
+        Normalizer::Rank => utils::rank_normalize(fitness),
       };
       for (mass, particle) in m.iter().zip(self.particles_mut().iter_mut()) {
         particle.set_mass(*mass);
