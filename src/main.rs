@@ -12,8 +12,8 @@ use crate::optimizers::{gsa::Normalizer, traits::ParamValue};
 use optimizers::{gsa::Gsa, pso::Pso};
 #[allow(unused_imports)]
 use particles::{
-  gsa_particle::GsaParticle,
-  pso_particle::PsoParticle,
+  gsa::GsaParticle,
+  pso::PsoParticle,
   traits::{Behavior, Edge},
 };
 #[allow(unused_imports)]
@@ -34,7 +34,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // gsa
     utils::check_cec17::<GsaParticle, Gsa<GsaParticle>>(
-      format!("test_{}", pc).as_str(),
+      "test",
       "gsa",
       iterations,
       dim,
@@ -49,26 +49,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ("particle_count", i(pc)),
         ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
         ("tiled", ParamValue::Tiled(false)),
-      ],
-    )?;
-
-    // tiled gsa
-    utils::check_cec17::<GsaParticle, Gsa<GsaParticle>>(
-      format!("test_{}", pc).as_str(),
-      "tiledgsa",
-      iterations,
-      dim,
-      attempts,
-      Behavior {
-        edge: Edge::Cycle,
-        vmax: false,
-      },
-      vec![
-        ("g0", f(1000.0)),
-        ("alpha", f(5.0)),
-        ("particle_count", i(pc)),
-        ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
-        ("tiled", ParamValue::Tiled(true)),
       ],
     )?;
 

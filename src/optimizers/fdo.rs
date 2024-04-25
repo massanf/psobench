@@ -1,7 +1,7 @@
 use crate::optimizers::traits::{
   Data, DataExporter, GlobalBestPos, Name, OptimizationProblem, Optimizer, ParamValue, Particles,
 };
-use crate::particles::fdo_particle::FDOParticle;
+use crate::particles::fdo::FDOParticle;
 use crate::particles::traits::{Behavior, Mass, Position, Velocity};
 use crate::problems;
 use crate::utils;
