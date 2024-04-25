@@ -193,6 +193,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
 
       let m = match self.normalizer {
         Normalizer::MinMax => utils::original_gsa_normalize(fitness),
+        Normalizer::Sigmoid => utils::sigmoid_normalize(fitness),
         _ => todo!(),
       };
       for (mass, particle) in m.iter().zip(self.particles_mut().iter_mut()) {

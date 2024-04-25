@@ -210,12 +210,6 @@ pub fn generate_out_directory(test_name: &str, dim: usize, type_name: &str) -> P
   PathBuf::from(format!("data/{}/{}/{}", test_name, dim, type_name))
 }
 
-pub fn original_gsa_normalize(input: Vec<f64>) -> Vec<f64> {
-  let input = min_max_normalize(input);
-  let sum: f64 = input.iter().sum();
-  input.iter().map(|&x| x / sum).collect()
-}
-
 pub fn min_max_normalize(input: Vec<f64>) -> Vec<f64> {
   if input.is_empty() {
     return Vec::new(); // Return an empty vector if input is empty
@@ -236,6 +230,12 @@ pub fn z_score_normalize(input: Vec<f64>) -> Vec<f64> {
   let std = (input.iter().map(|&x| (x - mean).powi(2)).sum::<f64>() / input.len() as f64).sqrt();
 
   input.iter().map(|&x| (x - mean) / std).collect()
+}
+
+pub fn original_gsa_normalize(input: Vec<f64>) -> Vec<f64> {
+  let input = min_max_normalize(input);
+  let sum: f64 = input.iter().sum();
+  input.iter().map(|&x| x / sum).collect()
 }
 
 pub fn sigmoid_normalize(input: Vec<f64>) -> Vec<f64> {
