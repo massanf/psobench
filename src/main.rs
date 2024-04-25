@@ -9,7 +9,7 @@ mod problems;
 mod utils;
 use crate::optimizers::traits::ParamValue;
 #[allow(unused_imports)]
-use optimizers::{gsa::Gsa, pso::Pso, tiledgsa::TiledGsa};
+use optimizers::{gsa::Gsa, pso::Pso};
 #[allow(unused_imports)]
 use particles::{
   gsa_particle::{GsaParticle, Normalizer},
@@ -48,11 +48,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ("alpha", f(5.0)),
         ("particle_count", i(pc)),
         ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
+        ("tiled", ParamValue::Tiled(false)),
       ],
     )?;
 
     // tiled gsa
-    utils::check_cec17::<GsaParticle, TiledGsa<GsaParticle>>(
+    utils::check_cec17::<GsaParticle, Gsa<GsaParticle>>(
       format!("test_{}", pc).as_str(),
       "tiledgsa",
       iterations,
@@ -67,6 +68,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ("alpha", f(5.0)),
         ("particle_count", i(pc)),
         ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
+        ("tiled", ParamValue::Tiled(true)),
       ],
     )?;
 

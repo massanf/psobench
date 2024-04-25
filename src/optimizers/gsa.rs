@@ -30,6 +30,7 @@ pub struct Gsa<T> {
   alpha: f64,
   save: bool,
   normalizer: Normalizer,
+  tiled: bool,
 }
 
 impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
@@ -80,6 +81,15 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
       }
     };
 
+    assert!(parameters.contains_key("tiled"), "Key 'tiled' not found.");
+    let tiled = match parameters["tiled"] {
+      ParamValue::Tiled(val) => val,
+      _ => {
+        eprintln!("Error: parameter 'tiled' should be of type Param::Tiled.");
+        std::process::exit(1);
+      }
+    };
+
     let mut gsa = Gsa {
       name,
       problem,
@@ -93,6 +103,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
       alpha,
       save,
       normalizer,
+      tiled,
     };
 
     gsa.init(number_of_particles, behavior);
@@ -119,19 +130,37 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
     utils::create_directory(self.out_directory().to_path_buf(), true, false);
   }
 
-  fn calculate_vel(&mut self, idx: usize) -> DVector<f64> {
-    assert!(idx < self.particles().len());
-
+  fn calculate_vel(&mut self, i: usize) -> DVector<f64> {
+    assert!(i < self.particles().len());
     let mut a: DVector<f64> = DVector::from_element(self.problem().dim(), 0.);
-
     let mut rng = rand::thread_rng();
 
     for j in 0..self.particles().len() {
-      if idx == j || !self.influences[j] {
+      if i == j || !self.influences[j] {
         continue;
       }
-      let r = self.particles()[j].pos() - self.particles()[idx].pos();
-      let mut a_delta = self.g * self.particles()[j].mass() / (r.norm() + std::f64::EPSILON) * r;
+
+      let i = self.particles()[i].clone();
+      let j = self.particles()[j].clone();
+
+      let r = match self.tiled {
+        true => {
+          let width = self.problem().domain().1 - self.problem().domain().0;
+          let mut closest_j = j.pos().clone();
+
+          for (idx, x) in closest_j.iter_mut().enumerate() {
+            if (*x - width - i.pos()[idx]).abs() < (*x - i.pos()[idx]).abs() {
+              *x -= width;
+            } else if (*x + width - i.pos()[idx]).abs() < (*x - i.pos()[idx]).abs() {
+              *x += width;
+            }
+          }
+          closest_j - i.pos().clone()
+        }
+        false => j.pos() - i.pos(),
+      };
+
+      let mut a_delta = self.g * j.mass() / (r.norm() + std::f64::EPSILON) * r;
 
       for e in a_delta.iter_mut() {
         let rand: f64 = rng.gen_range(0.0..1.0);
@@ -142,7 +171,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
     }
 
     let rand: f64 = rng.gen_range(0.0..1.0);
-    rand * self.particles()[idx].vel() + a
+    rand * self.particles()[i].vel() + a
   }
 
   fn run(&mut self, iterations: usize) {
@@ -155,7 +184,10 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
         fitness.push(self.problem().f(&pos));
       }
 
-      let m = utils::original_gsa_normalize(fitness);
+      let m = match self.normalizer {
+        Normalizer::MinMax => utils::original_gsa_normalize(fitness),
+        _ => todo!(),
+      };
       for (mass, particle) in m.iter().zip(self.particles_mut().iter_mut()) {
         particle.set_mass(*mass);
       }

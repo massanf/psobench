@@ -17,6 +17,7 @@ pub enum ParamValue {
   Float(f64),
   Int(isize),
   Normalizer(Normalizer),
+  Tiled(bool),
 }
 
 impl fmt::Display for ParamValue {
@@ -48,6 +49,7 @@ impl Serialize for ParamValue {
         Normalizer::Softmax => serializer.serialize_str("Softmax"),
         Normalizer::Rank => serializer.serialize_str("Rank"),
       },
+      ParamValue::Tiled(v) => serializer.serialize_bool(v),
     }
   }
 }
