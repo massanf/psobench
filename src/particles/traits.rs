@@ -11,7 +11,7 @@ pub struct Behavior {
 }
 
 #[allow(dead_code)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Edge {
   Reflect,
   Pass,

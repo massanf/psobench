@@ -15,19 +15,24 @@ def plot_and_fill(ax: Any, iterations: List[List[float]],
                   log=True, label="", alpha=0.15) -> None:
     t = np.linspace(0, len(iterations), len(iterations))
     top = []
-    bottom = []
-    avg = []
+    btm = []
+    mid = []
     for iteration in iterations:
-        top.append(max(iteration))
-        bottom.append(min(iteration))
-        avg.append(np.average(iteration))
+        btm.append(np.quantile(iteration, 0.25))
+        mid.append(np.quantile(iteration, 0.5))
+        top.append(np.quantile(iteration, 0.75))
 
     if label != "":
-        line, = ax.plot(t, avg, label=label)
+        if "tiled" in label: 
+            # We're expecting 'tiled' to come right after the untiled one.
+            # This will break if this rule is not followed.
+            line, = ax.plot(t, mid, label=label, linestyle='--', color=ax.get_lines()[-1].get_color(), linewidth=1)
+        else:
+            line, = ax.plot(t, mid, label=label, linestyle='-', linewidth=1)
     else:
-        line, = ax.plot(t, avg)
+        line, = ax.plot(t, mid)
 
-    ax.fill_between(t, top, bottom, color=line.get_color(), alpha=alpha)
+    ax.fill_between(t, top, btm, color=line.get_color(), alpha=alpha)
     ax.set_xlim(0, len(iterations))
 
     if log:

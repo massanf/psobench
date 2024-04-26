@@ -16,6 +16,7 @@ use particles::{
   pso::PsoParticle,
   traits::{Behavior, Edge},
 };
+use strum::IntoEnumIterator;
 #[allow(unused_imports)]
 use ParamValue::Float as f;
 #[allow(unused_imports)]
@@ -23,84 +24,113 @@ use ParamValue::Int as i;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
   // let dims = [10, 30, 50, 100];
-  let dims = [10];
-  // let dim = 30;
+  let dims = [50];
   let iterations = 1000;
-  let attempts = 10;
+  let attempts = 30;
 
   for dim in dims {
     println!("{}", dim);
-    let pc: isize = 50;
-
-    // gsa
-    utils::check_cec17::<GsaParticle, Gsa<GsaParticle>>(
-      "test",
-      "gsa",
-      iterations,
-      dim,
-      attempts,
-      Behavior {
-        edge: Edge::Pass,
-        vmax: false,
-      },
-      vec![
-        ("g0", f(1000.0)),
-        ("alpha", f(5.0)),
-        ("particle_count", i(pc)),
-        ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
-        ("tiled", ParamValue::Tiled(false)),
-      ],
-    )?;
-
-    // // igsa
-    // utils::check_cec17::<GsaParticle, Gsa<GsaParticle>>(
-    //   format!("test_{}", pc).as_str(),
-    //   "igsa",
-    //   iterations,
-    //   dim,
-    //   attempts,
-    //   Behavior {
-    //     edge: Edge::Pass,
-    //     vmax: false,
-    //   },
-    //   vec![
-    //     ("g0", f(100.0)),
-    //     ("alpha", f(5.0)),
-    //     ("particle_count", i(pc)),
-    //     ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
-    //   ],
-    // )?;
-
-    // // tiled igsa
-    // utils::check_cec17::<GsaParticle, TiledGsa<GsaParticle>>(
-    //   format!("test_{}", pc).as_str(),
-    //   "tiledigsa",
-    //   iterations,
-    //   dim,
-    //   attempts,
-    //   Behavior {
-    //     edge: Edge::Cycle,
-    //     vmax: false,
-    //   },
-    //   vec![("g0", f(100.0)), ("alpha", f(5.0)), ("particle_count", i(pc))],
-    // )?;
+    for normalizer in Normalizer::iter() {
+      if normalizer == Normalizer::Softmax {
+        continue;
+      }
+      let g0 = match normalizer {
+        Normalizer::MinMax => 1000.,
+        _ => 50.,
+      };
+      utils::check_cec17::<GsaParticle, Gsa<GsaParticle>>(
+        "test",
+        format!("gsa_{:?}_tiled", normalizer).as_str(),
+        iterations,
+        dim,
+        attempts,
+        Behavior {
+          edge: Edge::Cycle,
+          vmax: false,
+        },
+        vec![
+          ("g0", f(g0)),
+          ("alpha", f(5.0)),
+          ("particle_count", i(50)),
+          ("normalizer", ParamValue::Normalizer(normalizer)),
+          ("tiled", ParamValue::Tiled(true)),
+        ],
+        true,
+      )?;
+      // utils::run_grid_searches::<GsaParticle, Gsa<GsaParticle>>(
+      //   format!("gsa_{:?}_tiled", normalizer).as_str(),
+      //   attempts,
+      //   iterations,
+      //   dim,
+      //   parameters::GSA_G0_OPTIONS.clone(),
+      //   parameters::GSA_ALPHA_OPTIONS.clone(),
+      //   vec![
+      //     ("particle_count", i(50)),
+      //     ("normalizer", ParamValue::Normalizer(normalizer)),
+      //     ("tiled", ParamValue::Tiled(true)),
+      //   ],
+      //   Behavior {
+      //     edge: Edge::Cycle,
+      //     vmax: false,
+      //   },
+      // )?;
+    }
   }
 
-  // for dim in dims {
-  //   utils::run_grid_searches::<GsaParticle, Gsa<GsaParticle>>(
-  //     "gsa",
-  //     attempts,
-  //     iterations,
-  //     dim,
-  //     parameters::GSA_G0_OPTIONS.clone(),
-  //     parameters::GSA_ALPHA_OPTIONS.clone(),
-  //     vec![("particle_count", i(100))],
-  //     Behavior {
-  //       edge: Edge::Reflect,
-  //       vmax: false,
-  //     },
-  //   )?;
+  // utils::check_cec17::<GsaParticle, Gsa<GsaParticle>>(
+  //   "test",
+  //   "gsa",
+  //   iterations,
+  //   dim,
+  //   attempts,
+  //   Behavior {
+  //     edge: Edge::Pass,
+  //     vmax: false,
+  //   },
+  //   vec![
+  //     ("g0", f(1000.0)),
+  //     ("alpha", f(5.0)),
+  //     ("particle_count", i(pc)),
+  //     ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
+  //     ("tiled", ParamValue::Tiled(false)),
+  //   ],
+  // )?;
 
+  // // igsa
+  // utils::check_cec17::<GsaParticle, Gsa<GsaParticle>>(
+  //   format!("test_{}", pc).as_str(),
+  //   "igsa",
+  //   iterations,
+  //   dim,
+  //   attempts,
+  //   Behavior {
+  //     edge: Edge::Pass,
+  //     vmax: false,
+  //   },
+  //   vec![
+  //     ("g0", f(100.0)),
+  //     ("alpha", f(5.0)),
+  //     ("particle_count", i(pc)),
+  //     ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
+  //   ],
+  // )?;
+
+  // // tiled igsa
+  // utils::check_cec17::<GsaParticle, TiledGsa<GsaParticle>>(
+  //   format!("test_{}", pc).as_str(),
+  //   "tiledigsa",
+  //   iterations,
+  //   dim,
+  //   attempts,
+  //   Behavior {
+  //     edge: Edge::Cycle,
+  //     vmax: false,
+  //   },
+  //   vec![("g0", f(100.0)), ("alpha", f(5.0)), ("particle_count", i(pc))],
+  // )?;
+  // }
+
+  // for dim in dims {
   //   utils::run_grid_searches::<GsaParticle, Gsa<GsaParticle>>(
   //     "igsa",
   //     attempts,

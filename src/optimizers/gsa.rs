@@ -1,7 +1,7 @@
 use crate::optimizers::traits::{
   Data, DataExporter, GlobalBestPos, Name, OptimizationProblem, Optimizer, ParamValue, Particles,
 };
-use crate::particles::traits::{Behavior, Mass, Particle, Position, Velocity};
+use crate::particles::traits::{Behavior, Edge, Mass, Particle, Position, Velocity};
 use crate::problems;
 use crate::rand::Rng;
 use crate::utils;
@@ -12,9 +12,10 @@ use std::collections::HashMap;
 use std::fs;
 use std::mem;
 use std::path::PathBuf;
+use strum_macros::EnumIter;
 
 #[allow(dead_code)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, EnumIter, Debug, PartialEq)]
 pub enum Normalizer {
   MinMax,
   Sigmoid,
@@ -95,6 +96,14 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
         std::process::exit(1);
       }
     };
+
+    if (tiled && behavior.edge != Edge::Cycle) || (!tiled && behavior.edge == Edge::Cycle) {
+      let name = match tiled {
+        true => "tiled",
+        false => "untiled",
+      };
+      eprintln!("Running {} but edge behavior is {:?}", name, behavior.edge);
+    }
 
     let mut gsa = Gsa {
       name,
@@ -202,7 +211,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
 
       // Only use k largest values. Make others not influence.
       let mut m_sorted = m.clone();
-      m_sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
+      m_sorted.sort_by(|a, b| a.partial_cmp(b).expect("Could not compare NaN."));
 
       let particle_count = self.particles().len();
       let mut k = (-(particle_count as f64) / (iterations as f64) * iter as f64 + particle_count as f64) as usize;

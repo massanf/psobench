@@ -111,6 +111,7 @@ pub fn run_attempts<U: Position + Velocity + Clone, T: Optimizer<U> + DataExport
   Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 #[allow(dead_code)]
 pub fn check_cec17<T: Velocity + Clone, U: Optimizer<T>>(
   test_name: &str,
@@ -120,7 +121,7 @@ pub fn check_cec17<T: Velocity + Clone, U: Optimizer<T>>(
   attempts: usize,
   behavior: Behavior,
   params_in_vec: Vec<(&str, ParamValue)>,
-  // out_directory: String,
+  save: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
   let params = param_hashmap_generator(params_in_vec);
   // Progress Bar.
@@ -152,7 +153,7 @@ pub fn check_cec17<T: Velocity + Clone, U: Optimizer<T>>(
       out_directory.join(problem.clone().name()),
       iterations,
       attempts,
-      false,
+      save,
       &bar,
       behavior,
     );
@@ -211,15 +212,11 @@ pub fn generate_out_directory(test_name: &str, dim: usize, type_name: &str) -> P
 }
 
 pub fn min_max_normalize(input: Vec<f64>) -> Vec<f64> {
-  if input.is_empty() {
-    return Vec::new(); // Return an empty vector if input is empty
-  }
-
   let min = input.iter().fold(f64::INFINITY, |a, &b| a.min(b));
   let max = input.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
 
   if (max - min).abs() < f64::EPSILON {
-    return vec![0.0; input.len()]; // Return zero vector if all elements are the same
+    return vec![0.5; input.len()]; // Return zero vector if all elements are the same
   }
 
   input.into_iter().map(|x| (x - max) / (min - max)).collect()
@@ -228,6 +225,9 @@ pub fn min_max_normalize(input: Vec<f64>) -> Vec<f64> {
 pub fn z_score_normalize(input: Vec<f64>) -> Vec<f64> {
   let mean = input.iter().sum::<f64>() / input.len() as f64;
   let std = (input.iter().map(|&x| (x - mean).powi(2)).sum::<f64>() / input.len() as f64).sqrt();
+  if std.abs() < f64::EPSILON {
+    return vec![0.0; input.len()];
+  }
 
   input.iter().map(|&x| (x - mean) / std).collect()
 }
@@ -235,24 +235,30 @@ pub fn z_score_normalize(input: Vec<f64>) -> Vec<f64> {
 pub fn original_gsa_normalize(input: Vec<f64>) -> Vec<f64> {
   let input = min_max_normalize(input);
   let sum: f64 = input.iter().sum();
+  if sum.abs() < f64::EPSILON {
+    return vec![0.0; input.len()];
+  }
   input.iter().map(|&x| x / sum).collect()
 }
 
 pub fn sigmoid_normalize(input: Vec<f64>) -> Vec<f64> {
-  z_score_normalize(input).into_iter().map(|x| 1.0 / (1.0 + (-2. * x).exp())).collect()
+  z_score_normalize(input).into_iter().map(|x| 1.0 / (1.0 + (2. * x).exp())).collect()
 }
 
 pub fn softmax_normalize(input: Vec<f64>) -> Vec<f64> {
-  let max = input.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
-  let exps: Vec<f64> = input.iter().map(|&x| ((x - max).exp()).min(f64::MAX)).collect();
+  let max_val = input.iter().max_by(|x, y| x.partial_cmp(y).unwrap()).unwrap();
+  let exps: Vec<f64> = input.iter().map(|&x| ((-(x - max_val)).exp()).min(f64::MAX)).collect();
   let sum_exps: f64 = exps.iter().sum();
+  if sum_exps.abs() < f64::EPSILON {
+    return vec![0.0; input.len()];
+  }
 
   exps.iter().map(|&exp| exp / sum_exps).collect()
 }
 
 pub fn rank_normalize(input: Vec<f64>) -> Vec<f64> {
   let mut sorted_input: Vec<_> = input.iter().enumerate().collect();
-  sorted_input.sort_by(|i, j| i.1.partial_cmp(j.1).unwrap());
+  sorted_input.sort_by(|i, j| j.1.partial_cmp(i.1).unwrap());
   let mut mp: HashMap<usize, usize> = HashMap::new();
   for (idx, (i, _x)) in sorted_input.iter().enumerate() {
     mp.insert(*i, idx);
