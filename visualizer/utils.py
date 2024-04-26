@@ -1,5 +1,6 @@
 from typing import List, Any
 import pathlib
+import json
 from pso import PSO
 import matplotlib.pyplot as plt  # type: ignore
 from grid_searches import GridSearches
@@ -61,6 +62,24 @@ def generate_progress_comparison(name: pathlib.Path):
     print(f"Saving: {graphs/ f'progress_comparison.png'}")
     plt.savefig(graphs / f"progress_comparison.png")
 
+def generate_final_results(name: pathlib.Path):
+    data = HOME / "data" / name
+    graphs = HOME / "graphs" / name
+    graphs.mkdir(parents=True, exist_ok=True)
+    tests = Tests(data)
+    fig, axs = plt.subplots(5, 6, figsize=(15, 10), dpi=300)
+    axs = tests.plot_final_results(axs)
+    plt.tight_layout()
+    print(f"Saving: {graphs/ f'final_results.png'}")
+    plt.savefig(graphs / f"final_results.png")
+
+def get_final_results(name: pathlib.Path):
+    data = HOME / "data" / name
+    graphs = HOME / "graphs" / name
+    graphs.mkdir(parents=True, exist_ok=True)
+    tests = Tests(data)
+    return tests.get_final_results()
+
 def generate_entropy_comparison(name: pathlib.Path):
     data = HOME / "data" / name
     graphs = HOME / "graphs" / name
@@ -83,3 +102,10 @@ def generate_overview(name: pathlib.Path, skip=1, end=500, animate_mass=False):
         pso.animate_mass(graphs / "mass.gif", skip, 0, end)
     print(f"Saving: {graphs / 'animation.gif'}")
     pso.animate_particles(graphs/ "animation.gif", skip, 0, end)
+
+def shorter_names(names: List[str]):
+    # ["gsa_MinMax", "gsa_MinMax_tiled"] -> ["gM", "gMt"]
+    result = []
+    for name in names:
+        result.append(''.join([i[0] for i in name.split('_')]))
+    return result

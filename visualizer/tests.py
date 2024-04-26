@@ -1,4 +1,5 @@
 import pathlib
+import numpy as np
 from pso import PSO
 from attempts import Attempts
 from tqdm import tqdm
@@ -45,6 +46,42 @@ class Tests:
             if pso_type[0] == '_':
                 continue
             axs = self.plot_best_global_progress(axs, pso_type)
+        return axs
+
+    def get_final_result(self, pso_type: str):
+        result = {}
+        for i, function in enumerate(sorted(self.data[pso_type])):
+            attempts = self.data[pso_type][function]
+            result[function] = attempts.get_all_final_results()
+        return result
+
+    def get_final_results(self):
+        result = {}
+        for pso_type in sorted(self.data):
+            if pso_type[0] == '_':
+                continue
+            pso_result = self.get_final_result(pso_type)
+            for fn in pso_result:
+                if fn not in result:
+                    result[fn] = {}
+                result[fn][pso_type] = pso_result[fn]
+        return result
+
+    def plot_final_results(self, axs):
+        axs = axs.flatten()
+        result = self.get_final_results()
+        for i, function in enumerate(result):
+            axs[i].set_title(function)
+            data = result[function].values()
+            err_top = []
+            avg = []
+            err_btm = []
+            for datum in data:
+                err_top.append(np.quantile(datum, 0.75) - np.quantile(datum, 0.5))
+                err_btm.append(np.quantile(datum, 0.5) - np.quantile(datum, 0.25))
+                avg.append(np.average(datum) - i * 100)
+            axs[i].bar(utils.shorter_names(result[function].keys()), avg, yerr=[err_top, err_btm], capsize=4)
+            axs[i].set_ylim(0)
         return axs
 
     def plot_all_entropy(self, axs):
