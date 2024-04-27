@@ -1,6 +1,6 @@
 import pathlib
 from matplotlib.animation import FuncAnimation  # type: ignore
-from scipy.spatial import distance_matrix
+from scipy.spatial import distance_matrix # type: ignore
 import matplotlib.pyplot as plt  # type: ignore
 from tqdm import tqdm  # type: ignore
 import utils
@@ -10,7 +10,8 @@ import os
 import json
 from particle import Particle
 from iteration import Iteration
-from typing import List, Dict, Any, Callable
+from typing import List, Dict, Any, Callable, cast, Iterable
+from matplotlib.artist import Artist
 
 
 class PSO:
@@ -166,17 +167,18 @@ class PSO:
         plt.title(f"Iteration: {frame}")
 
     def animate(self, updater: Callable, destination_path: pathlib.Path,
-                skip_frames: int = 50, start=0, end=-1) -> None:
+                skip_frames: int = 50, start: int = 0, end: int =-1) -> None:
         fig, ax = plt.subplots()
         if end == -1:
             end = len(self.iterations)
         frames = range(start, end, skip_frames)
+        frames_cast = cast(Iterable[Artist], frames)
         self.progressbar = tqdm(total=math.ceil((end - start) / skip_frames) + 1)
-        ani = FuncAnimation(fig, updater, frames=frames)
+        ani = FuncAnimation(fig, updater, frames=frames_cast)
         ani.save(destination_path, fps=10)
     
     def animate_particles(self, destination_path: pathlib.Path,
-                          skip_frames: int = 50, start=0, end=-1) -> None:
+                          skip_frames: int = 50, start: int =0, end: int =-1) -> None:
         assert self.fully_loaded
         # Find lim
         self.lim = [float('inf'), float('-inf')]
@@ -191,7 +193,7 @@ class PSO:
         self.animate(self.update_particles_for_animate, destination_path, skip_frames, start, end)
 
     def animate_mass(self, destination_path: pathlib.Path,
-                          skip_frames: int = 50, start=0, end=-1) -> None:
+                          skip_frames: int = 50, start: int =0, end: int =-1) -> None:
         assert self.fully_loaded
         mass = []
         for iteration in self.iterations:

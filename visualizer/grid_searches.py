@@ -25,14 +25,14 @@ class GridSearches:
         self.data_paths = sorted(self.data_paths, key=lambda path: path.name)
         self.graph_paths = sorted(self.graph_paths, key=lambda path: path.name)
 
-    def draw_heatmap(self, log_1: bool, log_2: bool):
+    def draw_heatmap(self, log_1: bool, log_2: bool) -> None:
         for idx, function_dir in enumerate(self.data_paths):
             graph_dir = self.graphs / function_dir.name
             graph_dir.mkdir(parents=True, exist_ok=True)
             grid = GridSearch(function_dir)
             grid.draw_heatmap(graph_dir, log_1, log_2)
 
-    def heatmap_collage(self, filename: str, log_1: bool, log_2: bool):
+    def heatmap_collage(self, filename: str, log_1: bool, log_2: bool) -> None:
         self.draw_heatmap(log_1, log_2)
         n_rows = 5
         n_cols = 6
@@ -50,7 +50,7 @@ class GridSearches:
         print(f"Saving: {self.graphs / filename}")
         plt.savefig(self.graphs / filename, bbox_inches='tight', pad_inches=0.1)
 
-    def plot_best_global_progresses(self, axs) -> Any:
+    def plot_best_global_progresses(self, axs: Any) -> Any:
         axs = axs.flatten()
         for i, ax in enumerate(tqdm(axs)):
             if i >= len(self.data_paths):

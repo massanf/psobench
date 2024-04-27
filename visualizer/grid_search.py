@@ -11,6 +11,7 @@ from matplotlib.ticker import ScalarFormatter
 from matplotlib.ticker import LogLocator
 import matplotlib.colors as colors  # type: ignore
 from typing import List, Tuple
+from numpy._typing import _64Bit
 import pathlib
 
 
@@ -68,7 +69,7 @@ class GridSearch:
                 self.best_pso = z
                 self.min_fitness = np.min(z.global_best_fitness_progress())
 
-    def best_global_progress(self):
+    def best_global_progress(self) -> List[float]:
         best = float("inf")
         for row in self.psos:
             for psos in row:
@@ -77,7 +78,7 @@ class GridSearch:
                     final_values.append(attempt.global_best_fitness(-1))
                 avg = np.average(final_values)
                 if avg < best:
-                    best = avg
+                    best = float(avg)
                     best_psos = psos
         data = []
         best_psos = self.psos[0][0]
@@ -86,7 +87,7 @@ class GridSearch:
         return [sum(group) / len(group) for group in zip(*data)]
  
 
-    def plot_best_global_progress(self, path: pathlib.Path):
+    def plot_best_global_progress(self, path: pathlib.Path) -> None:
         plt.close()
         plt.cla()
         plt.yscale('log')
@@ -95,7 +96,7 @@ class GridSearch:
         print(f"Saving: {path / 'best_global_progress.png'}")
         plt.savefig(path / "best_global_progress.png", bbox_inches='tight')
 
-    def create_image(self, use_all_range: bool, frame: int = -1) -> Tuple[List[List[float]], Any]:
+    def create_image(self, use_all_range: bool, frame: int = -1) -> Tuple[np.ndarray[Any, np.dtype[np.floating[_64Bit]]], Any]:
         image = np.zeros((len(self.y_values), len(self.x_values)))
         for (i, row) in enumerate(self.psos):
             for (j, z) in enumerate(row):
@@ -108,26 +109,6 @@ class GridSearch:
         else:
             norm = colors.LogNorm()
         return (image, norm)
-
-    def draw_heatmap_for_animate(
-            self,
-            frame: int = -1
-            ) -> None:
-        plt.cla()
-
-        image, norm = self.create_image(True, frame)
-
-        plt.imshow(image, cmap='viridis', origin='lower',
-                   norm=norm,
-                   extent=[self.x_values[0],
-                           self.x_values[-1],
-                           self.y_values[0],
-                           self.y_values[-1]],
-                   aspect="auto")
-        plt.title(f"{self.name} iter: {frame}")
-        plt.xlabel(self.arg1)
-        plt.ylabel(self.arg2)
-        self.progressbar.update(1)
 
     def draw_heatmap(
             self,
@@ -165,23 +146,4 @@ class GridSearch:
         newax.set_ylabel(self.arg2)
 
         plt.savefig(path / "grid_search.png", bbox_inches='tight')
-        plt.close()
-
-    def animate(self, out_path: pathlib.Path) -> None:
-        plt.rcParams.update({'figure.max_open_warning': 0})
-        fig, ax = plt.subplots(figsize=(6.0, 6.0))
-        skip_frames = 10
-        self.progressbar = tqdm(total=int(
-            (len(self.psos[0][0].global_best_fitness_progress())
-             / skip_frames) + 2))
-        self.progressbar.set_description(self.name)
-
-        self.draw_heatmap(0)
-        plt.colorbar()
-
-        frames = range(0, 1000, skip_frames)
-        ani = FuncAnimation(fig, self.plot_for_animate, frames=frames)
-        ani.save(out_path /
-                 f"grid_progress_{self.name}_{self.arg1}_vs_{self.arg2}.mp4",
-                 fps=10)
         plt.close()

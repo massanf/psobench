@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt  # type: ignore
 from particle import Particle
-from typing import List
+from typing import List, Tuple
 import pathlib
 
 
@@ -10,8 +10,8 @@ class Iteration:
         self.particles = particles
         self.global_best_fitness = global_best_fitness
 
-    def visualize(self, title: str, x_lim: List[float],
-                  y_lim: List[float], filename: pathlib.Path) -> None:
+    def visualize(self, title: str, x_lim: Tuple[float, float],
+                  y_lim: Tuple[float, float], filename: pathlib.Path) -> None:
         plt.cla()
         for particle in self.particles:
             assert len(particle.pos) >= 2
