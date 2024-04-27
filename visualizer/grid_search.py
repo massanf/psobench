@@ -1,14 +1,9 @@
 import matplotlib.pyplot as plt  # type: ignore
 import os
-import matplotlib
-from matplotlib.animation import FuncAnimation  # type: ignore
 import numpy as np  # type: ignore
 from typing import Dict, Any
 import json
 from pso import PSO
-from tqdm import tqdm  # type: ignore
-from matplotlib.ticker import ScalarFormatter
-from matplotlib.ticker import LogLocator
 import matplotlib.colors as colors  # type: ignore
 from typing import List, Tuple
 from numpy._typing import _64Bit
@@ -39,7 +34,8 @@ class GridSearch:
         for exp_path in (data_path).glob("*"):
             if not os.path.isdir(exp_path):
                 continue
-            attempts = len([name for name in os.listdir(exp_path) if os.path.isdir(os.path.join(exp_path, name))])
+            attempts = len([name for name in os.listdir(exp_path)
+                            if os.path.isdir(os.path.join(exp_path, name))])
             for attempt_path in (exp_path).glob("*"):
                 pso = PSO(attempt_path)
                 if self.arg1 == "dim":
@@ -54,7 +50,8 @@ class GridSearch:
         self.x_values = self.search_config["grid_search"][self.arg1]
         self.y_values = self.search_config["grid_search"][self.arg2]
 
-        self.psos = [[[PSO(attempt_path) for _ in range(attempts)] for _ in range(len(self.x_values))]
+        self.psos = [[[PSO(attempt_path) for _ in range(attempts)]
+                      for _ in range(len(self.x_values))]
                      for _ in range(len(self.y_values))]
 
         self.max_fitness = float("-inf")
@@ -85,7 +82,6 @@ class GridSearch:
         for pso in best_psos:
             data.append(pso.global_best_fitness_progress())
         return [sum(group) / len(group) for group in zip(*data)]
- 
 
     def plot_best_global_progress(self, path: pathlib.Path) -> None:
         plt.close()
@@ -96,7 +92,9 @@ class GridSearch:
         print(f"Saving: {path / 'best_global_progress.png'}")
         plt.savefig(path / "best_global_progress.png", bbox_inches='tight')
 
-    def create_image(self, use_all_range: bool, frame: int = -1) -> Tuple[np.ndarray[Any, np.dtype[np.floating[_64Bit]]], Any]:
+    def create_image(
+            self, use_all_range: bool, frame: int = -1
+            ) -> Tuple[np.ndarray[Any, np.dtype[np.floating[_64Bit]]], Any]:
         image = np.zeros((len(self.y_values), len(self.x_values)))
         for (i, row) in enumerate(self.psos):
             for (j, z) in enumerate(row):
@@ -116,10 +114,10 @@ class GridSearch:
             log_1: bool,
             log_2: bool,
             frame: int = -1,
-        ) -> None:
+            ) -> None:
         plt.close()
         image, norm = self.create_image(False, frame)
-        
+
         # Doing finicky stuff because the axes have to be log.
         fig, ax = plt.subplots(1, 1, figsize=(2, 2), dpi=100)
 

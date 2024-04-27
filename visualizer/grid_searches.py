@@ -1,5 +1,4 @@
 import pathlib
-from pso import PSO
 from tqdm import tqdm
 from matplotlib.ticker import LogLocator, LogFormatterMathtext
 import matplotlib.pyplot as plt  # type: ignore
@@ -7,8 +6,10 @@ from typing import Any
 from grid_search import GridSearch
 import matplotlib.image as mpimg
 
+
 class GridSearches:
-    def __init__(self, data: pathlib.Path, graphs: pathlib.Path, path: pathlib.Path):
+    def __init__(self, data: pathlib.Path,
+                 graphs: pathlib.Path, path: pathlib.Path):
         self.path = path
         self.data = data / path
         self.graphs = graphs / path
@@ -48,7 +49,8 @@ class GridSearches:
 
         plt.subplots_adjust(wspace=0.1, hspace=0.1)
         print(f"Saving: {self.graphs / filename}")
-        plt.savefig(self.graphs / filename, bbox_inches='tight', pad_inches=0.1)
+        plt.savefig(self.graphs / filename, bbox_inches='tight',
+                    pad_inches=0.1)
 
     def plot_best_global_progresses(self, axs: Any) -> Any:
         axs = axs.flatten()
@@ -58,7 +60,8 @@ class GridSearches:
                 continue
             grid = GridSearch(self.data_paths[i])
             axs[i].yaxis.set_major_locator(LogLocator(base=10.0))
-            axs[i].yaxis.set_major_formatter(LogFormatterMathtext(base=10.0, labelOnlyBase=False))
+            axs[i].yaxis.set_major_formatter(
+                LogFormatterMathtext(base=10.0, labelOnlyBase=False))
             axs[i].plot(grid.best_global_progress(), label=self.path.name)
             axs[i].set_title(grid.name)
             axs[i].legend()

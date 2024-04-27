@@ -7,6 +7,8 @@ name = "pypi"
 matplotlib = "*"
 tqdm = "*"
 scipy = "*"
+autopep8 = "*"
+flake8 = "*"
 
 [dev-packages]
 

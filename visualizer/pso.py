@@ -1,6 +1,6 @@
 import pathlib
 from matplotlib.animation import FuncAnimation  # type: ignore
-from scipy.spatial import distance_matrix # type: ignore
+from scipy.spatial import distance_matrix  # type: ignore
 import matplotlib.pyplot as plt  # type: ignore
 from tqdm import tqdm  # type: ignore
 import utils
@@ -63,7 +63,7 @@ class PSO:
             return result
         raise ValueError("Incorrect dictionary type.")
 
-    def global_best_fitness(self, idx: int=-1) -> float:
+    def global_best_fitness(self, idx: int = -1) -> float:
         progress = self.summary["global_best_fitness"]
         if idx != -1 and not (idx >= 0 and idx < len(progress)):
             raise ValueError("Index is out of bounds.")
@@ -111,7 +111,7 @@ class PSO:
             entropy_estimate = np.mean(np.log(k_distances))
             entropies.append(entropy_estimate)
         return entropies
-    
+
     def mass(self) -> List[List[float]]:
         assert self.fully_loaded
         assert self.has_mass()
@@ -139,7 +139,8 @@ class PSO:
         for particle in iteration.particles:
             assert len(particle.pos) >= 2
             if self.has_mass() and max_mass != 0.0:
-                plt.scatter(particle.pos[0], particle.pos[1], s=particle.mass * 50 / max_mass, c='c')
+                plt.scatter(particle.pos[0], particle.pos[1],
+                            s=particle.mass * 50 / max_mass, c='c')
             else:
                 plt.scatter(particle.pos[0], particle.pos[1], c='c')
 
@@ -167,18 +168,20 @@ class PSO:
         plt.title(f"Iteration: {frame}")
 
     def animate(self, updater: Callable, destination_path: pathlib.Path,
-                skip_frames: int = 50, start: int = 0, end: int =-1) -> None:
+                skip_frames: int = 50, start: int = 0, end: int = -1) -> None:
         fig, ax = plt.subplots()
         if end == -1:
             end = len(self.iterations)
         frames = range(start, end, skip_frames)
         frames_cast = cast(Iterable[Artist], frames)
-        self.progressbar = tqdm(total=math.ceil((end - start) / skip_frames) + 1)
+        self.progressbar = tqdm(
+            total=math.ceil((end - start) / skip_frames) + 1)
         ani = FuncAnimation(fig, updater, frames=frames_cast)
         ani.save(destination_path, fps=10)
-    
+
     def animate_particles(self, destination_path: pathlib.Path,
-                          skip_frames: int = 50, start: int =0, end: int =-1) -> None:
+                          skip_frames: int = 50, start: int = 0,
+                          end: int = -1) -> None:
         assert self.fully_loaded
         # Find lim
         self.lim = [float('inf'), float('-inf')]
@@ -190,10 +193,12 @@ class PSO:
                 self.lim[1] = max(self.lim[1],
                                   particle.pos[0],
                                   particle.pos[1])
-        self.animate(self.update_particles_for_animate, destination_path, skip_frames, start, end)
+        self.animate(self.update_particles_for_animate,
+                     destination_path, skip_frames, start, end)
 
     def animate_mass(self, destination_path: pathlib.Path,
-                          skip_frames: int = 50, start: int =0, end: int =-1) -> None:
+                     skip_frames: int = 50, start: int = 0,
+                     end: int = -1) -> None:
         assert self.fully_loaded
         mass = []
         for iteration in self.iterations:
@@ -209,9 +214,11 @@ class PSO:
             counts, _ = np.histogram(mass_, self.bins)
             max_y = max(max_y, counts.max())
         self.max_y = max_y
-        self.animate(self.update_mass_for_animate, destination_path, skip_frames, start, end)
+        self.animate(self.update_mass_for_animate, destination_path,
+                     skip_frames, start, end)
 
-    def plot_global_best_fitness_progress(self, out_directory: pathlib.Path) -> None:
+    def plot_global_best_fitness_progress(self,
+                                          out_directory: pathlib.Path) -> None:
         if not out_directory.exists():
             os.makedirs(out_directory)
         plt.close()
@@ -253,7 +260,6 @@ class PSO:
         print(f"Saving: {out_directory / 'entropy_over_time.png'}")
         plt.savefig(out_directory / "entropy_over_time.png")
         plt.close()
-
 
         if self.has_mass():
             plt.cla()

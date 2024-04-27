@@ -1,7 +1,7 @@
 import pathlib
 from typing import List
 from pso import PSO
-import numpy as np
+
 
 class Attempts:
     def __init__(self, path: pathlib.Path):
@@ -29,7 +29,7 @@ class Attempts:
             data.append(pso.entropy())
             pso.unload()
         return [sum(group) / len(group) for group in zip(*data)]
-    
+
     def get_all_final_results(self) -> List[float]:
         data = []
         for pso in self.data:
