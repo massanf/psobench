@@ -32,33 +32,33 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   let particle_count = 100;
 
   // grid
-  let grid = false;
+  let grid = true;
 
   for dim in dims {
-    for tiled in [true, false].iter() {
-      for normalizer in Normalizer::iter() {
+    for normalizer in Normalizer::iter() {
+      for tiled in [false, true].iter() {
         match grid {
           false => {
             utils::check_cec17::<GsaParticle, Gsa<GsaParticle>>(
               "test",
-              utils::generate_name_with_normalizer_and_tiled(normalizer, *tiled).as_str(),
+              utils::name_from_normalizer_and_tiled(normalizer, *tiled).as_str(),
               iterations,
               dim,
               attempts,
               vec![
-                ("g0", utils::g0_with_normalizer(normalizer)),
-                ("alpha", utils::alpha_with_normalizer(normalizer)),
+                ("g0", utils::g0_from_normalizer(normalizer)),
+                ("alpha", utils::alpha_from_normalizer(normalizer)),
                 ("particle_count", i(particle_count)),
                 ("normalizer", ParamValue::Normalizer(normalizer)),
                 ("tiled", ParamValue::Tiled(*tiled)),
-                ("behavior", utils::generate_behavior_with_tiled(*tiled)),
+                ("behavior", utils::behavior_from_tiled(*tiled)),
               ],
               true,
             )?;
           }
           true => {
             utils::run_grid_searches::<GsaParticle, Gsa<GsaParticle>>(
-              utils::generate_name_with_normalizer_and_tiled(normalizer, *tiled).as_str(),
+              utils::name_from_normalizer_and_tiled(normalizer, *tiled).as_str(),
               attempts,
               iterations,
               dim,
@@ -68,7 +68,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ("particle_count", i(particle_count)),
                 ("normalizer", ParamValue::Normalizer(normalizer)),
                 ("tiled", ParamValue::Tiled(*tiled)),
-                ("behavior", utils::generate_behavior_with_tiled(*tiled)),
+                ("behavior", utils::behavior_from_tiled(*tiled)),
               ],
             )?;
           }

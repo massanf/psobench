@@ -111,7 +111,6 @@ pub fn run_attempts<U: Position + Velocity + Clone, T: Optimizer<U> + DataExport
 }
 
 #[allow(clippy::too_many_arguments)]
-#[allow(dead_code)]
 pub fn check_cec17<T: Velocity + Clone, U: Optimizer<T>>(
   test_name: &str,
   optimizer_name: &str,
@@ -159,7 +158,6 @@ pub fn check_cec17<T: Velocity + Clone, U: Optimizer<T>>(
   Ok(())
 }
 
-#[allow(dead_code)]
 #[allow(clippy::too_many_arguments)]
 pub fn run_grid_searches<T: Velocity + Clone, U: Optimizer<T>>(
   optimizer_name: &str,
@@ -192,7 +190,6 @@ pub fn run_grid_searches<T: Velocity + Clone, U: Optimizer<T>>(
   Ok(())
 }
 
-#[allow(dead_code)]
 pub fn param_hashmap_generator(params: Vec<(&str, ParamValue)>) -> HashMap<String, ParamValue> {
   let mut vec = Vec::new();
   for param in params {
@@ -201,7 +198,6 @@ pub fn param_hashmap_generator(params: Vec<(&str, ParamValue)>) -> HashMap<Strin
   vec.iter().cloned().collect()
 }
 
-#[allow(dead_code)]
 pub fn generate_out_directory(test_name: &str, dim: usize, type_name: &str) -> PathBuf {
   PathBuf::from(format!("data/{}/{}/{}", test_name, dim, type_name))
 }
@@ -258,7 +254,7 @@ pub fn rank_normalize(input: Vec<f64>) -> Vec<f64> {
   input.iter().enumerate().map(|(i, _)| mp[&i] as f64 / input.len() as f64).collect()
 }
 
-pub fn generate_behavior_with_tiled(tiled: bool) -> ParamValue {
+pub fn behavior_from_tiled(tiled: bool) -> ParamValue {
   ParamValue::Behavior(Behavior {
     edge: match tiled {
       true => Edge::Cycle,
@@ -268,18 +264,18 @@ pub fn generate_behavior_with_tiled(tiled: bool) -> ParamValue {
   })
 }
 
-pub fn g0_with_normalizer(normalizer: Normalizer) -> ParamValue {
+pub fn g0_from_normalizer(normalizer: Normalizer) -> ParamValue {
   ParamValue::Float(match normalizer {
     Normalizer::MinMax => 1000.,
     _ => 50.,
   })
 }
 
-pub fn alpha_with_normalizer(_normalizer: Normalizer) -> ParamValue {
+pub fn alpha_from_normalizer(_normalizer: Normalizer) -> ParamValue {
   ParamValue::Float(5.)
 }
 
-pub fn generate_name_with_normalizer_and_tiled(normalizer: Normalizer, tiled: bool) -> String {
+pub fn name_from_normalizer_and_tiled(normalizer: Normalizer, tiled: bool) -> String {
   match tiled {
     true => format!("gsa_{:?}_tiled", normalizer),
     false => format!("gsa_{:?}", normalizer),

@@ -4,17 +4,17 @@ import pathlib
 # import numpy as np
 from constants import DATA
 
-test_name = "test_copy"
-# for path in (DATA / test_name).glob("*"):
-    #     # utils.generate_entropy_comparison(pathlib.Path("test") / path.name)
-    # utils.generate_progress_comparison(pathlib.Path(test_name) / path.name)
-    # utils.generate_final_results(pathlib.Path(test_name) / path.name)
+test_name = "test"
+for path in (DATA / test_name).glob("*"):
+    # utils.generate_entropy_comparison(pathlib.Path("test") / path.name)
+    utils.generate_progress_comparison(pathlib.Path(test_name) / path.name)
+    utils.generate_final_results(pathlib.Path(test_name) / path.name)
 
 # gsa_path = pathlib.Path("grid_search") / "50" / "gsa_MinMax"
 # utils.generate_gridmap_collage(gsa_path)
 
-gsa_path = pathlib.Path("grid_search") / "50" / "gsa_Sigmoid4_tiled"
-utils.generate_gridmap_collage(gsa_path)
+# gsa_path = pathlib.Path("grid_search") / "50" / "gsa_Sigmoid4_tiled"
+# utils.generate_gridmap_collage(gsa_path)
 
 # gsa_path = pathlib.Path("grid_search") / "50" / "gsa_Rank"
 # utils.generate_gridmap_collage(gsa_path)
