@@ -15,17 +15,6 @@ lazy_static! {
     .collect();
     pso_params
   };
-  pub static ref GSA_PARAMS: HashMap<String, ParamValue> = {
-    let gsa_params: HashMap<String, ParamValue> = [
-      ("g0".to_owned(), ParamValue::Float(100.0)),
-      ("alpha".to_owned(), ParamValue::Float(20.0)),
-      ("particle_count".to_owned(), ParamValue::Int(30)),
-    ]
-    .iter()
-    .cloned()
-    .collect();
-    gsa_params
-  };
   pub static ref PSO_PHI_P_OPTIONS: (String, Vec<ParamValue>) = {
     let phi_p: Vec<ParamValue> = vec![
       ParamValue::Float(-4.0),
@@ -92,10 +81,5 @@ lazy_static! {
       ParamValue::Float(100.0),
     ];
     ("alpha".to_owned(), alpha)
-  };
-  pub static ref GSA_BASE_PARAMS: HashMap<String, ParamValue> = {
-    let base_params: HashMap<String, ParamValue> =
-    [("particle_count".to_owned(), ParamValue::Int(30))].iter().cloned().collect();
-    base_params
   };
 }

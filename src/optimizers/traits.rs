@@ -16,6 +16,7 @@ pub enum ParamValue {
   Int(isize),
   Normalizer(Normalizer),
   Tiled(bool),
+  Behavior(Behavior),
 }
 
 impl fmt::Display for ParamValue {
@@ -40,11 +41,13 @@ impl Serialize for ParamValue {
       ParamValue::Int(ref c) => serializer.serialize_u64(*c as u64),
       ParamValue::Normalizer(value) => match value {
         Normalizer::MinMax => serializer.serialize_str("MinMax"),
-        Normalizer::Sigmoid => serializer.serialize_str("Sigmoid"),
+        Normalizer::Sigmoid2 => serializer.serialize_str("Sigmoid2"),
+        Normalizer::Sigmoid4 => serializer.serialize_str("Sigmoid4"),
         Normalizer::Softmax => serializer.serialize_str("Softmax"),
         Normalizer::Rank => serializer.serialize_str("Rank"),
       },
       ParamValue::Tiled(v) => serializer.serialize_bool(v),
+      ParamValue::Behavior(b) => b.serialize(serializer),
     }
   }
 }
@@ -57,7 +60,6 @@ pub trait Optimizer<U: Position + Velocity + Clone>:
     problem: Problem,
     parameters: HashMap<String, ParamValue>,
     out_directory: PathBuf,
-    behavior: Behavior,
     save: bool,
   ) -> Self
   where

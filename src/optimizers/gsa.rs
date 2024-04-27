@@ -18,7 +18,8 @@ use strum_macros::EnumIter;
 #[derive(Clone, Copy, EnumIter, Debug, PartialEq)]
 pub enum Normalizer {
   MinMax,
-  Sigmoid,
+  Sigmoid2,
+  Sigmoid4,
   Softmax,
   Rank,
 }
@@ -46,7 +47,6 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
     problem: Problem,
     parameters: HashMap<String, ParamValue>,
     out_directory: PathBuf,
-    behavior: Behavior,
     save: bool,
   ) -> Gsa<T> {
     assert!(
@@ -93,6 +93,15 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
       ParamValue::Tiled(val) => val,
       _ => {
         eprintln!("Error: parameter 'tiled' should be of type Param::Tiled.");
+        std::process::exit(1);
+      }
+    };
+
+    assert!(parameters.contains_key("behavior"), "Key 'behavior' not found.");
+    let behavior = match parameters["behavior"] {
+      ParamValue::Behavior(val) => val,
+      _ => {
+        eprintln!("Error: parameter 'behavior' should be of type Param::Behavior.");
         std::process::exit(1);
       }
     };
@@ -201,7 +210,8 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
 
       let m = match self.normalizer {
         Normalizer::MinMax => utils::original_gsa_normalize(fitness),
-        Normalizer::Sigmoid => utils::sigmoid_normalize(fitness),
+        Normalizer::Sigmoid2 => utils::sigmoid2_normalize(fitness),
+        Normalizer::Sigmoid4 => utils::sigmoid4_normalize(fitness),
         Normalizer::Softmax => utils::softmax_normalize(fitness),
         Normalizer::Rank => utils::rank_normalize(fitness),
       };

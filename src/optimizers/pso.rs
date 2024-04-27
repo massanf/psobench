@@ -29,7 +29,6 @@ impl<T: Particle + Position + Velocity + BestPosition + Clone> Optimizer<T> for 
     problem: Problem,
     parameters: HashMap<String, ParamValue>,
     out_directory: PathBuf,
-    behavior: Behavior,
     save: bool,
   ) -> Pso<T> {
     assert!(
@@ -67,6 +66,15 @@ impl<T: Particle + Position + Velocity + BestPosition + Clone> Optimizer<T> for 
       ParamValue::Float(val) => val,
       _ => {
         eprintln!("Error");
+        std::process::exit(1);
+      }
+    };
+
+    assert!(parameters.contains_key("behavior"), "Key 'behavior' not found.");
+    let behavior = match parameters["behavior"] {
+      ParamValue::Behavior(val) => val,
+      _ => {
+        eprintln!("Error: parameter 'behavior' should be of type Param::Behavior.");
         std::process::exit(1);
       }
     };

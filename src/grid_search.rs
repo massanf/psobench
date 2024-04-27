@@ -1,5 +1,5 @@
 use crate::optimizers::traits::{DataExporter, Optimizer, ParamValue};
-use crate::particles::traits::{Behavior, Position, Velocity};
+use crate::particles::traits::{Position, Velocity};
 use crate::problems::Problem;
 use crate::utils;
 use indicatif::{ProgressBar, ProgressStyle};
@@ -37,7 +37,6 @@ pub fn grid_search<U: Position + Velocity + Clone, T: Optimizer<U> + DataExporte
   param2: (String, Vec<ParamValue>),
   base_params: HashMap<String, ParamValue>,
   out_folder: PathBuf,
-  behavior: Behavior,
 ) -> Result<(), Box<dyn std::error::Error>> {
   utils::create_directory(out_folder.clone(), true, false);
   let out_directory = out_folder.join(problem.name());
@@ -66,7 +65,6 @@ pub fn grid_search<U: Position + Velocity + Clone, T: Optimizer<U> + DataExporte
         attempts,
         false,
         &bar,
-        behavior,
       );
     });
   });
@@ -87,7 +85,6 @@ pub fn grid_search_dim<U: Position + Velocity + Clone, T: Optimizer<U> + DataExp
   param: (String, Vec<ParamValue>),
   base_params: HashMap<String, ParamValue>,
   out_folder: PathBuf,
-  behavior: Behavior,
 ) -> Result<(), Box<dyn std::error::Error>> {
   utils::create_directory(out_folder.clone(), false, true);
   let out_directory = out_folder.join(problem_type(2).name());
@@ -119,7 +116,6 @@ pub fn grid_search_dim<U: Position + Velocity + Clone, T: Optimizer<U> + DataExp
         attempts,
         false,
         &bar,
-        behavior,
       );
     });
   });

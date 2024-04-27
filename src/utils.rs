@@ -1,6 +1,6 @@
 use crate::grid_search;
 use crate::optimizers::traits::{DataExporter, Optimizer, ParamValue};
-use crate::particles::traits::{Behavior, Position, Velocity};
+use crate::particles::traits::{Position, Velocity};
 use crate::problems;
 use indicatif::{ProgressBar, ProgressStyle};
 use nalgebra::DVector;
@@ -88,7 +88,6 @@ pub fn run_attempts<U: Position + Velocity + Clone, T: Optimizer<U> + DataExport
   attempts: usize,
   save_data: bool,
   bar: &indicatif::ProgressBar,
-  behavior: Behavior,
 ) -> Result<(), Box<dyn std::error::Error>> {
   (0..attempts).into_par_iter().for_each(|attempt| {
     let save = save_data && attempt < 1;
@@ -97,7 +96,6 @@ pub fn run_attempts<U: Position + Velocity + Clone, T: Optimizer<U> + DataExport
       problem.clone(),
       params.clone(),
       out_directory.join(format!("{}", attempt)),
-      behavior,
       save,
     );
     pso.run(iterations);
@@ -119,7 +117,6 @@ pub fn check_cec17<T: Velocity + Clone, U: Optimizer<T>>(
   iterations: usize,
   dim: usize,
   attempts: usize,
-  behavior: Behavior,
   params_in_vec: Vec<(&str, ParamValue)>,
   save: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -155,7 +152,6 @@ pub fn check_cec17<T: Velocity + Clone, U: Optimizer<T>>(
       attempts,
       save,
       &bar,
-      behavior,
     );
   });
 
@@ -172,7 +168,6 @@ pub fn run_grid_searches<T: Velocity + Clone, U: Optimizer<T>>(
   param1: (String, Vec<ParamValue>),
   param2: (String, Vec<ParamValue>),
   base_params_in_vec: Vec<(&str, ParamValue)>,
-  behavior: Behavior,
 ) -> Result<(), Box<dyn std::error::Error>> {
   let base_params = param_hashmap_generator(base_params_in_vec);
   let out_directory = generate_out_directory("grid_search", dim, optimizer_name);
@@ -191,7 +186,6 @@ pub fn run_grid_searches<T: Velocity + Clone, U: Optimizer<T>>(
       param2.clone(),
       base_params.clone(),
       out_directory.clone(),
-      behavior,
     )?;
   }
   Ok(())
@@ -241,8 +235,16 @@ pub fn original_gsa_normalize(input: Vec<f64>) -> Vec<f64> {
   input.iter().map(|&x| x / sum).collect()
 }
 
-pub fn sigmoid_normalize(input: Vec<f64>) -> Vec<f64> {
-  z_score_normalize(input).into_iter().map(|x| 1.0 / (1.0 + (2. * x).exp())).collect()
+pub fn sigmoid2_normalize(input: Vec<f64>) -> Vec<f64> {
+  sigmoid_normalize(input, 2.)
+}
+
+pub fn sigmoid4_normalize(input: Vec<f64>) -> Vec<f64> {
+  sigmoid_normalize(input, 4.)
+}
+
+fn sigmoid_normalize(input: Vec<f64>, scale: f64) -> Vec<f64> {
+  z_score_normalize(input).into_iter().map(|x| 1.0 / (1.0 + (scale * x).exp())).collect()
 }
 
 pub fn softmax_normalize(input: Vec<f64>) -> Vec<f64> {

@@ -24,191 +24,86 @@ use ParamValue::Int as i;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
   // let dims = [10, 30, 50, 100];
-  let dims = [50];
+  let dims = [100];
   let iterations = 1000;
-  let attempts = 30;
+  let attempts = 10;
+
+  // params
+  let particle_count = 100;
+
+  // grid
+  let grid = false;
 
   for dim in dims {
-    println!("{}", dim);
-    for normalizer in Normalizer::iter() {
-      if normalizer == Normalizer::Softmax {
-        continue;
+    for tiled in [true, false].iter() {
+      for normalizer in Normalizer::iter() {
+        match grid {
+          false => {
+            utils::check_cec17::<GsaParticle, Gsa<GsaParticle>>(
+              "test",
+              generate_name_with_normalizer_and_tiled(normalizer, *tiled).as_str(),
+              iterations,
+              dim,
+              attempts,
+              vec![
+                ("g0", g0_with_normalizer(normalizer)),
+                ("alpha", alpha_with_normalizer(normalizer)),
+                ("particle_count", i(particle_count)),
+                ("normalizer", ParamValue::Normalizer(normalizer)),
+                ("tiled", ParamValue::Tiled(*tiled)),
+                ("behavior", generate_behavior_with_tiled(*tiled)),
+              ],
+              true,
+            )?;
+          }
+          true => {
+            utils::run_grid_searches::<GsaParticle, Gsa<GsaParticle>>(
+              generate_name_with_normalizer_and_tiled(normalizer, *tiled).as_str(),
+              attempts,
+              iterations,
+              dim,
+              parameters::GSA_G0_OPTIONS.clone(),
+              parameters::GSA_ALPHA_OPTIONS.clone(),
+              vec![
+                ("particle_count", i(particle_count)),
+                ("normalizer", ParamValue::Normalizer(normalizer)),
+                ("tiled", ParamValue::Tiled(*tiled)),
+                ("behavior", generate_behavior_with_tiled(*tiled)),
+              ],
+            )?;
+          }
+        }
       }
-      let g0 = match normalizer {
-        Normalizer::MinMax => 1000.,
-        _ => 50.,
-      };
-      utils::check_cec17::<GsaParticle, Gsa<GsaParticle>>(
-        "test",
-        format!("gsa_{:?}_tiled", normalizer).as_str(),
-        iterations,
-        dim,
-        attempts,
-        Behavior {
-          edge: Edge::Cycle,
-          vmax: false,
-        },
-        vec![
-          ("g0", f(g0)),
-          ("alpha", f(5.0)),
-          ("particle_count", i(50)),
-          ("normalizer", ParamValue::Normalizer(normalizer)),
-          ("tiled", ParamValue::Tiled(true)),
-        ],
-        true,
-      )?;
-      // utils::run_grid_searches::<GsaParticle, Gsa<GsaParticle>>(
-      //   format!("gsa_{:?}_tiled", normalizer).as_str(),
-      //   attempts,
-      //   iterations,
-      //   dim,
-      //   parameters::GSA_G0_OPTIONS.clone(),
-      //   parameters::GSA_ALPHA_OPTIONS.clone(),
-      //   vec![
-      //     ("particle_count", i(50)),
-      //     ("normalizer", ParamValue::Normalizer(normalizer)),
-      //     ("tiled", ParamValue::Tiled(true)),
-      //   ],
-      //   Behavior {
-      //     edge: Edge::Cycle,
-      //     vmax: false,
-      //   },
-      // )?;
     }
   }
 
-  // utils::check_cec17::<GsaParticle, Gsa<GsaParticle>>(
-  //   "test",
-  //   "gsa",
-  //   iterations,
-  //   dim,
-  //   attempts,
-  //   Behavior {
-  //     edge: Edge::Pass,
-  //     vmax: false,
-  //   },
-  //   vec![
-  //     ("g0", f(1000.0)),
-  //     ("alpha", f(5.0)),
-  //     ("particle_count", i(pc)),
-  //     ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
-  //     ("tiled", ParamValue::Tiled(false)),
-  //   ],
-  // )?;
-
-  // // igsa
-  // utils::check_cec17::<GsaParticle, Gsa<GsaParticle>>(
-  //   format!("test_{}", pc).as_str(),
-  //   "igsa",
-  //   iterations,
-  //   dim,
-  //   attempts,
-  //   Behavior {
-  //     edge: Edge::Pass,
-  //     vmax: false,
-  //   },
-  //   vec![
-  //     ("g0", f(100.0)),
-  //     ("alpha", f(5.0)),
-  //     ("particle_count", i(pc)),
-  //     ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
-  //   ],
-  // )?;
-
-  // // tiled igsa
-  // utils::check_cec17::<GsaParticle, TiledGsa<GsaParticle>>(
-  //   format!("test_{}", pc).as_str(),
-  //   "tiledigsa",
-  //   iterations,
-  //   dim,
-  //   attempts,
-  //   Behavior {
-  //     edge: Edge::Cycle,
-  //     vmax: false,
-  //   },
-  //   vec![("g0", f(100.0)), ("alpha", f(5.0)), ("particle_count", i(pc))],
-  // )?;
-  // }
-
-  // for dim in dims {
-  //   utils::run_grid_searches::<GsaParticle, Gsa<GsaParticle>>(
-  //     "igsa",
-  //     attempts,
-  //     iterations,
-  //     dim,
-  //     parameters::GSA_G0_OPTIONS.clone(),
-  //     parameters::GSA_ALPHA_OPTIONS.clone(),
-  //     vec![("particle_count", i(100))],
-  //     Behavior {
-  //       edge: Edge::Reflect,
-  //       vmax: false,
-  //     },
-  //   )?;
-
-  //   utils::run_grid_searches::<GsaParticle, TiledGsa<GsaParticle>>(
-  //     "tiledgsa",
-  //     attempts,
-  //     iterations,
-  //     dim,
-  //     parameters::GSA_G0_OPTIONS.clone(),
-  //     parameters::GSA_ALPHA_OPTIONS.clone(),
-  //     vec![("particle_count", i(100))],
-  //     Behavior {
-  //       edge: Edge::Cycle,
-  //       vmax: false,
-  //     },
-  //   )?;
-
-  //   utils::run_grid_searches::<GsaParticle, TiledGsa<GsaParticle>>(
-  //     "tiledigsa",
-  //     attempts,
-  //     iterations,
-  //     dim,
-  //     parameters::GSA_G0_OPTIONS.clone(),
-  //     parameters::GSA_ALPHA_OPTIONS.clone(),
-  //     vec![("particle_count", i(100))],
-  //     Behavior {
-  //       edge: Edge::Cycle,
-  //       vmax: false,
-  //     },
-  //   )?;
-  // }
-
-  // utils::check_cec17::<GsaParticle, TiledGsa<GsaParticle>>(
-  //   format!("test_{}", iterations).as_str(),
-  //   "tiledgsa",
-  //   iterations,
-  //   dim,
-  //   attempts,
-  //   behavior,
-  //   vec![("g0", f(1000.0)), ("alpha", f(5.0)), ("particle_count", i(30))],
-  // )?;
-
-  // utils::check_cec17::<PsoParticle, Pso<PsoParticle>>(
-  //   "test",
-  //   "pso",
-  //   iterations,
-  //   dim,
-  //   attempts,
-  //   behavior,
-  //   vec![
-  //     ("w", f(0.8)),
-  //     ("phi_p", f(1.)),
-  //     ("phi_g", f(1.)),
-  //     ("particle_count", i(30)),
-  //   ],
-  // )?;
-
-  // utils::run_grid_searches::<GsaParticle, Gsa<GsaParticle>>(
-  //   "gsa",
-  //   attempts,
-  //   iterations,
-  //   dim,
-  //   parameters::GSA_G0_OPTIONS.clone(),
-  //   parameters::GSA_ALPHA_OPTIONS.clone(),
-  //   vec![("particle_count", i(30))],
-  //   behavior,
-  // )?;
-
   Ok(())
+}
+
+fn generate_behavior_with_tiled(tiled: bool) -> ParamValue {
+  ParamValue::Behavior(Behavior {
+    edge: match tiled {
+      true => Edge::Cycle,
+      false => Edge::Pass,
+    },
+    vmax: false,
+  })
+}
+
+fn g0_with_normalizer(normalizer: Normalizer) -> ParamValue {
+  ParamValue::Float(match normalizer {
+    Normalizer::MinMax => 1000.,
+    _ => 50.,
+  })
+}
+
+fn alpha_with_normalizer(_normalizer: Normalizer) -> ParamValue {
+  ParamValue::Float(5.)
+}
+
+fn generate_name_with_normalizer_and_tiled(normalizer: Normalizer, tiled: bool) -> String {
+  match tiled {
+    true => format!("gsa_{:?}_tiled", normalizer),
+    false => format!("gsa_{:?}", normalizer),
+  }
 }

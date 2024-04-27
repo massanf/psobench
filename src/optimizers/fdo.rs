@@ -29,7 +29,6 @@ impl Optimizer<FDOParticle> for Fdo<FDOParticle> {
     problem: Problem,
     parameters: HashMap<String, ParamValue>,
     out_directory: PathBuf,
-    behavior: Behavior,
     save: bool,
   ) -> Fdo<FDOParticle> {
     assert!(
@@ -60,6 +59,15 @@ impl Optimizer<FDOParticle> for Fdo<FDOParticle> {
         std::process::exit(1);
       }
     }
+
+    assert!(parameters.contains_key("behavior"), "Key 'behavior' not found.");
+    let behavior = match parameters["behavior"] {
+      ParamValue::Behavior(val) => val,
+      _ => {
+        eprintln!("Error: parameter 'behavior' should be of type Param::Behavior.");
+        std::process::exit(1);
+      }
+    };
 
     let mut gsa = Fdo {
       name,

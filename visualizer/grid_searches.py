@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt  # type: ignore
 from typing import Any
 from grid_search import GridSearch
 import matplotlib.image as mpimg
+import numpy as np
 
 
 class GridSearches:
@@ -26,7 +27,7 @@ class GridSearches:
         self.data_paths = sorted(self.data_paths, key=lambda path: path.name)
         self.graph_paths = sorted(self.graph_paths, key=lambda path: path.name)
 
-    def draw_heatmap(self, log_1: bool, log_2: bool) -> None:
+    def draw_heatmaps(self, log_1: bool, log_2: bool) -> None:
         for idx, function_dir in enumerate(self.data_paths):
             graph_dir = self.graphs / function_dir.name
             graph_dir.mkdir(parents=True, exist_ok=True)
@@ -34,7 +35,7 @@ class GridSearches:
             grid.draw_heatmap(graph_dir, log_1, log_2)
 
     def heatmap_collage(self, filename: str, log_1: bool, log_2: bool) -> None:
-        self.draw_heatmap(log_1, log_2)
+        self.draw_heatmaps(log_1, log_2)
         n_rows = 5
         n_cols = 6
 
@@ -51,6 +52,30 @@ class GridSearches:
         print(f"Saving: {self.graphs / filename}")
         plt.savefig(self.graphs / filename, bbox_inches='tight',
                     pad_inches=0.1)
+
+    def average_mse(
+            self, log_1: bool, log_2: bool) -> float:
+        maps = []
+        for idx, function_dir in enumerate(self.data_paths):
+            grid = GridSearch(function_dir)
+            image, _ = grid.create_image(log_1, log_2)
+            image = np.log(image)
+            min = np.min(image)
+            max = np.max(image)
+            maps.append(((image - min) / (max - min)).flatten())
+        # cosine_similarities = []
+        mse = []
+        for i in range(len(maps)):
+            for j in range(len(maps)):
+                if i >= j:
+                    continue
+                mse.append(np.square(maps[i] - maps[j]).sum() / len(maps[i]))
+                # cosine_similarities.append(
+                #     np.dot(maps[i], maps[j]) / (np.linalg.norm(maps[i])
+                #                                 * (np.linalg.norm(maps[j]))))
+        # print(np.std(cosine_similarities)))
+        # return float(np.average(cosine_similarities))
+        return float(np.average(mse))
 
     def plot_best_global_progresses(self, axs: Any) -> Any:
         axs = axs.flatten()

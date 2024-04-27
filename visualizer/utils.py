@@ -43,9 +43,12 @@ def plot_and_fill(ax: Axes, iterations: List[List[float]],
     return ax
 
 
-def generate_gridmap_collage(path: pathlib.Path) -> None:
+def generate_gridmap_collage(path: pathlib.Path,
+                             average_mse: bool = False) -> None:
     optimizer = GridSearches(DATA, GRAPHS, path)
     optimizer.heatmap_collage("grid_search.png", True, True)
+    if average_mse:
+        print("Average MSE: ", optimizer.average_mse(True, True))
 
 
 def generate_progress_comparison(name: pathlib.Path) -> None:
@@ -115,5 +118,12 @@ def shorter_names(names: List[str]) -> List[str]:
     # ["gsa_MinMax", "gsa_MinMax_tiled"] -> ["gM", "gMt"]
     result = []
     for name in names:
-        result.append(''.join([i[0] for i in name.split('_')]))
+        ans = ""
+        words = name.split('_')
+        for word in words:
+            ans += word[0]
+            for i in range(1, len(word)):
+                if word[i].isdigit():
+                    ans += word[i]
+        result.append(ans)
     return result

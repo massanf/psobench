@@ -3,15 +3,16 @@ use crate::problems;
 use crate::utils;
 use nalgebra::DVector;
 use problems::Problem;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct Behavior {
   pub edge: Edge,
   pub vmax: bool,
 }
 
 #[allow(dead_code)]
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Serialize, Deserialize)]
 pub enum Edge {
   Reflect,
   Pass,
