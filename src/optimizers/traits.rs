@@ -43,7 +43,6 @@ impl Serialize for ParamValue {
         Normalizer::MinMax => serializer.serialize_str("MinMax"),
         Normalizer::Sigmoid2 => serializer.serialize_str("Sigmoid2"),
         Normalizer::Sigmoid4 => serializer.serialize_str("Sigmoid4"),
-        Normalizer::Softmax => serializer.serialize_str("Softmax"),
         Normalizer::Rank => serializer.serialize_str("Rank"),
       },
       ParamValue::Tiled(v) => serializer.serialize_bool(v),

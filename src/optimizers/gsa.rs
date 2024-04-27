@@ -20,7 +20,6 @@ pub enum Normalizer {
   MinMax,
   Sigmoid2,
   Sigmoid4,
-  Softmax,
   Rank,
 }
 
@@ -212,7 +211,6 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
         Normalizer::MinMax => utils::original_gsa_normalize(fitness),
         Normalizer::Sigmoid2 => utils::sigmoid2_normalize(fitness),
         Normalizer::Sigmoid4 => utils::sigmoid4_normalize(fitness),
-        Normalizer::Softmax => utils::softmax_normalize(fitness),
         Normalizer::Rank => utils::rank_normalize(fitness),
       };
       for (mass, particle) in m.iter().zip(self.particles_mut().iter_mut()) {

@@ -247,17 +247,6 @@ fn sigmoid_normalize(input: Vec<f64>, scale: f64) -> Vec<f64> {
   z_score_normalize(input).into_iter().map(|x| 1.0 / (1.0 + (scale * x).exp())).collect()
 }
 
-pub fn softmax_normalize(input: Vec<f64>) -> Vec<f64> {
-  let max_val = input.iter().max_by(|x, y| x.partial_cmp(y).unwrap()).unwrap();
-  let exps: Vec<f64> = input.iter().map(|&x| ((-(x - max_val)).exp()).min(f64::MAX)).collect();
-  let sum_exps: f64 = exps.iter().sum();
-  if sum_exps.abs() < f64::EPSILON {
-    return vec![0.0; input.len()];
-  }
-
-  exps.iter().map(|&exp| exp / sum_exps).collect()
-}
-
 pub fn rank_normalize(input: Vec<f64>) -> Vec<f64> {
   let mut sorted_input: Vec<_> = input.iter().enumerate().collect();
   sorted_input.sort_by(|i, j| j.1.partial_cmp(i.1).unwrap());
