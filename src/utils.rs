@@ -1,7 +1,8 @@
 use crate::grid_search;
 use crate::optimizers::traits::{DataExporter, Optimizer, ParamValue};
-use crate::particles::traits::{Position, Velocity};
+use crate::particles::traits::{Behavior, Edge, Position, Velocity};
 use crate::problems;
+use crate::Normalizer;
 use indicatif::{ProgressBar, ProgressStyle};
 use nalgebra::DVector;
 use problems::Problem;
@@ -255,4 +256,32 @@ pub fn rank_normalize(input: Vec<f64>) -> Vec<f64> {
     mp.insert(*i, idx);
   }
   input.iter().enumerate().map(|(i, _)| mp[&i] as f64 / input.len() as f64).collect()
+}
+
+pub fn generate_behavior_with_tiled(tiled: bool) -> ParamValue {
+  ParamValue::Behavior(Behavior {
+    edge: match tiled {
+      true => Edge::Cycle,
+      false => Edge::Pass,
+    },
+    vmax: false,
+  })
+}
+
+pub fn g0_with_normalizer(normalizer: Normalizer) -> ParamValue {
+  ParamValue::Float(match normalizer {
+    Normalizer::MinMax => 1000.,
+    _ => 50.,
+  })
+}
+
+pub fn alpha_with_normalizer(_normalizer: Normalizer) -> ParamValue {
+  ParamValue::Float(5.)
+}
+
+pub fn generate_name_with_normalizer_and_tiled(normalizer: Normalizer, tiled: bool) -> String {
+  match tiled {
+    true => format!("gsa_{:?}_tiled", normalizer),
+    false => format!("gsa_{:?}", normalizer),
+  }
 }

@@ -41,24 +41,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
           false => {
             utils::check_cec17::<GsaParticle, Gsa<GsaParticle>>(
               "test",
-              generate_name_with_normalizer_and_tiled(normalizer, *tiled).as_str(),
+              utils::generate_name_with_normalizer_and_tiled(normalizer, *tiled).as_str(),
               iterations,
               dim,
               attempts,
               vec![
-                ("g0", g0_with_normalizer(normalizer)),
-                ("alpha", alpha_with_normalizer(normalizer)),
+                ("g0", utils::g0_with_normalizer(normalizer)),
+                ("alpha", utils::alpha_with_normalizer(normalizer)),
                 ("particle_count", i(particle_count)),
                 ("normalizer", ParamValue::Normalizer(normalizer)),
                 ("tiled", ParamValue::Tiled(*tiled)),
-                ("behavior", generate_behavior_with_tiled(*tiled)),
+                ("behavior", utils::generate_behavior_with_tiled(*tiled)),
               ],
               true,
             )?;
           }
           true => {
             utils::run_grid_searches::<GsaParticle, Gsa<GsaParticle>>(
-              generate_name_with_normalizer_and_tiled(normalizer, *tiled).as_str(),
+              utils::generate_name_with_normalizer_and_tiled(normalizer, *tiled).as_str(),
               attempts,
               iterations,
               dim,
@@ -68,7 +68,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ("particle_count", i(particle_count)),
                 ("normalizer", ParamValue::Normalizer(normalizer)),
                 ("tiled", ParamValue::Tiled(*tiled)),
-                ("behavior", generate_behavior_with_tiled(*tiled)),
+                ("behavior", utils::generate_behavior_with_tiled(*tiled)),
               ],
             )?;
           }
@@ -78,32 +78,4 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   }
 
   Ok(())
-}
-
-fn generate_behavior_with_tiled(tiled: bool) -> ParamValue {
-  ParamValue::Behavior(Behavior {
-    edge: match tiled {
-      true => Edge::Cycle,
-      false => Edge::Pass,
-    },
-    vmax: false,
-  })
-}
-
-fn g0_with_normalizer(normalizer: Normalizer) -> ParamValue {
-  ParamValue::Float(match normalizer {
-    Normalizer::MinMax => 1000.,
-    _ => 50.,
-  })
-}
-
-fn alpha_with_normalizer(_normalizer: Normalizer) -> ParamValue {
-  ParamValue::Float(5.)
-}
-
-fn generate_name_with_normalizer_and_tiled(normalizer: Normalizer, tiled: bool) -> String {
-  match tiled {
-    true => format!("gsa_{:?}_tiled", normalizer),
-    false => format!("gsa_{:?}", normalizer),
-  }
 }
