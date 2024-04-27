@@ -1,12 +1,12 @@
 import utils
-from pso import PSO
+# from pso import PSO
 import pathlib
-import numpy as np
+# import numpy as np
 from constants import DATA
 
 test_name = "test_copy"
 for path in (DATA / test_name).glob("*"):
-#     # utils.generate_entropy_comparison(pathlib.Path("test") / path.name)
+    #     # utils.generate_entropy_comparison(pathlib.Path("test") / path.name)
     utils.generate_progress_comparison(pathlib.Path(test_name) / path.name)
     # utils.generate_final_results(pathlib.Path(test_name) / path.name)
 
