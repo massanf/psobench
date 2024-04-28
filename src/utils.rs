@@ -203,6 +203,7 @@ pub fn generate_out_directory(test_name: &str, dim: usize, type_name: &str) -> P
 }
 
 pub fn quantile(input: &[f64], q: f64) -> f64 {
+  // This is approximate; should be good enough.
   let mut sorted = input.to_owned();
   sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
   sorted[(sorted.len() as f64 * q) as usize]
@@ -212,7 +213,6 @@ pub fn quantile(input: &[f64], q: f64) -> f64 {
 pub fn min_max_normalize(input: Vec<f64>) -> Vec<f64> {
   let min = input.iter().fold(f64::INFINITY, |a, &b| a.min(b));
   let max = input.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
-
   if (max - min).abs() < f64::EPSILON {
     return vec![0.5; input.len()]; // Return zero vector if all elements are the same
   }
@@ -222,6 +222,9 @@ pub fn min_max_normalize(input: Vec<f64>) -> Vec<f64> {
 pub fn robust_normalize(input: Vec<f64>) -> Vec<f64> {
   let med = quantile(&input, 0.5);
   let niqr = (quantile(&input, 0.75) - quantile(&input, 0.25)) / 1.3489;
+  if niqr < f64::EPSILON {
+    return vec![0.0; input.len()];
+  }
   input.iter().map(|x| (x - med) / niqr).collect()
 }
 
