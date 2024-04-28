@@ -37,7 +37,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   for dim in dims {
     for normalizer in Normalizer::iter() {
       for tiled in [false, true].iter() {
-        if normalizer != Normalizer::ZScore {
+        if normalizer != Normalizer::Robust {
           continue;
         }
         match grid {

@@ -202,6 +202,12 @@ pub fn generate_out_directory(test_name: &str, dim: usize, type_name: &str) -> P
   PathBuf::from(format!("data/{}/{}/{}", test_name, dim, type_name))
 }
 
+pub fn quantile(input: &[f64], q: f64) -> f64 {
+  let mut sorted = input.to_owned();
+  sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
+  sorted[(sorted.len() as f64 * q) as usize]
+}
+
 // Normalizers
 pub fn min_max_normalize(input: Vec<f64>) -> Vec<f64> {
   let min = input.iter().fold(f64::INFINITY, |a, &b| a.min(b));
@@ -214,7 +220,9 @@ pub fn min_max_normalize(input: Vec<f64>) -> Vec<f64> {
 }
 
 pub fn robust_normalize(input: Vec<f64>) -> Vec<f64> {
-  todo!();
+  let med = quantile(&input, 0.5);
+  let niqr = (quantile(&input, 0.75) - quantile(&input, 0.25)) / 1.3489;
+  input.iter().map(|x| (x - med) / niqr).collect()
 }
 
 pub fn z_score_normalize(input: Vec<f64>) -> Vec<f64> {
@@ -255,7 +263,7 @@ pub fn z_mass(input: Vec<f64>) -> Vec<f64> {
 }
 
 pub fn robust_mass(input: Vec<f64>) -> Vec<f64> {
-  todo!();
+  robust_normalize(input).iter().map(|x| -0.5 * x).map(|x| if x < 0. { 0. } else { x }).collect()
 }
 
 pub fn sigmoid2_mass(input: Vec<f64>) -> Vec<f64> {
