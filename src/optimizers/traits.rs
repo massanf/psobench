@@ -41,6 +41,8 @@ impl Serialize for ParamValue {
       ParamValue::Int(ref c) => serializer.serialize_u64(*c as u64),
       ParamValue::Normalizer(value) => match value {
         Normalizer::MinMax => serializer.serialize_str("MinMax"),
+        Normalizer::ZScore => serializer.serialize_str("ZScore"),
+        Normalizer::Robust => serializer.serialize_str("Robust"),
         Normalizer::Sigmoid2 => serializer.serialize_str("Sigmoid2"),
         Normalizer::Sigmoid4 => serializer.serialize_str("Sigmoid4"),
         Normalizer::Rank => serializer.serialize_str("Rank"),

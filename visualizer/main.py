@@ -5,10 +5,13 @@ import pathlib
 from constants import DATA
 
 test_name = "test"
-for path in (DATA / test_name).glob("*"):
+for path in sorted((DATA / test_name).glob("*")):
     # utils.generate_entropy_comparison(pathlib.Path("test") / path.name)
-    utils.generate_progress_comparison(pathlib.Path(test_name) / path.name)
+    # utils.generate_progress_comparison(pathlib.Path(test_name) / path.name)
     utils.generate_final_results(pathlib.Path(test_name) / path.name)
+
+# for path in (DATA / "grid_search" / "50").glob("*"):
+#     utils.generate_gridmap_collage(path)
 
 # gsa_path = pathlib.Path("grid_search") / "50" / "gsa_MinMax"
 # utils.generate_gridmap_collage(gsa_path)

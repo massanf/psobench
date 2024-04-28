@@ -202,6 +202,7 @@ pub fn generate_out_directory(test_name: &str, dim: usize, type_name: &str) -> P
   PathBuf::from(format!("data/{}/{}/{}", test_name, dim, type_name))
 }
 
+// Normalizers
 pub fn min_max_normalize(input: Vec<f64>) -> Vec<f64> {
   let min = input.iter().fold(f64::INFINITY, |a, &b| a.min(b));
   let max = input.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
@@ -209,8 +210,11 @@ pub fn min_max_normalize(input: Vec<f64>) -> Vec<f64> {
   if (max - min).abs() < f64::EPSILON {
     return vec![0.5; input.len()]; // Return zero vector if all elements are the same
   }
+  input.into_iter().map(|x| (x - min) / (max - min)).collect()
+}
 
-  input.into_iter().map(|x| (x - max) / (min - max)).collect()
+pub fn robust_normalize(input: Vec<f64>) -> Vec<f64> {
+  todo!();
 }
 
 pub fn z_score_normalize(input: Vec<f64>) -> Vec<f64> {
@@ -219,34 +223,12 @@ pub fn z_score_normalize(input: Vec<f64>) -> Vec<f64> {
   if std.abs() < f64::EPSILON {
     return vec![0.0; input.len()];
   }
-
   input.iter().map(|&x| (x - mean) / std).collect()
-}
-
-pub fn original_gsa_normalize(input: Vec<f64>) -> Vec<f64> {
-  let input = min_max_normalize(input);
-  let sum: f64 = input.iter().sum();
-  if sum.abs() < f64::EPSILON {
-    return vec![0.0; input.len()];
-  }
-  input.iter().map(|&x| x / sum).collect()
-}
-
-pub fn sigmoid2_normalize(input: Vec<f64>) -> Vec<f64> {
-  sigmoid_normalize(input, 2.)
-}
-
-pub fn sigmoid4_normalize(input: Vec<f64>) -> Vec<f64> {
-  sigmoid_normalize(input, 4.)
-}
-
-fn sigmoid_normalize(input: Vec<f64>, scale: f64) -> Vec<f64> {
-  z_score_normalize(input).into_iter().map(|x| 1.0 / (1.0 + (scale * x).exp())).collect()
 }
 
 pub fn rank_normalize(input: Vec<f64>) -> Vec<f64> {
   let mut sorted_input: Vec<_> = input.iter().enumerate().collect();
-  sorted_input.sort_by(|i, j| j.1.partial_cmp(i.1).unwrap());
+  sorted_input.sort_by(|i, j| i.1.partial_cmp(j.1).unwrap());
   let mut mp: HashMap<usize, usize> = HashMap::new();
   for (idx, (i, _x)) in sorted_input.iter().enumerate() {
     mp.insert(*i, idx);
@@ -254,6 +236,41 @@ pub fn rank_normalize(input: Vec<f64>) -> Vec<f64> {
   input.iter().enumerate().map(|(i, _)| mp[&i] as f64 / input.len() as f64).collect()
 }
 
+fn sigmoid_normalize(input: Vec<f64>, scale: f64) -> Vec<f64> {
+  z_score_normalize(input).into_iter().map(|x| 1.0 / (1.0 + (-1. * scale * x).exp())).collect()
+}
+
+// mass
+pub fn original_gsa_mass(input: Vec<f64>) -> Vec<f64> {
+  let input: Vec<f64> = min_max_normalize(input).iter().map(|x| 1. - x).collect();
+  let sum: f64 = input.iter().sum();
+  if sum.abs() < f64::EPSILON {
+    return vec![0.0; input.len()];
+  }
+  input.iter().map(|&x| x / sum).collect()
+}
+
+pub fn z_mass(input: Vec<f64>) -> Vec<f64> {
+  z_score_normalize(input).iter().map(|x| -0.5 * x).map(|x| if x < 0. { 0. } else { x }).collect()
+}
+
+pub fn robust_mass(input: Vec<f64>) -> Vec<f64> {
+  todo!();
+}
+
+pub fn sigmoid2_mass(input: Vec<f64>) -> Vec<f64> {
+  sigmoid_normalize(input, -2.)
+}
+
+pub fn sigmoid4_mass(input: Vec<f64>) -> Vec<f64> {
+  sigmoid_normalize(input, -4.)
+}
+
+pub fn rank_mass(input: Vec<f64>) -> Vec<f64> {
+  rank_normalize(input).iter().map(|x| 1. - x).collect()
+}
+
+// Parameter getters
 pub fn behavior_from_tiled(tiled: bool) -> ParamValue {
   ParamValue::Behavior(Behavior {
     edge: match tiled {
@@ -267,6 +284,7 @@ pub fn behavior_from_tiled(tiled: bool) -> ParamValue {
 pub fn g0_from_normalizer(normalizer: Normalizer) -> ParamValue {
   ParamValue::Float(match normalizer {
     Normalizer::MinMax => 1000.,
+    Normalizer::ZScore => 100.,
     _ => 50.,
   })
 }

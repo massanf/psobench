@@ -18,9 +18,11 @@ use strum_macros::EnumIter;
 #[derive(Clone, Copy, EnumIter, Debug, PartialEq)]
 pub enum Normalizer {
   MinMax,
+  Rank,
+  ZScore,
+  Robust,
   Sigmoid2,
   Sigmoid4,
-  Rank,
 }
 
 #[derive(Clone)]
@@ -208,10 +210,12 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
       }
 
       let m = match self.normalizer {
-        Normalizer::MinMax => utils::original_gsa_normalize(fitness),
-        Normalizer::Sigmoid2 => utils::sigmoid2_normalize(fitness),
-        Normalizer::Sigmoid4 => utils::sigmoid4_normalize(fitness),
-        Normalizer::Rank => utils::rank_normalize(fitness),
+        Normalizer::MinMax => utils::original_gsa_mass(fitness),
+        Normalizer::ZScore => utils::z_mass(fitness),
+        Normalizer::Robust => utils::robust_mass(fitness),
+        Normalizer::Rank => utils::rank_mass(fitness),
+        Normalizer::Sigmoid2 => utils::sigmoid2_mass(fitness),
+        Normalizer::Sigmoid4 => utils::sigmoid4_mass(fitness),
       };
       for (mass, particle) in m.iter().zip(self.particles_mut().iter_mut()) {
         particle.set_mass(*mass);

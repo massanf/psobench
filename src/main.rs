@@ -23,13 +23,13 @@ use ParamValue::Float as f;
 use ParamValue::Int as i;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-  // let dims = [10, 30, 50, 100];
-  let dims = [100];
+  // let dims = [10, 100];
+  let dims = [50];
   let iterations = 1000;
   let attempts = 10;
 
   // params
-  let particle_count = 100;
+  let particle_count = 50;
 
   // grid
   let grid = true;
@@ -37,6 +37,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   for dim in dims {
     for normalizer in Normalizer::iter() {
       for tiled in [false, true].iter() {
+        if normalizer != Normalizer::ZScore {
+          continue;
+        }
         match grid {
           false => {
             utils::check_cec17::<GsaParticle, Gsa<GsaParticle>>(
