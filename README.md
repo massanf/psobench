@@ -1,80 +1,104 @@
-# Usage
-## Running PSO
+# PSOBench
+PSOBench is a benchmarking suite written in Rust for multi-agent optimization algorithms. It provides a standardized set of test functions from CEC2017 and a framework for evaluating the performance of different optimization variants. It is able to run simultaneous optimizations in parallel on multiple threads at the same time. It also includes a visualizer written in Python that can parse and visualize the data outputted from the simulation.
 
-```rust
-let params: HashMap<String, ParamValue> = [
-  ("w".to_owned(), ParamValue::Float(0.8)),
-  ("phi_p".to_owned(), ParamValue::Float(1.0)),
-  ("phi_g".to_owned(), ParamValue::Float(1.0)),
-  ("particle_count".to_owned(), ParamValue::Int(30)),
-]
-.iter()
-.cloned()
-.collect();
+![grid](img/pso.gif)
 
-let mut pso: PSO<Particle> = PSO::new(
-  "PSO",
-  functions::f1(10),
-  params.clone(),
-  PathBuf::from("data/test"),
-);
-pso.run(iterations);
-pso.save_summary()?;
-pso.save_data()?;
-pso.save_config()?;
+
+## Features
+
+- **Standardized Test Functions**: Includes a variety of commonly used benchmark functions for evaluating PSO and GSA algorithms, namely CEC2017.
+- **Extensible Framework**: Easily add new optimization variants and test functions.
+- **Performance Metrics**: Provides tools for measuring and comparing the performance of different algorithms.
+- **Visualization Tools**: Generate plots to visualize the performance of algorithms over time.
+- **Grid Search**: Supports grid search for hyperparameter tuning.
+
+## Installation
+
+### Clone the Repository
+
+```bash
+git clone https://github.com/massanf/psobench.git
+cd psobench
 ```
 
-## Grid search
-```rust
-use grid_search::grid_search_dim;
+### Build the Project
 
-// Experiment Settings
-let iterations = 1000;
-let out_directory = PathBuf::from("data/base_pso_all");
-
-// Test particle_count vs. dimensions for CEC2017
-let cec17_dims = vec![2, 10, 20, 30, 50, 100];
-let particle_counts = vec![
-  ParamValue::Int(2),
-  ParamValue::Int(5),
-  ParamValue::Int(10),
-  ParamValue::Int(50),
-  ParamValue::Int(100),
-  ParamValue::Int(200),
-  ParamValue::Int(500),
-];
-let base_params: HashMap<String, ParamValue> = [
-  ("w".to_owned(), ParamValue::Float(0.8)),
-  ("phi_p".to_owned(), ParamValue::Float(1.0)),
-  ("phi_g".to_owned(), ParamValue::Float(1.0)),
-]
-.iter()
-.cloned()
-.collect();
-
-for func_num in 1..=30 {
-  if func_num == 2 {
-    continue;
-  }
-  grid_search_dim::<Particle, PSO<Particle>>(
-    iterations,
-    Arc::new(move |d: usize| functions::cec17(func_num, d)),
-    5,
-    cec17_dims.clone(),
-    ("particle_count".to_owned(), particle_counts.clone()),
-    base_params.clone(),
-    out_directory.clone(),
-  )?;
-}
+```bash
+cargo build --release
 ```
 
-# Running the Visualizer
+## Usage
+
+### Running Benchmarks
+
+The main entry point for running benchmarks is the `main.rs` file. To run the benchmarks with the default configuration, use the following command:
+
+```bash
+cargo run --release
 ```
+
+The `main.rs` file is configured to:
+
+- Test different dimensions.
+- Iterate through different normalizers.
+- Optionally perform grid search for hyperparameter tuning.
+- Run a specified number of iterations and attempts.
+
+### Adding New Optimization Variants
+
+1. Create a new module in the `optimizers` directory.
+2. Implement your optimization algorithm as a class or a set of functions.
+3. Update the `main.rs` file to include your new optimizer.
+
+### Adding New Test Functions
+
+1. Create a new module in the `functions` directory.
+2. Implement your test function as a class or a set of functions.
+3. Update the `main.rs` file to include your new test function.
+
+### Grid Search Configuration
+
+The `main.rs` file supports grid search for hyperparameter tuning. You can configure the grid search parameters in the `parameters` module. For example, `GSA_G0_OPTIONS` and `GSA_ALPHA_OPTIONS` define the range of values for the `g0` and `alpha` parameters, respectively.
+
+### Visualizing Results
+
+To generate performance plots:
+
+```bash
+python visualize_results.py
+```
+
+### Running the Visualizer
+
+To run the visualizer:
+
+```bash
 source .venv/bin/activate
 pipenv shell
 python visualizer/main.py
 ```
 
-# Acknowledgement
+## Contributing
+
+We welcome contributions from the community! To contribute:
+
+1. Fork the repository.
+2. Create a new branch for your feature or bugfix.
+3. Commit your changes and push them to your fork.
+4. Submit a pull request.
+
+Please ensure that your code adheres to our coding standards and includes appropriate tests.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Acknowledgement
+
 ### CEC2017 Benchmark Functions
-N. H. Awad, M. Z. Ali, J. J. Liang, B. Y. Qu and P. N. Suganthan, "Problem Definitions and Evaluation Criteria for the CEC 2017 Special Session and Competition on Single Objective Bound Constrained Real-Parameter Numerical Optimization," Technical Report, Nanyang Technological University, Singapore, November 2016
+
+N. H. Awad, M. Z. Ali, J. J. Liang, B. Y. Qu and P. N. Suganthan, "Problem Definitions and Evaluation Criteria for the CEC 2017 Special Session and Competition on Single Objective Bound Constrained Real-Parameter Numerical Optimization," Technical Report, Nanyang Technological University, Singapore, November 2016.
+
+## Contact
+
+For questions or support, please open an issue on GitHub or contact [massanf](https://github.com/massanf).
