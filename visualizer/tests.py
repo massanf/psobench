@@ -63,9 +63,7 @@ class Tests:
 
         psos = questionary.checkbox(
             "Select tests to plot entropy:", choices=list(self.data.keys())).ask()
-        for pso_type in sorted(self.data):
-            if pso_type[0] == '_':
-                continue
+        for pso_type in sorted(psos):
             pso_result = self.get_final_result(pso_type)
             for fn in pso_result:
                 if fn not in result:

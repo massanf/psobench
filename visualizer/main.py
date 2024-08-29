@@ -31,15 +31,19 @@ if graph_type == 'collage':
     ).ask()
 
     for test in tests:
-        for path in sorted((DATA / test).glob("*")):
+        dim_options = [folder.name for folder in (DATA / test).iterdir()
+                       if folder.is_dir()]
+        dims = questionary.checkbox(
+            "Select dimensions:", choices=dim_options).ask()
+        for dim in dims:
             if "entropy" in types:
                 utils.generate_entropy_comparison(
-                    pathlib.Path(test) / path.name)
+                    pathlib.Path(test) / dim)
             if "progress" in types:
                 utils.generate_progress_comparison(
-                    pathlib.Path(test) / path.name)
+                    pathlib.Path(test) / dim)
             if "bar" in types:
-                utils.generate_final_results(pathlib.Path(test) / path.name)
+                utils.generate_final_results(pathlib.Path(test) / dim)
 
 
 # final_results
