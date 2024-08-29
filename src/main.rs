@@ -31,54 +31,34 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   // params
   let particle_count = 50;
 
-  // grid
-  let grid = true;
+  for normalizer in Normalizer::iter() {
+    for tiled in [false, true].iter() {
+      if normalizer != Normalizer::MinMax {
+        continue;
+      }
+      if *tiled {
+        continue;
+      }
 
-  for dim in dims {
-    for normalizer in Normalizer::iter() {
-      for tiled in [false, true].iter() {
-        if normalizer != Normalizer::Robust {
-          continue;
-        }
-        match grid {
-          false => {
-            utils::check_cec17::<GsaParticle, Gsa<GsaParticle>>(
-              "test",
-              utils::name_from_normalizer_and_tiled(normalizer, *tiled).as_str(),
-              iterations,
-              dim,
-              attempts,
-              vec![
-                ("g0", utils::g0_from_normalizer(normalizer)),
-                ("alpha", utils::alpha_from_normalizer(normalizer)),
-                ("particle_count", i(particle_count)),
-                ("normalizer", ParamValue::Normalizer(normalizer)),
-                ("tiled", ParamValue::Tiled(*tiled)),
-                ("behavior", utils::behavior_from_tiled(*tiled)),
-              ],
-              true,
-            )?;
-          }
-          true => {
-            utils::run_grid_searches::<GsaParticle, Gsa<GsaParticle>>(
-              utils::name_from_normalizer_and_tiled(normalizer, *tiled).as_str(),
-              attempts,
-              iterations,
-              dim,
-              parameters::GSA_G0_OPTIONS.clone(),
-              parameters::GSA_ALPHA_OPTIONS.clone(),
-              vec![
-                ("particle_count", i(particle_count)),
-                ("normalizer", ParamValue::Normalizer(normalizer)),
-                ("tiled", ParamValue::Tiled(*tiled)),
-                ("behavior", utils::behavior_from_tiled(*tiled)),
-              ],
-            )?;
-          }
-        }
+      for dim in dims {
+        utils::check_cec17::<GsaParticle, Gsa<GsaParticle>>(
+          "test",
+          utils::name_from_normalizer_and_tiled(normalizer, *tiled).as_str(),
+          iterations,
+          dim,
+          attempts,
+          vec![
+            ("g0", utils::g0_from_normalizer(normalizer)),
+            ("alpha", utils::alpha_from_normalizer(normalizer)),
+            ("particle_count", i(particle_count)),
+            ("normalizer", ParamValue::Normalizer(normalizer)),
+            ("tiled", ParamValue::Tiled(*tiled)),
+            ("behavior", utils::behavior_from_tiled(*tiled)),
+          ],
+          true,
+        )?;
       }
     }
   }
-
   Ok(())
 }

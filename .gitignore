@@ -17,3 +17,5 @@ share/
 pyvenv.cfg
 Pipfile.lock
 nohup.out
+*.swp
+tags

@@ -78,6 +78,49 @@ pipenv shell
 python visualizer/main.py
 ```
 
+## Data structure
+```
+data
+└─ test name (test)
+   └─ dimension (50)
+      └─ optimizer name (gsa)
+         └─ problem name (CEC2017_F01)
+            └─ attempt name (0)
+               ├─ config.json
+               ├─ data.json
+               └─ summary.json
+```
+
+`config.json`
+```json
+{
+  "method": {
+    "name": "gsa_MinMax",
+    "parameters": {
+      "alpha": 5.0,
+      "behavior": { "edge": "Pass", "vmax": false },
+      "g0": 1000.0,
+      "normalizer": "MinMax",
+      "particle_count": 50,
+      "tiled": false
+    }
+  },
+  "problem": { "dim": 50, "name": "CEC2017_F30" }
+}
+```
+
+`summary.json`
+```json
+{
+  "evaluation_count": 51001,
+  "global_best_fitness": [
+    23545502872.25257, 23545502872.25257, …, 9782641974.513685
+  ]
+}
+
+
+```
+
 ## Contributing
 
 We welcome contributions from the community! To contribute:
