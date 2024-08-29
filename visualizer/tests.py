@@ -1,4 +1,5 @@
 import pathlib
+import questionary
 import numpy as np
 from attempts import Attempts
 from tqdm import tqdm
@@ -44,10 +45,10 @@ class Tests:
         return axs
 
     def plot_all(self, axs: np.ndarray) -> np.ndarray:
-        for pso_type in sorted(self.data):
-            if pso_type[0] == '_':
-                continue
-            axs = self.plot_best_global_progress(axs, pso_type)
+        psos = questionary.checkbox(
+            "Select tests to plot progress:", choices=list(self.data.keys())).ask()
+        for pso in psos:
+            axs = self.plot_best_global_progress(axs, pso)
         return axs
 
     def get_final_result(self, pso_type: str) -> Dict[str, List[float]]:
@@ -59,6 +60,9 @@ class Tests:
 
     def get_final_results(self) -> Dict[str, Dict[str, List[float]]]:
         result: Dict[str, Dict[str, List[float]]] = {}
+
+        psos = questionary.checkbox(
+            "Select tests to plot entropy:", choices=list(self.data.keys())).ask()
         for pso_type in sorted(self.data):
             if pso_type[0] == '_':
                 continue
@@ -93,5 +97,8 @@ class Tests:
         for pso_type in sorted(self.data):
             if pso_type[0] == '_':
                 continue
-            axs = self.plot_entropy(axs, pso_type)
+        psos = questionary.checkbox(
+            "Select tests to plot entropy:", choices=list(self.data.keys())).ask()
+        for pso in psos:
+            axs = self.plot_entropy(axs, pso)
         return axs
