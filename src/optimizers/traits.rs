@@ -10,6 +10,7 @@ use std::fmt;
 use std::fs;
 use std::path::PathBuf;
 
+#[allow(dead_code)]
 #[derive(Clone)]
 pub enum ParamValue {
   Float(f64),
@@ -67,7 +68,7 @@ pub trait Optimizer<U: Position + Velocity + Clone>:
     Self: Sized;
 
   fn init(&mut self, number_of_particles: usize, behavior: Behavior);
-  fn calculate_vel(&mut self, idx: usize) -> DVector<f64>;
+  fn calculate_vel(&mut self, i: usize) -> DVector<f64>;
   fn run(&mut self, iterations: usize);
 }
 
@@ -78,6 +79,7 @@ pub trait Particles<T> {
 
 pub trait GlobalBestPos: OptimizationProblem {
   fn global_best_pos(&self) -> DVector<f64>;
+  #[allow(dead_code)]
   fn option_global_best_pos(&self) -> &Option<DVector<f64>>;
   fn set_global_best_pos(&mut self, pos: DVector<f64>);
   fn update_global_best_pos(&mut self, pos: DVector<f64>) {

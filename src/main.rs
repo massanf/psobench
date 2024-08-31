@@ -9,13 +9,15 @@ mod problems;
 mod utils;
 use crate::optimizers::{gsa::Normalizer, traits::ParamValue};
 #[allow(unused_imports)]
-use optimizers::{gsa::Gsa, pso::Pso};
+use optimizers::{gaussian::Gaussian, gsa::Gsa, pso::Pso};
 #[allow(unused_imports)]
 use particles::{
+  gaussian::GaussianParticle,
   gsa::GsaParticle,
   pso::PsoParticle,
   traits::{Behavior, Edge},
 };
+#[allow(unused_imports)]
 use strum::IntoEnumIterator;
 #[allow(unused_imports)]
 use ParamValue::Float as f;
@@ -23,42 +25,32 @@ use ParamValue::Float as f;
 use ParamValue::Int as i;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-  // let dims = [10, 100];
-  let dims = [50];
+  let dims = [30];
   let iterations = 1000;
   let attempts = 10;
-
-  // params
   let particle_count = 50;
 
-  for normalizer in Normalizer::iter() {
-    for tiled in [false, true].iter() {
-      if normalizer != Normalizer::MinMax {
-        continue;
-      }
-      if *tiled {
-        continue;
-      }
-
-      for dim in dims {
-        utils::check_cec17::<GsaParticle, Gsa<GsaParticle>>(
-          "test",
-          utils::name_from_normalizer_and_tiled(normalizer, *tiled).as_str(),
-          iterations,
-          dim,
-          attempts,
-          vec![
-            ("g0", utils::g0_from_normalizer(normalizer)),
-            ("alpha", utils::alpha_from_normalizer(normalizer)),
-            ("particle_count", i(particle_count)),
-            ("normalizer", ParamValue::Normalizer(normalizer)),
-            ("tiled", ParamValue::Tiled(*tiled)),
-            ("behavior", utils::behavior_from_tiled(*tiled)),
-          ],
-          true,
-        )?;
-      }
-    }
+  for dim in dims {
+    utils::check_cec17::<GaussianParticle, Gaussian<GaussianParticle>>(
+      "test",
+      "gaussian",
+      iterations,
+      dim,
+      attempts,
+      vec![
+        ("g0", f(1000.)),
+        ("alpha", f(5.)),
+        ("particle_count", i(particle_count)),
+        (
+          "behavior",
+          ParamValue::Behavior(Behavior {
+            edge: Edge::Pass,
+            vmax: false,
+          }),
+        ),
+      ],
+      true,
+    )?;
   }
   Ok(())
 }

@@ -16,6 +16,10 @@ graph_type = questionary.select(
         'collage',
     ]).ask()
 
+
+if graph_type == 'single' or graph_type == 'gridmaps':
+    raise NotImplementedError("Not implemented")
+
 if graph_type == 'collage':
     test_options = [folder.name for folder in DATA.iterdir()
                     if folder.is_dir()]

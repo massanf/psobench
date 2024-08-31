@@ -158,6 +158,7 @@ pub fn check_cec17<T: Velocity + Clone, U: Optimizer<T>>(
   Ok(())
 }
 
+#[allow(dead_code)]
 #[allow(clippy::too_many_arguments)]
 pub fn run_grid_searches<T: Velocity + Clone, U: Optimizer<T>>(
   optimizer_name: &str,
@@ -282,6 +283,7 @@ pub fn rank_mass(input: Vec<f64>) -> Vec<f64> {
 }
 
 // Parameter getters
+#[allow(dead_code)]
 pub fn behavior_from_tiled(tiled: bool) -> ParamValue {
   ParamValue::Behavior(Behavior {
     edge: match tiled {
@@ -292,6 +294,7 @@ pub fn behavior_from_tiled(tiled: bool) -> ParamValue {
   })
 }
 
+#[allow(dead_code)]
 pub fn g0_from_normalizer(normalizer: Normalizer) -> ParamValue {
   ParamValue::Float(match normalizer {
     Normalizer::MinMax => 1000.,
@@ -300,10 +303,12 @@ pub fn g0_from_normalizer(normalizer: Normalizer) -> ParamValue {
   })
 }
 
+#[allow(dead_code)]
 pub fn alpha_from_normalizer(_normalizer: Normalizer) -> ParamValue {
   ParamValue::Float(5.)
 }
 
+#[allow(dead_code)]
 pub fn name_from_normalizer_and_tiled(normalizer: Normalizer, tiled: bool) -> String {
   match tiled {
     true => format!("gsa_{:?}_tiled", normalizer),
