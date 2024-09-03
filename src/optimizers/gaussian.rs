@@ -3,12 +3,12 @@ use crate::optimizers::traits::{
 };
 use crate::particles::traits::{Behavior, Particle, Position, Velocity};
 use crate::problems;
-use crate::rand::Rng;
 use crate::utils;
 use nalgebra::DVector;
 use problems::Problem;
 use serde_json::json;
 use std::collections::HashMap;
+use std::f64::consts::PI;
 use std::fs;
 use std::mem;
 use std::path::PathBuf;
@@ -19,12 +19,12 @@ pub struct Gaussian<T> {
   problem: Problem,
   particles: Vec<T>,
   global_best_pos: Option<DVector<f64>>,
-  g: f64,
   data: Vec<(f64, Option<Vec<T>>)>,
   out_directory: PathBuf,
-  fitness: Vec<f64>,
-  g0: f64,
-  alpha: f64,
+  x: Vec<Vec<DVector<f64>>>,
+  gamma: f64,
+  beta: f64,
+  fitness: Vec<Vec<f64>>, // f[j(time)][i(particle)]
   save: bool,
 }
 
@@ -48,24 +48,6 @@ impl<T: Particle + Position + Velocity + Clone> Optimizer<T> for Gaussian<T> {
       }
     };
 
-    assert!(parameters.contains_key("g0"), "Key 'g0' not found.");
-    let g0 = match parameters["g0"] {
-      ParamValue::Float(val) => val,
-      _ => {
-        eprintln!("Error: parameter 'g0' should be of type Param::Float.");
-        std::process::exit(1);
-      }
-    };
-
-    assert!(parameters.contains_key("alpha"), "Key 'alpha' not found.");
-    let alpha = match parameters["alpha"] {
-      ParamValue::Float(val) => val,
-      _ => {
-        eprintln!("Error: parameter 'alpha' should be of type Param::Float.");
-        std::process::exit(1);
-      }
-    };
-
     assert!(parameters.contains_key("behavior"), "Key 'behavior' not found.");
     let behavior = match parameters["behavior"] {
       ParamValue::Behavior(val) => val,
@@ -75,17 +57,35 @@ impl<T: Particle + Position + Velocity + Clone> Optimizer<T> for Gaussian<T> {
       }
     };
 
+    assert!(parameters.contains_key("gamma"), "Key 'gamma' not found.");
+    let gamma = match parameters["gamma"] {
+      ParamValue::Float(val) => val,
+      _ => {
+        eprintln!("Error: parameter 'gamma' should be of type Param::Float.");
+        std::process::exit(1);
+      }
+    };
+
+    assert!(parameters.contains_key("beta"), "Key 'beta' not found.");
+    let beta = match parameters["beta"] {
+      ParamValue::Float(val) => val,
+      _ => {
+        eprintln!("Error: parameter 'beta' should be of type Param::Float.");
+        std::process::exit(1);
+      }
+    };
+
     let mut gaussian = Gaussian {
       name,
       problem,
       particles: Vec::new(),
       global_best_pos: None,
-      g: g0,
       data: Vec::new(),
       out_directory,
+      x: Vec::new(),
+      beta,
+      gamma,
       fitness: Vec::new(),
-      g0,
-      alpha,
       save,
     };
 
@@ -114,17 +114,26 @@ impl<T: Particle + Position + Velocity + Clone> Optimizer<T> for Gaussian<T> {
   }
 
   fn calculate_vel(&mut self, _i: usize) -> DVector<f64> {
-    panic!("`calculate_vel` is left for legacy reasons. Use `calculate_vels`.");
+    panic!("`calculate_vel` is left here for legacy reasons. Use `calculate_vels`.");
   }
 
   fn run(&mut self, iterations: usize) {
-    for iter in 0..iterations {
-      self.g = self.g0 * (-self.alpha * iter as f64 / iterations as f64).exp();
+    for _iter in 0..iterations {
+      // Calculate and record fitness.
+      let mut f = Vec::new();
+      let mut x = Vec::new();
+      for idx in 0..self.particles.len() {
+        let pos = self.particles[idx].pos().clone();
+        f.push(self.problem.f(&pos));
+        x.push(pos.clone());
+      }
+      self.fitness.push(f);
+      self.x.push(x);
+
+      // Save x.
 
       // Calculate vels.
-      let mut temp_problem = mem::take(&mut self.problem);
-      let vels = calculate_vels(self.particles().clone(), &mut temp_problem, self.g);
-      self.problem = temp_problem;
+      let vels = calculate_vels(self.x.clone(), self.fitness.clone(), self.gamma, self.beta);
 
       // Clear memory.
       self.problem().clear_memo();
@@ -154,43 +163,33 @@ impl<T: Particle + Position + Velocity + Clone> Optimizer<T> for Gaussian<T> {
   }
 }
 
-fn calculate_vels<T: Particle + Position + Velocity + Clone>(
-  particles: Vec<T>,
-  problem: &mut Problem,
-  g: f64,
-) -> Vec<DVector<f64>> {
-  // Calculate fitness for reuse.
-  let mut fitnesses = Vec::new();
-  for idx in 0..particles.len() {
-    let pos = particles[idx].pos().clone();
-    fitnesses.push(problem.f(&pos));
-  }
+fn calculate_vels(x: Vec<Vec<DVector<f64>>>, f: Vec<Vec<f64>>, gamma: f64, beta: f64) -> Vec<DVector<f64>> {
+  let t = f.len();
+  let n = x[0].len();
+  let d = x[0][0].len();
+  let mut vels = Vec::with_capacity(n);
 
-  let mut vels = Vec::new();
-  for i in 0..particles.len() {
-    let mut a: DVector<f64> = DVector::from_element(problem.dim(), 0.);
-    let mut rng = rand::thread_rng();
-
-    for j in 0..particles.len() {
-      let particle_i = particles[i].clone();
-      let particle_j = particles[j].clone();
-
-      let r = particle_j.pos() - particle_i.pos();
-
-      let mut a_delta = g * fitnesses[j] / (r.norm() + std::f64::EPSILON) * r;
-
-      for e in a_delta.iter_mut() {
-        let rand: f64 = rng.gen_range(0.0..1.0);
-        *e *= rand;
+  for r in 0..n {
+    let x_tr = &x[t - 1][r];
+    let mut sum: DVector<f64> = DVector::from_element(d, 0.);
+    for j in 0..t {
+      let mut numerator: DVector<f64> = DVector::from_element(d, 0.);
+      let mut denominator: f64 = 0.;
+      for i in 0..n {
+        let x_ji = &x[j][i];
+        let g = alpha(beta, d) * (-beta / 2. * (x_tr - x_ji).norm_squared()).exp();
+        denominator += f[j][i] * g;
+        numerator += f[j][i] * g * beta * (x_tr - x_ji);
       }
-
-      a += a_delta;
+      sum += numerator / denominator;
     }
-
-    let rand: f64 = rng.gen_range(0.0..1.0);
-    vels.push(rand * particles[i].vel() + a);
+    vels.push(gamma * sum);
   }
   vels
+}
+
+fn alpha(beta: f64, d: usize) -> f64 {
+  (beta / (2.0 * PI)).powf(d as f64 / 2.0)
 }
 
 impl<T> Particles<T> for Gaussian<T> {

@@ -39,8 +39,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
       attempts,
       vec![
         ("g0", f(1000.)),
-        ("alpha", f(5.)),
         ("particle_count", i(particle_count)),
+        ("gamma", f(0.8)),
+        ("beta", f(0.4)),
         (
           "behavior",
           ParamValue::Behavior(Behavior {
