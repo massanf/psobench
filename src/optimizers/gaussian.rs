@@ -130,8 +130,6 @@ impl<T: Particle + Position + Velocity + Clone> Optimizer<T> for Gaussian<T> {
       self.fitness.push(f);
       self.x.push(x);
 
-      // Save x.
-
       // Calculate vels.
       let vels = calculate_vels(self.x.clone(), self.fitness.clone(), self.gamma, self.beta);
 
@@ -175,13 +173,29 @@ fn calculate_vels(x: Vec<Vec<DVector<f64>>>, f: Vec<Vec<f64>>, gamma: f64, beta:
     for j in 0..t {
       let mut numerator: DVector<f64> = DVector::from_element(d, 0.);
       let mut denominator: f64 = 0.;
+      let mut max_exponent = f64::NEG_INFINITY;
       for i in 0..n {
+        if j == t - 1 && r == i {
+          continue;
+        }
+        max_exponent = max_exponent.max(-beta / 2. * (x_tr - &x[j][i]).norm_squared());
+      }
+      for i in 0..n {
+        if j == t - 1 && r == i {
+          continue;
+        }
         let x_ji = &x[j][i];
-        let g = alpha(beta, d) * (-beta / 2. * (x_tr - x_ji).norm_squared()).exp();
+        let g = alpha(beta, d) * (-beta / 2. * (x_tr - x_ji).norm_squared() - max_exponent).exp();
+        numerator += f[j][i] * g * beta * (x_ji - x_tr);
         denominator += f[j][i] * g;
-        numerator += f[j][i] * g * beta * (x_tr - x_ji);
+      }
+      if denominator == 0. {
+        panic!("Division by 0");
       }
       sum += numerator / denominator;
+    }
+    if sum.norm() > 100000000. {
+      panic!("overflow");
     }
     vels.push(gamma * sum);
   }

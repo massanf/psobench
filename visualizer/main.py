@@ -5,7 +5,7 @@ import utils
 from pso import PSO
 import pathlib
 import numpy as np
-from constants import DATA
+from constants import DATA, GRAPHS
 
 
 graph_type = questionary.select(
@@ -13,12 +13,56 @@ graph_type = questionary.select(
     choices=[
         'single',
         'gridmaps',
+        'animation',
         'collage',
     ]).ask()
 
 
 if graph_type == 'single' or graph_type == 'gridmaps':
     raise NotImplementedError("Not implemented")
+
+if graph_type == 'animation':
+    test_options = [folder.name for folder in DATA.iterdir()
+                    if folder.is_dir()]
+    tests = questionary.checkbox(
+        "Select tests:",
+        choices=test_options
+    ).ask()
+
+    for test in tests:
+        dim_options = [folder.name for folder in (DATA / test).iterdir()
+                       if folder.is_dir()]
+        dims = questionary.checkbox(
+            "Select dimensions:", choices=dim_options).ask()
+        for dim in dims:
+            optimizer_options = [folder.name for folder in (DATA / test / dim).iterdir()
+                                 if folder.is_dir()]
+            optimizers = questionary.checkbox(
+                "Select problems:", choices=optimizer_options).ask()
+
+            for optimizer in optimizers:
+                problem_options = [folder.name for folder in (DATA / test / dim / optimizer).iterdir()
+                                   if folder.is_dir()]
+                problems = questionary.checkbox(
+                    "Select problems:", choices=problem_options).ask()
+
+                for problem in problems:
+                    attempt_options = [folder.name for folder in (DATA / test / dim / optimizer / problem).iterdir()
+                                       if folder.is_dir()]
+                    attempts = questionary.checkbox(
+                        "Select attempts:", choices=attempt_options).ask()
+
+                    for attempt in attempts:
+                        print(DATA / test / dim / optimizer / problem / attempt)
+                        pso = PSO(DATA / test / dim /
+                                  optimizer / problem / attempt)
+                        pso.load_full()
+                        skip = int(questionary.text(
+                            "Skip count: ", default="1").ask())
+                        end = int(questionary.text(
+                            "End: ", default=str(len(pso.iterations))).ask())
+                        pso.animate_particles(
+                            GRAPHS / test / dim / optimizer / problem / attempt / "animation.gif", skip, 0, end)
 
 if graph_type == 'collage':
     test_options = [folder.name for folder in DATA.iterdir()

@@ -136,6 +136,9 @@ pub fn check_cec17<T: Velocity + Clone, U: Optimizer<T>>(
     if func_num == 2 {
       continue;
     }
+    if func_num != 1 {
+      continue;
+    }
     func_nums.push(func_num);
   }
 

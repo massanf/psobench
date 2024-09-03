@@ -177,6 +177,8 @@ class PSO:
         self.progressbar = tqdm(
             total=math.ceil((end - start) / skip_frames) + 1)
         ani = FuncAnimation(fig, updater, frames=frames_cast)
+        if not destination_path.parent.exists():
+            os.makedirs(destination_path.parent)
         ani.save(destination_path, fps=10)
 
     def animate_particles(self, destination_path: pathlib.Path,
