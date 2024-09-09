@@ -24,6 +24,7 @@ pub struct Gaussian<T> {
   x: Vec<Vec<DVector<f64>>>,
   gamma: f64,
   beta: f64,
+  scale: f64,
   fitness: Vec<Vec<f64>>, // f[j(time)][i(particle)]
   save: bool,
 }
@@ -75,6 +76,15 @@ impl<T: Particle + Position + Velocity + Clone> Optimizer<T> for Gaussian<T> {
       }
     };
 
+    assert!(parameters.contains_key("scale"), "Key 'scale' not found.");
+    let scale = match parameters["scale"] {
+      ParamValue::Float(val) => val,
+      _ => {
+        eprintln!("Error: parameter 'scale' should be of type Param::Float.");
+        std::process::exit(1);
+      }
+    };
+
     let mut gaussian = Gaussian {
       name,
       problem,
@@ -85,6 +95,7 @@ impl<T: Particle + Position + Velocity + Clone> Optimizer<T> for Gaussian<T> {
       x: Vec::new(),
       beta,
       gamma,
+      scale,
       fitness: Vec::new(),
       save,
     };
@@ -131,7 +142,7 @@ impl<T: Particle + Position + Velocity + Clone> Optimizer<T> for Gaussian<T> {
       self.x.push(x);
 
       // Calculate vels.
-      let vels = calculate_vels(self.x.clone(), self.fitness.clone(), self.gamma, self.beta);
+      let vels = calculate_vels(self.x.clone(), self.fitness.clone(), self.gamma, self.beta, self.scale);
 
       // Clear memory.
       self.problem().clear_memo();
@@ -161,7 +172,7 @@ impl<T: Particle + Position + Velocity + Clone> Optimizer<T> for Gaussian<T> {
   }
 }
 
-fn calculate_vels(x: Vec<Vec<DVector<f64>>>, f: Vec<Vec<f64>>, gamma: f64, beta: f64) -> Vec<DVector<f64>> {
+fn calculate_vels(x: Vec<Vec<DVector<f64>>>, f: Vec<Vec<f64>>, gamma: f64, beta: f64, scale: f64) -> Vec<DVector<f64>> {
   let t = f.len();
   let n = x[0].len();
   let d = x[0][0].len();
@@ -173,29 +184,19 @@ fn calculate_vels(x: Vec<Vec<DVector<f64>>>, f: Vec<Vec<f64>>, gamma: f64, beta:
     for j in 0..t {
       let mut numerator: DVector<f64> = DVector::from_element(d, 0.);
       let mut denominator: f64 = 0.;
-      let mut max_exponent = f64::NEG_INFINITY;
       for i in 0..n {
-        if j == t - 1 && r == i {
-          continue;
-        }
-        max_exponent = max_exponent.max(-beta / 2. * (x_tr - &x[j][i]).norm_squared());
-      }
-      for i in 0..n {
-        if j == t - 1 && r == i {
-          continue;
-        }
         let x_ji = &x[j][i];
-        let g = alpha(beta, d) * (-beta / 2. * (x_tr - x_ji).norm_squared() - max_exponent).exp();
-        numerator += f[j][i] * g * beta * (x_ji - x_tr);
-        denominator += f[j][i] * g;
+        let g = alpha(beta, d) * (-beta / 2. * ((x_tr - x_ji).norm_squared() / (scale * scale))).exp();
+        numerator += 1. / f[j][i] * g * beta * (x_ji - x_tr);
+        denominator += 1. / f[j][i] * g;
       }
       if denominator == 0. {
         panic!("Division by 0");
       }
-      sum += numerator / denominator;
+      sum += numerator / denominator / scale;
     }
-    if sum.norm() > 100000000. {
-      panic!("overflow");
+    if sum.norm() > 10000. {
+      sum = sum.clone() / sum.norm() * 10000.;
     }
     vels.push(gamma * sum);
   }

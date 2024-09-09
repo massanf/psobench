@@ -25,10 +25,10 @@ use ParamValue::Float as f;
 use ParamValue::Int as i;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-  let dims = [10];
-  let iterations = 15;
+  let dims = [2];
+  let iterations = 1000;
   let attempts = 1;
-  let particle_count = 50;
+  let particle_count = 30;
 
   for dim in dims {
     utils::check_cec17::<GaussianParticle, Gaussian<GaussianParticle>>(
@@ -41,6 +41,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ("particle_count", i(particle_count)),
         ("gamma", f(0.8)),
         ("beta", f(0.4)),
+        ("scale", f(200.)),
         (
           "behavior",
           ParamValue::Behavior(Behavior {
