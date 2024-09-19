@@ -6,6 +6,7 @@ use crate::problems;
 use crate::utils;
 use nalgebra::DVector;
 use problems::Problem;
+use rug::Float;
 use serde_json::json;
 use std::collections::HashMap;
 use std::f64::consts::PI;
@@ -138,7 +139,21 @@ impl<T: Particle + Position + Velocity + Clone> Optimizer<T> for Gaussian<T> {
         f.push(self.problem.f(&pos));
         x.push(pos.clone());
       }
-      self.fitness.push(f);
+
+      // Update best pos.
+      let mut new_global_best_pos = None;
+      let mut new_global_best = None;
+      for idx in 0..self.particles().len() {
+        if new_global_best.is_none() || new_global_best.unwrap() > f[idx] {
+          new_global_best = Some(f[idx]);
+          new_global_best_pos = Some(self.particles[idx].pos());
+        }
+      }
+      println!("{:?}", new_global_best.unwrap());
+      self.update_global_best_pos(new_global_best_pos.unwrap().clone());
+
+      // Save positions and fitnesses.
+      self.fitness.push(f.clone());
       self.x.push(x);
 
       // Calculate vels.
@@ -148,21 +163,13 @@ impl<T: Particle + Position + Velocity + Clone> Optimizer<T> for Gaussian<T> {
       self.problem().clear_memo();
 
       // Update the position, best and worst.
-      let mut new_global_best_pos = None;
       for (i, vel) in vels.iter().enumerate().take(self.particles().len()) {
         let mut temp_problem = mem::take(&mut self.problem);
         let particle = &mut self.particles_mut()[i];
         particle.update_vel(vel.clone(), &mut temp_problem);
         particle.move_pos(&mut temp_problem);
-        let pos = particle.pos().clone();
-        if new_global_best_pos.is_none()
-          || (self.problem().f(&pos) < self.problem().f(&new_global_best_pos.clone().unwrap()))
-        {
-          new_global_best_pos = Some(pos);
-        }
         self.problem = temp_problem;
       }
-      self.update_global_best_pos(new_global_best_pos.unwrap());
 
       // Save the data for current iteration.
       let gbest = self.problem.f(&self.global_best_pos());
@@ -173,38 +180,55 @@ impl<T: Particle + Position + Velocity + Clone> Optimizer<T> for Gaussian<T> {
 }
 
 fn calculate_vels(x: Vec<Vec<DVector<f64>>>, f: Vec<Vec<f64>>, gamma: f64, beta: f64, scale: f64) -> Vec<DVector<f64>> {
+  let precision: u32 = 256;
   let t = f.len();
   let n = x[0].len();
   let d = x[0][0].len();
-  let mut vels = Vec::with_capacity(n);
 
+  let mut vels = Vec::with_capacity(n);
   for r in 0..n {
-    let x_tr = &x[t - 1][r];
     let mut sum: DVector<f64> = DVector::from_element(d, 0.);
-    for j in 0..t {
-      let mut numerator: DVector<f64> = DVector::from_element(d, 0.);
-      let mut denominator: f64 = 0.;
+
+    let x_t_1_r: DVector<Float> = x[t - 1][r].map(|x| Float::with_val(precision, x));
+    for j in std::cmp::max(0, t - 1)..t {
+    // for j in 0..t {
+      let mut numerator: DVector<Float> = DVector::from_element(d, Float::with_val(precision, 0.));
+      let mut denominator: Float = Float::with_val(precision, 0.);
       for i in 0..n {
-        let x_ji = &x[j][i];
-        let g = alpha(beta, d) * (-beta / 2. * ((x_tr - x_ji).norm_squared() / (scale * scale))).exp();
-        numerator += 1. / f[j][i] * g * beta * (x_ji - x_tr);
-        denominator += 1. / f[j][i] * g;
+        let x_ji: DVector<Float> = x[j][i].map(|x| Float::with_val(precision, x));
+        let f_ji: Float = Float::with_val(precision, f[j][i]).exp();
+        // println!("F {}", f_ji);
+        let exponent = Float::with_val(precision, ((&x[t - 1][r] - &x[j][i]) / (scale * scale)).norm_squared());
+        let g = alpha(beta, d, scale) * (exponent).exp();
+        numerator +=
+          float_dvector_times_float_scalar(x_ji - x_t_1_r.clone(), 1. / f_ji.clone() * g.clone() * beta / scale);
+        denominator += 1. / f_ji.clone() * g;
       }
       if denominator == 0. {
         panic!("Division by 0");
       }
-      sum += numerator / denominator / scale;
+      sum += (numerator / denominator).map(|x| x.to_f64());
     }
+
     if sum.norm() > 10000. {
-      sum = sum.clone() / sum.norm() * 10000.;
+      panic!("Velocity overflow.");
     }
-    vels.push(gamma * sum);
+
+    vels.push(gamma * sum * scale);
   }
+  println!(
+    "{}: avg vel",
+    vels.iter().map(|v| v.norm()).sum::<f64>() / vels.len() as f64
+  );
   vels
 }
 
-fn alpha(beta: f64, d: usize) -> f64 {
-  (beta / (2.0 * PI)).powf(d as f64 / 2.0)
+fn alpha(beta: f64, d: usize, scale: f64) -> f64 {
+  (beta / (2.0 * PI * scale * scale)).powf(d as f64 / 2.0)
+}
+
+fn float_dvector_times_float_scalar(dvector: DVector<Float>, scalar: Float) -> DVector<Float> {
+  dvector.map(|x| x.clone() * scalar.clone())
 }
 
 impl<T> Particles<T> for Gaussian<T> {

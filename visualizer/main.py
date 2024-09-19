@@ -30,25 +30,25 @@ if graph_type == 'animation':
     ).ask()
 
     for test in tests:
-        dim_options = [folder.name for folder in (DATA / test).iterdir()
-                       if folder.is_dir()]
+        dim_options = sorted([folder.name for folder in (DATA / test).iterdir()
+                       if folder.is_dir()])
         dims = questionary.checkbox(
             "Select dimensions:", choices=dim_options).ask()
         for dim in dims:
-            optimizer_options = [folder.name for folder in (DATA / test / dim).iterdir()
-                                 if folder.is_dir()]
+            optimizer_options = sorted([folder.name for folder in (DATA / test / dim).iterdir()
+                                 if folder.is_dir()])
             optimizers = questionary.checkbox(
                 "Select problems:", choices=optimizer_options).ask()
 
             for optimizer in optimizers:
-                problem_options = [folder.name for folder in (DATA / test / dim / optimizer).iterdir()
-                                   if folder.is_dir()]
+                problem_options = sorted([folder.name for folder in (DATA / test / dim / optimizer).iterdir()
+                                   if folder.is_dir()])
                 problems = questionary.checkbox(
                     "Select problems:", choices=problem_options).ask()
 
                 for problem in problems:
-                    attempt_options = [folder.name for folder in (DATA / test / dim / optimizer / problem).iterdir()
-                                       if folder.is_dir()]
+                    attempt_options = sorted([folder.name for folder in (DATA / test / dim / optimizer / problem).iterdir()
+                                       if folder.is_dir()])
                     attempts = questionary.checkbox(
                         "Select attempts:", choices=attempt_options).ask()
 

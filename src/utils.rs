@@ -111,6 +111,46 @@ pub fn run_attempts<U: Position + Velocity + Clone, T: Optimizer<U> + DataExport
 }
 
 #[allow(clippy::too_many_arguments)]
+#[allow(dead_code)]
+pub fn check_problem<T: Velocity + Clone, U: Optimizer<T>>(
+  test_name: &str,
+  optimizer_name: &str,
+  iterations: usize,
+  dim: usize,
+  attempts: usize,
+  params_in_vec: Vec<(&str, ParamValue)>,
+  problem: Problem,
+  save: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+  let params = param_hashmap_generator(params_in_vec);
+  // Progress Bar.
+  let bar = ProgressBar::new((29 * attempts) as u64);
+  bar.set_style(
+    ProgressStyle::default_bar()
+      .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {msg}")
+      .unwrap()
+      .progress_chars("#>-"),
+  );
+  bar.set_message(format!("{}...   ", optimizer_name));
+
+  let out_directory = generate_out_directory(test_name, dim, optimizer_name);
+
+  let _ = run_attempts::<T, U>(
+    params.clone(),
+    optimizer_name.to_owned().clone(),
+    problem.clone(),
+    out_directory.join(problem.clone().name()),
+    iterations,
+    attempts,
+    save,
+    &bar,
+  );
+
+  Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
+#[allow(dead_code)]
 pub fn check_cec17<T: Velocity + Clone, U: Optimizer<T>>(
   test_name: &str,
   optimizer_name: &str,

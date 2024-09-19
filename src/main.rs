@@ -25,13 +25,13 @@ use ParamValue::Float as f;
 use ParamValue::Int as i;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-  let dims = [2];
-  let iterations = 1000;
+  let dims = [10];
+  let iterations = 100;
   let attempts = 1;
-  let particle_count = 30;
+  let particle_count = 100;
 
   for dim in dims {
-    utils::check_cec17::<GaussianParticle, Gaussian<GaussianParticle>>(
+    utils::check_problem::<GaussianParticle, Gaussian<GaussianParticle>>(
       "test",
       "gaussian_test",
       iterations,
@@ -41,7 +41,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ("particle_count", i(particle_count)),
         ("gamma", f(0.8)),
         ("beta", f(0.4)),
-        ("scale", f(200.)),
+        ("scale", f(1.)),
         (
           "behavior",
           ParamValue::Behavior(Behavior {
@@ -50,8 +50,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
           }),
         ),
       ],
+      problems::rastrigin_5_12(dim),
       true,
     )?;
+    // utils::check_cec17::<GaussianParticle, Gaussian<GaussianParticle>>(
+    //   "test",
+    //   "gaussian_test",
+    //   iterations,
+    //   dim,
+    //   attempts,
+    //   vec![
+    //     ("particle_count", i(particle_count)),
+    //     ("gamma", f(0.8)),
+    //     ("beta", f(0.4)),
+    //     ("scale", f(1.)),
+    //     (
+    //       "behavior",
+    //       ParamValue::Behavior(Behavior {
+    //         edge: Edge::Pass,
+    //         vmax: false,
+    //       }),
+    //     ),
+    //   ],
+    //   true,
+    // )?;
   }
   Ok(())
 }

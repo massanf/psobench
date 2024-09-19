@@ -23,6 +23,25 @@ pub fn skewed_sphere(v: &DVector<f64>) -> f64 {
 }
 
 #[allow(dead_code)]
+pub fn hyper_ellipsoid(v: &DVector<f64>) -> f64 {
+  let mut sum = 0.0;
+  for k in 0..v.len() {
+      sum += (k as f64 * v[k]).powi(2);
+  }
+  sum
+}
+
+#[allow(dead_code)]
+pub fn griewank(v: &DVector<f64>) -> f64 {
+    let sum_part: f64 = v.iter().map(|&u| u.powi(2)).sum::<f64>() / 4000.0;
+    let product_part: f64 = v.iter().enumerate().map(|(i, &u)| {
+        (u / ((i + 1) as f64).sqrt()).cos()
+    }).product();
+    
+    sum_part - product_part + 1.0
+}
+
+#[allow(dead_code)]
 pub fn rosenbrock(v: &DVector<f64>) -> f64 {
   let mut sum = 0.0;
   for i in 0..v.len() - 1 {

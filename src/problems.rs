@@ -120,11 +120,51 @@ pub fn f1_skewed(dim: usize) -> Problem {
 }
 
 #[allow(dead_code)]
-pub fn f2(dim: usize) -> Problem {
+pub fn sphere_100(dim: usize) -> Problem {
   Problem::new(
-    "Rosenbrock".to_owned(),
+    "Sphere100".to_owned(),
+    Arc::new(functions::sphere),
+    (-100., 100.),
+    dim,
+  )
+}
+
+#[allow(dead_code)]
+pub fn rosenbrock_30(dim: usize) -> Problem {
+  Problem::new(
+    "Rosenbrock30".to_owned(),
     Arc::new(functions::rosenbrock),
     (-30., 30.),
+    dim,
+  )
+}
+
+#[allow(dead_code)]
+pub fn griewank_600(dim: usize) -> Problem {
+  Problem::new(
+    "Griewank600".to_owned(),
+    Arc::new(functions::griewank),
+    (-600., 600.),
+    dim,
+  )
+}
+
+#[allow(dead_code)]
+pub fn rastrigin_5_12(dim: usize) -> Problem {
+  Problem::new(
+    "Rastrigin5_12".to_owned(),
+    Arc::new(functions::rastrigin),
+    (-5.12, 5.12),
+    dim,
+  )
+}
+
+#[allow(dead_code)]
+pub fn hyper_ellipsoid_100(dim: usize) -> Problem {
+  Problem::new(
+    "HyperEllipsoid100".to_owned(),
+    Arc::new(functions::hyper_ellipsoid),
+    (-100., 100.),
     dim,
   )
 }
