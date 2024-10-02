@@ -31,6 +31,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   let particle_count = 100;
 
   for dim in dims {
+    utils::check_problem::<PsoParticle, Pso<PsoParticle>>(
+      "test",
+      "pso_test",
+      iterations,
+      dim,
+      attempts,
+      vec![
+        ("particle_count", i(particle_count)),
+        ("w", f(0.5)),
+        ("phi_p", f(2.)),
+        ("phi_g", f(2.)),
+        (
+          "behavior",
+          ParamValue::Behavior(Behavior {
+            edge: Edge::Pass,
+            vmax: false,
+          }),
+        ),
+      ],
+      problems::cec17(1, dim),
+      true,
+    )?;
+
     utils::check_problem::<GaussianParticle, Gaussian<GaussianParticle>>(
       "test",
       "gaussian_test",
@@ -50,7 +73,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
           }),
         ),
       ],
-      problems::rastrigin_5_12(dim),
+      problems::cec17(1, dim),
       true,
     )?;
     // utils::check_cec17::<GaussianParticle, Gaussian<GaussianParticle>>(

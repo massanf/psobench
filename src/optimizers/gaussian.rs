@@ -203,6 +203,7 @@ fn calculate_vels(x: Vec<Vec<DVector<f64>>>, f: Vec<Vec<f64>>, gamma: f64, beta:
         numerator +=
           float_dvector_times_float_scalar(x_ji - x_t_1_r.clone(), 1. / f_ji.clone() * g.clone() * beta / scale);
         denominator += 1. / f_ji.clone() * g;
+        println!("f_ji {}", f_ji.clone());
       }
       if denominator == 0. {
         panic!("Division by 0");

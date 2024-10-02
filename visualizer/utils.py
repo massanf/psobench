@@ -108,10 +108,10 @@ def generate_overview(name: pathlib.Path, skip: int = 1,
     pso = PSO(data)
     pso.load_full()
     pso.overview(False, graphs)
-    if pso.has_mass() and animate_mass:
-        pso.animate_mass(graphs / "mass.gif", skip, 0, end)
-    print(f"Saving: {graphs / 'animation.gif'}")
-    pso.animate_particles(graphs / "animation.gif", skip, 0, end)
+    # if pso.has_mass() and animate_mass:
+        #     pso.animate_mass(graphs / "mass.gif", skip, 0, end)
+    # print(f"Saving: {graphs / 'animation.gif'}")
+    # pso.animate_particles(graphs / "animation.gif", skip, 0, end)
 
 
 def shorter_names(names: List[str]) -> List[str]:

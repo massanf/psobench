@@ -1,10 +1,11 @@
 import questionary
+import random
 import utils
-import glob
+import matplotlib.pyplot as plt  # type: ignore
 import utils
 from pso import PSO
 import pathlib
-import numpy as np
+import os
 from constants import DATA, GRAPHS
 
 
@@ -18,10 +19,8 @@ graph_type = questionary.select(
     ]).ask()
 
 
-if graph_type == 'single' or graph_type == 'gridmaps':
-    raise NotImplementedError("Not implemented")
-
-if graph_type == 'animation':
+def get_paths(level: str):
+    results = []
     test_options = [folder.name for folder in DATA.iterdir()
                     if folder.is_dir()]
     tests = questionary.checkbox(
@@ -30,39 +29,95 @@ if graph_type == 'animation':
     ).ask()
 
     for test in tests:
-        dim_options = sorted([folder.name for folder in (DATA / test).iterdir()
-                       if folder.is_dir()])
+        if level == "tests":
+            results.append(test)
+            continue
+
+        dim_options = [str(x) for x in sorted([int(folder.name) for folder in (DATA / test).iterdir()
+                              if folder.is_dir()])]
         dims = questionary.checkbox(
-            "Select dimensions:", choices=dim_options).ask()
+            f"Select dimensions ({test}):", choices=dim_options).ask()
+
+
         for dim in dims:
+            if level == "dims":
+                results.append(dim)
+                continue
+
             optimizer_options = sorted([folder.name for folder in (DATA / test / dim).iterdir()
-                                 if folder.is_dir()])
+                                        if folder.is_dir()])
             optimizers = questionary.checkbox(
-                "Select problems:", choices=optimizer_options).ask()
+                f"Select problems ({pathlib.Path(test) / dim}):", choices=optimizer_options).ask()
 
             for optimizer in optimizers:
+                if level == "optimizer":
+                    results.append(optimizer)
+                    continue
+
                 problem_options = sorted([folder.name for folder in (DATA / test / dim / optimizer).iterdir()
-                                   if folder.is_dir()])
+                                          if folder.is_dir()])
                 problems = questionary.checkbox(
-                    "Select problems:", choices=problem_options).ask()
+                    f"Select problems ({pathlib.Path(test) / dim / optimizer}):", choices=problem_options).ask()
 
                 for problem in problems:
+                    if level == "problem":
+                        results.append(problem)
+                        continue
+
                     attempt_options = sorted([folder.name for folder in (DATA / test / dim / optimizer / problem).iterdir()
-                                       if folder.is_dir()])
+                                              if folder.is_dir()])
                     attempts = questionary.checkbox(
-                        "Select attempts:", choices=attempt_options).ask()
+                        f"Select attempts ({pathlib.Path(test) / dim / optimizer / problem}):", choices=attempt_options).ask()
 
                     for attempt in attempts:
-                        print(DATA / test / dim / optimizer / problem / attempt)
-                        pso = PSO(DATA / test / dim /
-                                  optimizer / problem / attempt)
-                        pso.load_full()
-                        skip = int(questionary.text(
-                            "Skip count: ", default="1").ask())
-                        end = int(questionary.text(
-                            "End: ", default=str(len(pso.iterations))).ask())
-                        pso.animate_particles(
-                            GRAPHS / test / dim / optimizer / problem / attempt / "animation.gif", skip, 0, end)
+                        if level == "attempts":
+                            results.append(
+                            pathlib.Path(test) / dim / optimizer / problem / attempt)
+    return results
+
+
+if graph_type == 'single':
+    attempts = get_paths("attempts")
+    plt.close()
+    plt.cla()
+    plt.rcdefaults()
+
+    for attempt in attempts:
+        data = DATA / attempt
+        graphs = GRAPHS / attempt
+        graphs.mkdir(parents=True, exist_ok=True)
+        pso = PSO(data)
+        pso.load_full()
+        plt.plot(pso.global_best_fitness_progress(), label=attempt)
+
+    plt.legend()
+    plt.gca().autoscale(axis='y', tight=False)
+    if not (GRAPHS / "custom_singles").exists():
+        os.makedirs(GRAPHS / "custom_singles")
+    filestem = questionary.text("Filename:").ask()
+    if filestem == "":
+        filestem = str(random.randint(100000, 999999))
+    filepath = GRAPHS / "custom_singles" / f"fitness_over_time_{filestem}.png"
+    print(f"Saving: {filepath}")
+    plt.savefig(filepath)
+    plt.close()
+
+
+if graph_type == 'gridmaps':
+    raise NotImplementedError()
+
+
+if graph_type == 'animation':
+    for attempt in get_attempts():
+        pso = PSO(DATA / attempt)
+        pso.load_full()
+        skip = int(questionary.text(
+            "Skip count: ", default="1").ask())
+        end = int(questionary.text(
+            "End: ", default=str(len(pso.iterations))).ask())
+        pso.animate_particles(
+            GRAPHS / attempt / "animation.gif", skip, 0, end)
+
 
 if graph_type == 'collage':
     test_options = [folder.name for folder in DATA.iterdir()

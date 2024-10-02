@@ -255,13 +255,13 @@ class PSO:
         plt.savefig(out_directory / "speed_over_time.png")
         plt.close()
 
-        plt.cla()
-        plt.rcdefaults()
-        fig, ax = plt.subplots()
-        ax.plot(self.entropy())
-        print(f"Saving: {out_directory / 'entropy_over_time.png'}")
-        plt.savefig(out_directory / "entropy_over_time.png")
-        plt.close()
+        # plt.cla()
+        # plt.rcdefaults()
+        # fig, ax = plt.subplots()
+        # ax.plot(self.entropy())
+        # print(f"Saving: {out_directory / 'entropy_over_time.png'}")
+        # plt.savefig(out_directory / "entropy_over_time.png")
+        # plt.close()
 
         if self.has_mass():
             plt.cla()
