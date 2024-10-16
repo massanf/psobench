@@ -1,43 +1,42 @@
+use crate::optimizers::gsa::Normalizer;
 use crate::optimizers::traits::{
   Data, DataExporter, GlobalBestPos, Name, OptimizationProblem, Optimizer, ParamValue, Particles,
 };
-use crate::particles::traits::{Behavior, Particle, Position, Velocity};
+use crate::particles::traits::{Behavior, Mass, Particle, Position, Velocity};
 use crate::problems;
+use crate::rand::Rng;
 use crate::utils;
 use nalgebra::DVector;
 use problems::Problem;
-use rug::Float;
 use serde_json::json;
 use std::collections::HashMap;
-use std::f64::consts::PI;
 use std::fs;
 use std::mem;
 use std::path::PathBuf;
 
 #[derive(Clone)]
-pub struct Gaussian<T> {
+pub struct Mgsa<T> {
   name: String,
   problem: Problem,
   particles: Vec<T>,
   global_best_pos: Option<DVector<f64>>,
+  g: f64,
   data: Vec<(f64, Option<Vec<T>>)>,
   out_directory: PathBuf,
-  x: Vec<Vec<DVector<f64>>>,
-  gamma: f64,
-  beta: f64,
-  scale: f64,
-  fitness: Vec<Vec<f64>>, // f[j(time)][i(particle)]
+  g0: f64,
+  alpha: f64,
   save: bool,
+  normalizer: Normalizer,
 }
 
-impl<T: Particle + Position + Velocity + Clone> Optimizer<T> for Gaussian<T> {
+impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> {
   fn new(
     name: String,
     problem: Problem,
     parameters: HashMap<String, ParamValue>,
     out_directory: PathBuf,
     save: bool,
-  ) -> Gaussian<T> {
+  ) -> Mgsa<T> {
     assert!(
       parameters.contains_key("particle_count"),
       "Key 'particle_count' not found."
@@ -46,6 +45,33 @@ impl<T: Particle + Position + Velocity + Clone> Optimizer<T> for Gaussian<T> {
       ParamValue::Int(val) => val as usize,
       _ => {
         eprintln!("Error: parameter 'particle_count' should be of type Param::Int.");
+        std::process::exit(1);
+      }
+    };
+
+    assert!(parameters.contains_key("g0"), "Key 'g0' not found.");
+    let g0 = match parameters["g0"] {
+      ParamValue::Float(val) => val,
+      _ => {
+        eprintln!("Error: parameter 'g0' should be of type Param::Float.");
+        std::process::exit(1);
+      }
+    };
+
+    assert!(parameters.contains_key("alpha"), "Key 'alpha' not found.");
+    let alpha = match parameters["alpha"] {
+      ParamValue::Float(val) => val,
+      _ => {
+        eprintln!("Error: parameter 'alpha' should be of type Param::Float.");
+        std::process::exit(1);
+      }
+    };
+
+    assert!(parameters.contains_key("normalizer"), "Key 'normalizer' not found.");
+    let normalizer = match parameters["normalizer"] {
+      ParamValue::Normalizer(val) => val,
+      _ => {
+        eprintln!("Error: parameter 'normalizer' should be of type Param::Normalizer.");
         std::process::exit(1);
       }
     };
@@ -59,50 +85,22 @@ impl<T: Particle + Position + Velocity + Clone> Optimizer<T> for Gaussian<T> {
       }
     };
 
-    assert!(parameters.contains_key("gamma"), "Key 'gamma' not found.");
-    let gamma = match parameters["gamma"] {
-      ParamValue::Float(val) => val,
-      _ => {
-        eprintln!("Error: parameter 'gamma' should be of type Param::Float.");
-        std::process::exit(1);
-      }
-    };
-
-    assert!(parameters.contains_key("beta"), "Key 'beta' not found.");
-    let beta = match parameters["beta"] {
-      ParamValue::Float(val) => val,
-      _ => {
-        eprintln!("Error: parameter 'beta' should be of type Param::Float.");
-        std::process::exit(1);
-      }
-    };
-
-    assert!(parameters.contains_key("scale"), "Key 'scale' not found.");
-    let scale = match parameters["scale"] {
-      ParamValue::Float(val) => val,
-      _ => {
-        eprintln!("Error: parameter 'scale' should be of type Param::Float.");
-        std::process::exit(1);
-      }
-    };
-
-    let mut gaussian = Gaussian {
+    let mut mgsa = Mgsa {
       name,
       problem,
       particles: Vec::new(),
       global_best_pos: None,
+      g: g0,
       data: Vec::new(),
       out_directory,
-      x: Vec::new(),
-      beta,
-      gamma,
-      scale,
-      fitness: Vec::new(),
+      g0,
+      alpha,
       save,
+      normalizer,
     };
 
-    gaussian.init(number_of_particles, behavior);
-    gaussian
+    mgsa.init(number_of_particles, behavior);
+    mgsa
   }
 
   fn init(&mut self, number_of_particles: usize, behavior: Behavior) {
@@ -126,50 +124,59 @@ impl<T: Particle + Position + Velocity + Clone> Optimizer<T> for Gaussian<T> {
   }
 
   fn calculate_vel(&mut self, _i: usize) -> DVector<f64> {
-    panic!("`calculate_vel` is left here for legacy reasons. Use `calculate_vels`.");
+    panic!("unused");
   }
 
   fn run(&mut self, iterations: usize) {
-    for _iter in 0..iterations {
-      // Calculate and record fitness.
-      let mut f = Vec::new();
-      let mut x = Vec::new();
-      for idx in 0..self.particles.len() {
-        let pos = self.particles[idx].pos().clone();
-        f.push(self.problem.f(&pos));
-        x.push(pos.clone());
-      }
+    for iter in 0..iterations {
+      self.g = self.g0 * (-self.alpha * iter as f64 / iterations as f64).exp();
 
-      // Update best pos.
-      let mut new_global_best_pos = None;
-      let mut new_global_best = None;
+      let mut fitness = Vec::new();
       for idx in 0..self.particles().len() {
-        if new_global_best.is_none() || new_global_best.unwrap() > f[idx] {
-          new_global_best = Some(f[idx]);
-          new_global_best_pos = Some(self.particles[idx].pos());
-        }
+        let pos = self.particles()[idx].pos().clone();
+        fitness.push(self.problem().f(&pos));
       }
-      println!("{:?}", new_global_best.unwrap() as i32);
-      self.update_global_best_pos(new_global_best_pos.unwrap().clone());
 
-      // Save positions and fitnesses.
-      self.fitness.push(f.clone());
-      self.x.push(x);
+      let m = match self.normalizer {
+        Normalizer::MinMax => utils::original_gsa_mass(fitness),
+        Normalizer::ZScore => utils::z_mass(fitness),
+        Normalizer::Robust => utils::robust_mass(fitness),
+        Normalizer::Rank => utils::rank_mass(fitness),
+        Normalizer::Sigmoid2 => utils::sigmoid2_mass(fitness),
+        Normalizer::Sigmoid4 => utils::sigmoid4_mass(fitness),
+      };
+
+      for (mass, particle) in m.iter().zip(self.particles_mut().iter_mut()) {
+        particle.set_mass(*mass);
+      }
 
       // Calculate vels.
-      let vels = calculate_vels(self.x.clone(), self.fitness.clone(), self.gamma, self.beta, self.scale);
+      let mut x = Vec::new();
+      for idx in 0..self.particles().len() {
+        x.push(self.particles()[idx].pos().clone());
+      }
+      let vels = calculate_vels(x, m, self.g, iter as f64 / iterations as f64);
 
       // Clear memory.
       self.problem().clear_memo();
 
       // Update the position, best and worst.
+      let mut new_global_best_pos = None;
+      // for (i, m_i) in 0..self.particles().len() {
       for (i, vel) in vels.iter().enumerate().take(self.particles().len()) {
         let mut temp_problem = mem::take(&mut self.problem);
         let particle = &mut self.particles_mut()[i];
         particle.update_vel(vel.clone(), &mut temp_problem);
         particle.move_pos(&mut temp_problem);
+        let pos = particle.pos().clone();
+        if new_global_best_pos.is_none()
+          || (self.problem().f(&pos) < self.problem().f(&new_global_best_pos.clone().unwrap()))
+        {
+          new_global_best_pos = Some(pos);
+        }
         self.problem = temp_problem;
       }
+      self.update_global_best_pos(new_global_best_pos.unwrap());
 
       // Save the data for current iteration.
       let gbest = self.problem.f(&self.global_best_pos());
@@ -179,59 +186,57 @@ impl<T: Particle + Position + Velocity + Clone> Optimizer<T> for Gaussian<T> {
   }
 }
 
-fn calculate_vels(x: Vec<Vec<DVector<f64>>>, f: Vec<Vec<f64>>, gamma: f64, beta: f64, scale: f64) -> Vec<DVector<f64>> {
-  let precision: u32 = 128;
-  let t = f.len();
-  let n = x[0].len();
-  let d = x[0][0].len();
-
+fn calculate_vels(x: Vec<DVector<f64>>, f: Vec<f64>, g: f64, progress: f64) -> Vec<DVector<f64>> {
+  let n = x.len();
+  let d = x[0].len();
   let mut vels = Vec::with_capacity(n);
-  for r in 0..n {
-    let mut sum: DVector<Float> = DVector::from_element(d, Float::with_val(precision, 0.));
+  for i in 0..n {
+    //assert!(i < self.particles().len());
+    let mut a: DVector<f64> = DVector::from_element(d, 0.);
+    let mut rng = rand::thread_rng();
 
-    let x_t_1_r: DVector<Float> = x[t - 1][r].map(|x| Float::with_val(precision, x));
-    for j in std::cmp::max(0, t - 10)..t {
-      // for j in 0..t {
-      let mut numerator: DVector<Float> = DVector::from_element(d, Float::with_val(precision, 0.));
-      let mut denominator: Float = Float::with_val(precision, 0.);
-      for i in 0..n {
-        if j == t - 1 && i == r {
-          continue;
-        }
-        let x_ji: DVector<Float> = x[j][i].map(|x| Float::with_val(precision, x));
-        let f_ji: Float = Float::with_val(precision, f[j][i]);
-        let exponent = Float::with_val(
-          precision,
-          -beta / 2.0 * ((&x[t - 1][r] - &x[j][i]) / (scale * scale)).norm_squared(),
-        );
-        let g = alpha(beta, d, scale) * (exponent.clone()).exp();
-        numerator += (x_ji - x_t_1_r.clone()) * (1. / f_ji.clone() * g.clone() * beta / scale);
-        denominator += 1. / f_ji.clone() * g;
+    let mut mass_sum = 0.;
+    for j in 0..n {
+      if i == j {
+        continue;
       }
-      if denominator == 0. {
-        panic!("Division by 0");
+
+      let r = x[j].clone() - x[i].clone();
+
+      let mut a_delta = g * f[j] / (r.norm() + std::f64::EPSILON) * r;
+      mass_sum += f[j];
+
+      for e in a_delta.iter_mut() {
+        let rand: f64 = rng.gen_range(0.0..1.0);
+        *e *= rand;
       }
-      sum += numerator / denominator;
+
+      a += a_delta;
     }
 
-    if sum.map(|x| x.to_f64()).norm() > 10000. {
-      panic!("Velocity overflow.");
-    }
+    for j in 0..n {
+      if i == j {
+        continue;
+      }
 
-    vels.push(gamma * sum.map(|x| x.to_f64()) * scale);
+      let r = x[j].clone() - x[i].clone();
+
+      let mut a_delta = g / (r.norm() + std::f64::EPSILON) * r;
+
+      for e in a_delta.iter_mut() {
+        let rand: f64 = rng.gen_range(0.0..1.0);
+        *e *= rand;
+      }
+
+      a -= mass_sum / n as f64 * a_delta;
+    }
+    // rand * self.particles()[i].vel() + a
+    vels.push(a);
   }
-  println!(
-    "{}: avg vel",
-    vels.iter().map(|v| v.norm()).sum::<f64>() / vels.len() as f64
-  );
   vels
 }
 
-fn alpha(beta: f64, d: usize, scale: f64) -> f64 {
-  (beta / (2.0 * PI * scale * scale)).powf(d as f64 / 2.0)
-}
-
-impl<T> Particles<T> for Gaussian<T> {
+impl<T> Particles<T> for Mgsa<T> {
   fn particles(&self) -> &Vec<T> {
     &self.particles
   }
@@ -241,7 +246,7 @@ impl<T> Particles<T> for Gaussian<T> {
   }
 }
 
-impl<T> GlobalBestPos for Gaussian<T> {
+impl<T> GlobalBestPos for Mgsa<T> {
   fn global_best_pos(&self) -> DVector<f64> {
     self.global_best_pos.clone().unwrap()
   }
@@ -255,19 +260,19 @@ impl<T> GlobalBestPos for Gaussian<T> {
   }
 }
 
-impl<T> OptimizationProblem for Gaussian<T> {
+impl<T> OptimizationProblem for Mgsa<T> {
   fn problem(&mut self) -> &mut Problem {
     &mut self.problem
   }
 }
 
-impl<T> Name for Gaussian<T> {
+impl<T> Name for Mgsa<T> {
   fn name(&self) -> &String {
     &self.name
   }
 }
 
-impl<T: Clone> Data<T> for Gaussian<T> {
+impl<T: Clone> Data<T> for Mgsa<T> {
   fn data(&self) -> &Vec<(f64, Option<Vec<T>>)> {
     &self.data
   }
@@ -277,7 +282,7 @@ impl<T: Clone> Data<T> for Gaussian<T> {
   }
 }
 
-impl<T: Position + Velocity + Clone> DataExporter<T> for Gaussian<T> {
+impl<T: Position + Velocity + Mass + Clone> DataExporter<T> for Mgsa<T> {
   fn out_directory(&self) -> &PathBuf {
     &self.out_directory
   }
@@ -294,6 +299,7 @@ impl<T: Position + Velocity + Clone> DataExporter<T> for Gaussian<T> {
           "fitness": self.problem().f_no_memo(&pos),
           "vel": particle_datum.vel().as_slice(),
           "pos": particle_datum.pos().as_slice(),
+          "mass": particle_datum.mass(),
         }));
       }
       vec_data.push(json!({

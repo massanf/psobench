@@ -81,6 +81,7 @@ if graph_type == 'single':
     plt.close()
     plt.cla()
     plt.rcdefaults()
+    plt.yscale("log")
 
     for attempt in attempts:
         data = DATA / attempt
@@ -108,7 +109,7 @@ if graph_type == 'gridmaps':
 
 
 if graph_type == 'animation':
-    for attempt in get_attempts():
+    for attempt in get_paths("attempts"):
         pso = PSO(DATA / attempt)
         pso.load_full()
         skip = int(questionary.text(

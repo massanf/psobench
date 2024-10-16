@@ -19,7 +19,7 @@ class Particle:
         if isinstance(datum["fitness"], float):
             self.fitness: float = datum["fitness"]
         else:
-            raise ValueError("Wrong value type for `fitness`.")
+            raise ValueError("Wrong value type for `fitness`:", datum["fitness"])
 
         if "mass" in datum:
             if isinstance(datum["mass"], float):

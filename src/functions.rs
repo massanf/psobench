@@ -70,5 +70,6 @@ pub fn cec17_impl(v: &DVector<f64>, func_num: usize) -> f64 {
   unsafe {
     cec17_test_func(x.as_ptr(), &mut result, nx, 1, func_num);
   }
+  // println!("result: {:?}", result);
   result
 }

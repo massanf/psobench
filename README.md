@@ -145,3 +145,56 @@ N. H. Awad, M. Z. Ali, J. J. Liang, B. Y. Qu and P. N. Suganthan, "Problem Defin
 ## Contact
 
 For questions or support, please open an issue on GitHub or contact [massanf](https://github.com/massanf).
+
+
+## Snippets
+```
+for dim in dims {
+    utils::check_problem::<PsoParticle, Pso<PsoParticle>>(
+      "test",
+      "pso_test",
+      iterations,
+      dim,
+      attempts,
+      vec![
+        ("particle_count", i(particle_count)),
+        ("w", f(0.5)),
+        ("phi_p", f(2.)),
+        ("phi_g", f(2.)),
+        (
+          "behavior",
+          ParamValue::Behavior(Behavior {
+            edge: Edge::Pass,
+            vmax: false,
+          }),
+        ),
+      ],
+      problems::cec17(3, dim),
+      true,
+    )?;
+
+    utils::check_problem::<GaussianParticle, Gaussian<GaussianParticle>>(
+      "test",
+      "gaussian_test",
+      iterations,
+      dim,
+      attempts,
+      vec![
+        ("particle_count", i(particle_count)),
+        ("gamma", f(0.8)),
+        ("beta", f(0.4)),
+        ("scale", f(1.)),
+        (
+          "behavior",
+          ParamValue::Behavior(Behavior {
+            edge: Edge::Pass,
+            vmax: false,
+          }),
+        ),
+      ],
+      problems::cec17(3, dim),
+      true,
+    )?;
+}
+
+```

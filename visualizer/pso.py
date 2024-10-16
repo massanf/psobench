@@ -3,6 +3,7 @@ from matplotlib.animation import FuncAnimation  # type: ignore
 from scipy.spatial import distance_matrix  # type: ignore
 import matplotlib.pyplot as plt  # type: ignore
 from tqdm import tqdm  # type: ignore
+from cycler import cycler
 import utils
 import math
 import numpy as np
@@ -131,16 +132,18 @@ class PSO:
         plt.cla()
         self.progressbar.update(1)
         iteration = self.iterations[frame]
+        max_mass = 0.0
+        colors = plt.cm.tab10.colors
         if self.has_mass():
             masses = []
             for particle in iteration.particles:
                 masses.append(particle.mass)
             max_mass = np.max(masses)
-        for particle in iteration.particles:
+        for i, particle in enumerate(iteration.particles):
             assert len(particle.pos) >= 2
             if self.has_mass() and max_mass != 0.0:
                 plt.scatter(particle.pos[0], particle.pos[1],
-                            s=particle.mass * 50 / max_mass, c='c')
+                            s=particle.mass * 10 / max_mass, color=colors[i % len(colors)])
             else:
                 plt.scatter(particle.pos[0], particle.pos[1], c='c')
 
@@ -195,6 +198,7 @@ class PSO:
                 self.lim[1] = max(self.lim[1],
                                   particle.pos[0],
                                   particle.pos[1])
+        print(f"Saving: {destination_path}")
         self.animate(self.update_particles_for_animate,
                      destination_path, skip_frames, start, end)
 
