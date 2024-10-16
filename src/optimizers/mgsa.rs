@@ -25,6 +25,7 @@ pub struct Mgsa<T> {
   out_directory: PathBuf,
   g0: f64,
   alpha: f64,
+  theta: f64,
   save: bool,
   normalizer: Normalizer,
 }
@@ -85,6 +86,15 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
       }
     };
 
+    assert!(parameters.contains_key("theta"), "Key 'theta' not found.");
+    let theta = match parameters["theta"] {
+      ParamValue::Float(val) => val,
+      _ => {
+        eprintln!("Error: parameter 'theta' should be of type Param::float.");
+        std::process::exit(1);
+      }
+    };
+
     let mut mgsa = Mgsa {
       name,
       problem,
@@ -95,6 +105,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
       out_directory,
       g0,
       alpha,
+      theta,
       save,
       normalizer,
     };
@@ -152,10 +163,12 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
 
       // Calculate vels.
       let mut x = Vec::new();
+      let mut v = Vec::new();
       for idx in 0..self.particles().len() {
         x.push(self.particles()[idx].pos().clone());
+        v.push(self.particles()[idx].vel().clone());
       }
-      let vels = calculate_vels(x, m, self.g, iter as f64 / iterations as f64);
+      let vels = calculate_vels(x, v, m, self.g, iter as f64 / iterations as f64, self.theta, true);
 
       // Clear memory.
       self.problem().clear_memo();
@@ -186,10 +199,28 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
   }
 }
 
-fn calculate_vels(x: Vec<DVector<f64>>, f: Vec<f64>, g: f64, progress: f64) -> Vec<DVector<f64>> {
+fn calculate_vels(
+  x: Vec<DVector<f64>>,
+  v: Vec<DVector<f64>>,
+  f: Vec<f64>,
+  g: f64,
+  progress: f64,
+  theta: f64,
+  elite: bool,
+) -> Vec<DVector<f64>> {
   let n = x.len();
   let d = x[0].len();
   let mut vels = Vec::with_capacity(n);
+
+  let k = (n as f64 * (1. - progress as f64)) as usize;
+  let mut sorted_f = f.clone();
+  sorted_f.sort_by(|a, b| b.partial_cmp(a).unwrap());
+  let k_largest: Vec<f64> = sorted_f.iter().take(k).copied().collect();
+  let influences: Vec<bool> = match elite {
+    true => f.iter().map(|x| k_largest.contains(x)).collect(),
+    false => vec![true; n],
+  };
+
   for i in 0..n {
     //assert!(i < self.particles().len());
     let mut a: DVector<f64> = DVector::from_element(d, 0.);
@@ -197,41 +228,36 @@ fn calculate_vels(x: Vec<DVector<f64>>, f: Vec<f64>, g: f64, progress: f64) -> V
 
     let mut mass_sum = 0.;
     for j in 0..n {
-      if i == j {
+      mass_sum += f[j];
+    }
+    let mass_avg = mass_sum / n as f64;
+
+    for j in 0..n {
+      if i == j || !influences[j] {
         continue;
       }
 
       let r = x[j].clone() - x[i].clone();
 
-      let mut a_delta = g * f[j] / (r.norm() + std::f64::EPSILON) * r;
-      mass_sum += f[j];
+      let mut gravity = g * f[j] / (r.norm() + std::f64::EPSILON) * r.clone();
+      let mut repellent = theta * mass_avg * g / (r.norm() + std::f64::EPSILON) * r.clone();
 
-      for e in a_delta.iter_mut() {
+      for e in gravity.iter_mut() {
         let rand: f64 = rng.gen_range(0.0..1.0);
         *e *= rand;
       }
+
+      let rand: f64 = rng.gen_range(0.0..1.0);
+      repellent *= rand;
+
+      let a_delta = gravity - repellent;
 
       a += a_delta;
     }
 
-    for j in 0..n {
-      if i == j {
-        continue;
-      }
-
-      let r = x[j].clone() - x[i].clone();
-
-      let mut a_delta = g / (r.norm() + std::f64::EPSILON) * r;
-
-      for e in a_delta.iter_mut() {
-        let rand: f64 = rng.gen_range(0.0..1.0);
-        *e *= rand;
-      }
-
-      a -= mass_sum / n as f64 * a_delta;
-    }
-    // rand * self.particles()[i].vel() + a
-    vels.push(a);
+    let rand: f64 = rng.gen_range(0.0..1.0);
+    vels.push(rand * v[i].clone() + a);
+    // vels.push(a);
   }
   vels
 }

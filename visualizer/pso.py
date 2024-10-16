@@ -198,6 +198,8 @@ class PSO:
                 self.lim[1] = max(self.lim[1],
                                   particle.pos[0],
                                   particle.pos[1])
+        self.lim[0] = -100
+        self.lim[1] = 100
         print(f"Saving: {destination_path}")
         self.animate(self.update_particles_for_animate,
                      destination_path, skip_frames, start, end)

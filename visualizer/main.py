@@ -13,9 +13,10 @@ graph_type = questionary.select(
     "Select graph type:",
     choices=[
         'single',
-        'gridmaps',
+        'grid',
         'animation',
         'collage',
+        'last best distance',
     ]).ask()
 
 
@@ -104,9 +105,10 @@ if graph_type == 'single':
     plt.close()
 
 
-if graph_type == 'gridmaps':
-    raise NotImplementedError()
-
+if graph_type == 'grid':
+    gsa_paths = get_paths(level="dims")
+    for path in gsa_paths:
+        utils.generate_gridmap_collage(path)
 
 if graph_type == 'animation':
     for attempt in get_paths("attempts"):

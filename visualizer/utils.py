@@ -67,6 +67,10 @@ def generate_progress_comparison(name: pathlib.Path) -> None:
     print(f"Saving: {graphs/ f'progress_comparison.png'}")
     plt.savefig(graphs / "progress_comparison.png")
 
+def print_last_positions(name: pathlib.Path) -> None:
+    data = HOME / "data" / name
+    tests = Tests(data)
+
 
 def generate_final_results(name: pathlib.Path) -> None:
     data = HOME / "data" / name
