@@ -16,7 +16,7 @@ pub enum ParamValue {
   Float(f64),
   Int(isize),
   Normalizer(Normalizer),
-  Tiled(bool),
+  Bool(bool),
   Behavior(Behavior),
 }
 
@@ -48,7 +48,7 @@ impl Serialize for ParamValue {
         Normalizer::Sigmoid4 => serializer.serialize_str("Sigmoid4"),
         Normalizer::Rank => serializer.serialize_str("Rank"),
       },
-      ParamValue::Tiled(v) => serializer.serialize_bool(v),
+      ParamValue::Bool(v) => serializer.serialize_bool(v),
       ParamValue::Behavior(b) => b.serialize(serializer),
     }
   }

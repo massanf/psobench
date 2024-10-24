@@ -160,6 +160,16 @@ pub fn rastrigin_5_12(dim: usize) -> Problem {
 }
 
 #[allow(dead_code)]
+pub fn rastrigin_100(dim: usize) -> Problem {
+  Problem::new(
+    "Rastrigin100".to_owned(),
+    Arc::new(functions::rastrigin),
+    (-100., 100.),
+    dim,
+  )
+}
+
+#[allow(dead_code)]
 pub fn hyper_ellipsoid_100(dim: usize) -> Problem {
   Problem::new(
     "HyperEllipsoid100".to_owned(),

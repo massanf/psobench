@@ -8,7 +8,7 @@ extern "C" {
 pub fn sphere(v: &DVector<f64>) -> f64 {
   let mut sum = 0.0;
   for i in 0..v.len() {
-    sum += (v[i] - 50.) * (v[i] - 50.);
+    sum += (v[i] + 50.) * (v[i] + 50.) * (v[i] + 50.) * (v[i] + 50.);
   }
   sum
 }
@@ -57,7 +57,7 @@ pub fn rastrigin(v: &DVector<f64>) -> f64 {
   let a = 10.0;
   let mut sum = a * v.len() as f64;
   for i in 0..v.len() {
-    sum += v[i] * v[i] - a * (2.0 * std::f64::consts::PI * v[i]).cos();
+    sum += (v[i] + 75.) * (v[i] + 75.) - a * (2.0 * std::f64::consts::PI * v[i]).cos();
   }
   sum
 }

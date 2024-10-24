@@ -42,7 +42,7 @@ def get_paths(level: str):
 
         for dim in dims:
             if level == "dims":
-                results.append(dim)
+                results.append(pathlib.Path(test) / dim)
                 continue
 
             optimizer_options = sorted([folder.name for folder in (DATA / test / dim).iterdir()
@@ -51,8 +51,8 @@ def get_paths(level: str):
                 f"Select problems ({pathlib.Path(test) / dim}):", choices=optimizer_options).ask()
 
             for optimizer in optimizers:
-                if level == "optimizer":
-                    results.append(optimizer)
+                if level == "optimizers":
+                    results.append(pathlib.Path(test) / dim / optimizer)
                     continue
 
                 problem_options = sorted([folder.name for folder in (DATA / test / dim / optimizer).iterdir()
@@ -61,8 +61,8 @@ def get_paths(level: str):
                     f"Select problems ({pathlib.Path(test) / dim / optimizer}):", choices=problem_options).ask()
 
                 for problem in problems:
-                    if level == "problem":
-                        results.append(problem)
+                    if level == "problems":
+                        results.append(pathlib.Path(test) / dim / optimizer / problem)
                         continue
 
                     attempt_options = sorted([folder.name for folder in (DATA / test / dim / optimizer / problem).iterdir()
@@ -106,7 +106,7 @@ if graph_type == 'single':
 
 
 if graph_type == 'grid':
-    gsa_paths = get_paths(level="dims")
+    gsa_paths = get_paths(level="optimizers")
     for path in gsa_paths:
         utils.generate_gridmap_collage(path)
 

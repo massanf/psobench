@@ -4,7 +4,7 @@ use crate::optimizers::traits::{
 };
 use crate::particles::traits::{Behavior, Mass, Particle, Position, Velocity};
 use crate::problems;
-use crate::rand::Rng;
+// use crate::rand::Rng;
 use crate::utils;
 use nalgebra::DVector;
 use problems::Problem;
@@ -26,6 +26,9 @@ pub struct Mgsa<T> {
   g0: f64,
   alpha: f64,
   theta: f64,
+  gamma: f64,
+  sigma: f64,
+  elite: bool,
   save: bool,
   normalizer: Normalizer,
 }
@@ -95,6 +98,33 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
       }
     };
 
+    assert!(parameters.contains_key("gamma"), "Key 'gamma' not found.");
+    let gamma = match parameters["gamma"] {
+      ParamValue::Float(val) => val,
+      _ => {
+        eprintln!("Error: parameter 'gamma' should be of type Param::float.");
+        std::process::exit(1);
+      }
+    };
+
+    assert!(parameters.contains_key("elite"), "Key 'elite' not found.");
+    let elite = match parameters["elite"] {
+      ParamValue::Bool(val) => val,
+      _ => {
+        eprintln!("Error: parameter 'elite' should be of type Param::bool.");
+        std::process::exit(1);
+      }
+    };
+
+    assert!(parameters.contains_key("sigma"), "Key 'sigma' not found.");
+    let sigma = match parameters["sigma"] {
+      ParamValue::Float(val) => val,
+      _ => {
+        eprintln!("Error: parameter 'sigma' should be of type Param::f64.");
+        std::process::exit(1);
+      }
+    };
+
     let mut mgsa = Mgsa {
       name,
       problem,
@@ -106,6 +136,9 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
       g0,
       alpha,
       theta,
+      gamma,
+      sigma,
+      elite,
       save,
       normalizer,
     };
@@ -139,8 +172,24 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
   }
 
   fn run(&mut self, iterations: usize) {
+    let mut initial_distance_avg: Option<f64> = None;
     for iter in 0..iterations {
-      self.g = self.g0 * (-self.alpha * iter as f64 / iterations as f64).exp();
+      // self.g = self.g0 * (-self.alpha * iter as f64 / iterations as f64).exp();
+      let mut distances = Vec::new();
+      for i in 0..self.particles().len() {
+        for j in 0..self.particles().len() {
+          if i == j {
+            continue;
+          }
+          distances.push((self.particles()[i].pos() - self.particles()[j].pos()).norm());
+        }
+      }
+      let distance_avg = distances.iter().sum::<f64>() / distances.len() as f64;
+      // println!("dist: {}", calculate_standard_deviation(distances));
+      if iter == 0 {
+        initial_distance_avg = Some(distance_avg);
+      }
+      // self.g = self.g0 * distance_avg / initial_distance_avg.unwrap();
 
       let mut fitness = Vec::new();
       for idx in 0..self.particles().len() {
@@ -156,6 +205,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
         Normalizer::Sigmoid2 => utils::sigmoid2_mass(fitness),
         Normalizer::Sigmoid4 => utils::sigmoid4_mass(fitness),
       };
+      // let m: Vec<f64> = fitness.iter().map(|&f| 1. / f).collect();
 
       for (mass, particle) in m.iter().zip(self.particles_mut().iter_mut()) {
         particle.set_mass(*mass);
@@ -168,7 +218,21 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
         x.push(self.particles()[idx].pos().clone());
         v.push(self.particles()[idx].vel().clone());
       }
-      let vels = calculate_vels(x, v, m, self.g, iter as f64 / iterations as f64, self.theta, true);
+
+      let avg_dist_rate = distance_avg / initial_distance_avg.unwrap();
+
+      let vels = calculate_vels(
+        x,
+        v,
+        m,
+        self.g,
+        iter as f64 / iterations as f64,
+        avg_dist_rate,
+        self.theta,
+        self.gamma,
+        self.elite,
+        self.sigma,
+      );
 
       // Clear memory.
       self.problem().clear_memo();
@@ -201,65 +265,156 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
 
 fn calculate_vels(
   x: Vec<DVector<f64>>,
-  v: Vec<DVector<f64>>,
+  _v: Vec<DVector<f64>>,
   f: Vec<f64>,
   g: f64,
   progress: f64,
+  avg_dist_rate: f64,
   theta: f64,
-  elite: bool,
+  gamma: f64,
+  _elite: bool,
+  sigma: f64,
 ) -> Vec<DVector<f64>> {
   let n = x.len();
   let d = x[0].len();
   let mut vels = Vec::with_capacity(n);
 
-  let k = (n as f64 * (1. - progress as f64)) as usize;
-  let mut sorted_f = f.clone();
-  sorted_f.sort_by(|a, b| b.partial_cmp(a).unwrap());
-  let k_largest: Vec<f64> = sorted_f.iter().take(k).copied().collect();
-  let influences: Vec<bool> = match elite {
-    true => f.iter().map(|x| k_largest.contains(x)).collect(),
-    false => vec![true; n],
-  };
-
-  for i in 0..n {
-    //assert!(i < self.particles().len());
+  for k in 0..n {
     let mut a: DVector<f64> = DVector::from_element(d, 0.);
-    let mut rng = rand::thread_rng();
 
-    let mut mass_sum = 0.;
+    let mut sum_fg = 0.;
+    let mut sum_g = 0.;
     for j in 0..n {
-      mass_sum += f[j];
+      sum_fg += f[j] * mock_gaussian(&x[j], &x[k], avg_dist_rate, sigma);
+      sum_g += 1. * mock_gaussian(&x[j], &x[k], avg_dist_rate, sigma);
     }
-    let mass_avg = mass_sum / n as f64;
 
-    for j in 0..n {
-      if i == j || !influences[j] {
+    for i in 0..n {
+      if k == i {
         continue;
       }
 
-      let r = x[j].clone() - x[i].clone();
+      let r = x[i].clone() - x[k].clone();
+      let dist = mock_gaussian(&x[i], &x[k], avg_dist_rate, sigma);
 
-      let mut gravity = g * f[j] / (r.norm() + std::f64::EPSILON) * r.clone();
-      let mut repellent = theta * mass_avg * g / (r.norm() + std::f64::EPSILON) * r.clone();
+      let gravity = f[i] * dist / sum_fg;
+      let repellent = gamma * (1. - progress * theta) * 1. * dist / sum_g;
 
-      for e in gravity.iter_mut() {
-        let rand: f64 = rng.gen_range(0.0..1.0);
-        *e *= rand;
-      }
+      let a_delta = (gravity - repellent) * r.clone();
 
-      let rand: f64 = rng.gen_range(0.0..1.0);
-      repellent *= rand;
-
-      let a_delta = gravity - repellent;
-
-      a += a_delta;
+      a += g * a_delta;
     }
 
-    let rand: f64 = rng.gen_range(0.0..1.0);
-    vels.push(rand * v[i].clone() + a);
-    // vels.push(a);
+    vels.push(a);
   }
   vels
+}
+
+// fn _calculate_vels(
+//   x: Vec<DVector<f64>>,
+//   _v: Vec<DVector<f64>>,
+//   f: Vec<f64>,
+//   g: f64,
+//   progress: f64,
+//   avg_dist_rate: f64,
+//   theta: f64,
+//   gamma: f64,
+//   _elite: bool,
+//   sigma: f64,
+// ) -> Vec<DVector<f64>> {
+//   let n = x.len();
+//   let d = x[0].len();
+//   let mut vels = Vec::with_capacity(n);
+//
+//   // let k = std::cmp::min(std::cmp::max((n as f64 * (1. - progress as f64)) as usize, 1), n);
+//   // let mut sorted_f = f.clone();
+//   // sorted_f.sort_by(|a, b| b.partial_cmp(a).unwrap_or(std::cmp::Ordering::Equal));
+//   // let k_largest: Vec<f64> = sorted_f.iter().take(k).copied().collect();
+//   // let influences: Vec<bool> = match elite {
+//   //   true => f.iter().map(|x| k_largest.contains(x)).collect(),
+//   //   false => vec![true; n],
+//   // };
+//
+//   // let mut vec = Vec::new();
+//   for k in 0..n {
+//     //assert!(i < self.particles().len());
+//     let mut a: DVector<f64> = DVector::from_element(d, 0.);
+//     // let mut rng = rand::thread_rng();
+//
+//     let mut sum_fg = 0.;
+//     let mut sum_g = 0.;
+//     for j in 0..n {
+//       // if !influences[j] {
+//       //   continue;
+//       // }
+//       sum_fg += f[j] * mock_gaussian(&x[j], &x[k], avg_dist_rate, sigma);
+//       sum_g += 1. * mock_gaussian(&x[j], &x[k], avg_dist_rate, sigma);
+//     }
+//
+//     for i in 0..n {
+//       // if k == i || !influences[i] {
+//       if k == i {
+//         continue;
+//       }
+//
+//       let r = x[i].clone() - x[k].clone();
+//       let dist = mock_gaussian(&x[i], &x[k], avg_dist_rate, sigma);
+//
+//       // let mut gravity = match influences[j] {
+//       //   true => f[j] / ((r.norm() + 1.) * sum_fg),
+//       //   false => 0.,
+//       // };
+//       let gravity = f[i] * dist / sum_fg;
+//       // for e in gravity.iter_mut() {
+//       //   let rand: f64 = rng.gen_range(0.0..2.0);
+//       //   *e *= rand;
+//       // }
+//
+//       // let mut repellent = gamma * (1. - progress * theta) / ((r.norm() + 1.) * sum_g);
+//       let repellent = gamma * (1. - progress * theta) * 1. * dist / sum_g;
+//       // for e in repellent.iter_mut() {
+//       //   let rand: f64 = rng.gen_range(0.0..2.0);
+//       //   *e *= rand;
+//       // }
+//
+//       let a_delta = (gravity - repellent) * r.clone();
+//       // a_delta *= rng.gen_range(-1.0..3.0);
+//       // for e in a_delta.iter_mut() {
+//       //   let rand: f64 = rng.gen_range(0.0..2.0);
+//       //   *e *= rand;
+//       // }
+//
+//       a += g * a_delta;
+//     }
+//
+//     // let rand: f64 = rng.gen_range(0.0..1.0);
+//     // vels.push(rand * v[i].clone() + a);
+//     // vec.push(a.clone());
+//     vels.push(a);
+//   }
+//   // println!("{}", vels.iter().map(|x| x.norm()).sum::<f64>() / vels.len() as f64);
+//   // let avg = vels.iter().sum::<DVector<f64>>() / vels.len() as f64;
+//
+//   // let mut no_movement_vels = vels.clone();
+//   // for i in 0..vels.len() {
+//   //   no_movement_vels[i] = vels[i].clone() - avg.clone();
+//   // }
+//   vels
+//   // no_movement_vels
+// }
+
+fn mock_gaussian(i: &DVector<f64>, j: &DVector<f64>, avg_dist_rate: f64, sigma: f64) -> f64 {
+  // let similarity = i.dot(&j) / (i.norm() * j.norm() + f64::EPSILON);
+  // 1. / ((i - j).norm() + 1.)
+  if !avg_dist_rate.is_finite() {
+    return 1.;
+  }
+  let res = (-(i - j).norm() / (sigma * avg_dist_rate)).exp();
+  // println!("{}", res);
+  if !res.is_finite() {
+    panic!("infinite gaussian: {}", avg_dist_rate);
+  }
+  res
 }
 
 impl<T> Particles<T> for Mgsa<T> {
@@ -339,4 +494,28 @@ impl<T: Position + Velocity + Mass + Clone> DataExporter<T> for Mgsa<T> {
     fs::write(self.out_directory().join("data.json"), serialized)?;
     Ok(())
   }
+}
+
+#[allow(dead_code)]
+fn calculate_mean(data: Vec<f64>) -> f64 {
+  data.iter().sum::<f64>() / (data.len() as f64)
+}
+
+#[allow(dead_code)]
+fn calculate_variance(data: Vec<f64>, mean: f64) -> f64 {
+  data
+    .iter()
+    .map(|value| {
+      let diff = value - mean;
+      diff * diff
+    })
+    .sum::<f64>()
+    / ((data.len() - 1) as f64) // Sample variance
+}
+
+#[allow(dead_code)]
+fn calculate_standard_deviation(data: Vec<f64>) -> f64 {
+  let mean = calculate_mean(data.clone());
+  let variance = calculate_variance(data.clone(), mean);
+  variance.sqrt()
 }
