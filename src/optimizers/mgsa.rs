@@ -23,8 +23,8 @@ pub struct Mgsa<T> {
   g: f64,
   data: Vec<(f64, Option<Vec<T>>)>,
   out_directory: PathBuf,
-  g0: f64,
-  alpha: f64,
+  _g0: f64,
+  _alpha: f64,
   theta: f64,
   gamma: f64,
   sigma: f64,
@@ -133,8 +133,8 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
       g: g0,
       data: Vec::new(),
       out_directory,
-      g0,
-      alpha,
+      _g0: g0,
+      _alpha: alpha,
       theta,
       gamma,
       sigma,
@@ -172,27 +172,26 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
   }
 
   fn run(&mut self, iterations: usize) {
+    let n = self.particles().len();
     let mut initial_distance_avg: Option<f64> = None;
     for iter in 0..iterations {
       // self.g = self.g0 * (-self.alpha * iter as f64 / iterations as f64).exp();
       let mut distances = Vec::new();
-      for i in 0..self.particles().len() {
-        for j in 0..self.particles().len() {
+      for i in 0..n {
+        for j in 0..n {
           if i == j {
             continue;
           }
           distances.push((self.particles()[i].pos() - self.particles()[j].pos()).norm());
         }
       }
-      let distance_avg = distances.iter().sum::<f64>() / distances.len() as f64;
-      // println!("dist: {}", calculate_standard_deviation(distances));
+      let distance_avg = distances.iter().sum::<f64>() / (n * n - 1) as f64;
       if iter == 0 {
         initial_distance_avg = Some(distance_avg);
       }
-      // self.g = self.g0 * distance_avg / initial_distance_avg.unwrap();
 
       let mut fitness = Vec::new();
-      for idx in 0..self.particles().len() {
+      for idx in 0..n {
         let pos = self.particles()[idx].pos().clone();
         fitness.push(self.problem().f(&pos));
       }
@@ -214,7 +213,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
       // Calculate vels.
       let mut x = Vec::new();
       let mut v = Vec::new();
-      for idx in 0..self.particles().len() {
+      for idx in 0..n {
         x.push(self.particles()[idx].pos().clone());
         v.push(self.particles()[idx].vel().clone());
       }
@@ -239,8 +238,8 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
 
       // Update the position, best and worst.
       let mut new_global_best_pos = None;
-      // for (i, m_i) in 0..self.particles().len() {
-      for (i, vel) in vels.iter().enumerate().take(self.particles().len()) {
+      // for (i, m_i) in 0.. {
+      for (i, vel) in vels.iter().enumerate().take(n) {
         let mut temp_problem = mem::take(&mut self.problem);
         let particle = &mut self.particles_mut()[i];
         particle.update_vel(vel.clone(), &mut temp_problem);
@@ -286,7 +285,7 @@ fn calculate_vels(
     let mut sum_g = 0.;
     for j in 0..n {
       sum_fg += f[j] * mock_gaussian(&x[j], &x[k], avg_dist_rate, sigma);
-      sum_g += 1. * mock_gaussian(&x[j], &x[k], avg_dist_rate, sigma);
+      sum_g += mock_gaussian(&x[j], &x[k], avg_dist_rate, sigma);
     }
 
     for i in 0..n {
@@ -298,7 +297,7 @@ fn calculate_vels(
       let dist = mock_gaussian(&x[i], &x[k], avg_dist_rate, sigma);
 
       let gravity = f[i] * dist / sum_fg;
-      let repellent = gamma * (1. - progress * theta) * 1. * dist / sum_g;
+      let repellent = gamma * (1. - progress * theta) * dist / sum_g;
 
       let a_delta = (gravity - repellent) * r.clone();
 
@@ -308,6 +307,18 @@ fn calculate_vels(
     vels.push(a);
   }
   vels
+}
+
+fn mock_gaussian(i: &DVector<f64>, j: &DVector<f64>, avg_dist_rate: f64, sigma: f64) -> f64 {
+  if !avg_dist_rate.is_finite() {
+    return 1.;
+  }
+  let res = (-(i - j).norm_squared() / (sigma * avg_dist_rate.powi(2))).exp();
+  // let res = (-(i - j).norm() / (sigma * avg_dist_rate)).exp();
+  if !res.is_finite() {
+    panic!("infinite gaussian: {}", avg_dist_rate);
+  }
+  res
 }
 
 // fn _calculate_vels(
@@ -337,7 +348,7 @@ fn calculate_vels(
 //
 //   // let mut vec = Vec::new();
 //   for k in 0..n {
-//     //assert!(i < self.particles().len());
+//     //assert!(i < n);
 //     let mut a: DVector<f64> = DVector::from_element(d, 0.);
 //     // let mut rng = rand::thread_rng();
 //
@@ -402,20 +413,6 @@ fn calculate_vels(
 //   vels
 //   // no_movement_vels
 // }
-
-fn mock_gaussian(i: &DVector<f64>, j: &DVector<f64>, avg_dist_rate: f64, sigma: f64) -> f64 {
-  // let similarity = i.dot(&j) / (i.norm() * j.norm() + f64::EPSILON);
-  // 1. / ((i - j).norm() + 1.)
-  if !avg_dist_rate.is_finite() {
-    return 1.;
-  }
-  let res = (-(i - j).norm() / (sigma * avg_dist_rate)).exp();
-  // println!("{}", res);
-  if !res.is_finite() {
-    panic!("infinite gaussian: {}", avg_dist_rate);
-  }
-  res
-}
 
 impl<T> Particles<T> for Mgsa<T> {
   fn particles(&self) -> &Vec<T> {

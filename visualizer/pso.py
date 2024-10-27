@@ -10,6 +10,7 @@ import numpy as np
 import os
 import json
 from particle import Particle
+import re
 from iteration import Iteration
 from typing import List, Dict, Any, Callable, cast, Iterable
 from matplotlib.artist import Artist
@@ -52,11 +53,18 @@ class PSO:
         del self.iterations
 
     def global_best_fitness_progress(self) -> List[float]:
-        result = self.summary["global_best_fitness"]
-        if isinstance(result, list) and all(isinstance(i, float)
-                                            for i in result):
-            return result
-        raise ValueError("Incorrect dictionary type.")
+        global_best_fitness = self.summary["global_best_fitness"]
+        if not (isinstance(global_best_fitness, list) and all(isinstance(i, float)
+                                            for i in global_best_fitness)):
+            raise ValueError("Incorrect dictionary type.")
+        match = re.match(r"CEC2017_F(\d+)", self.config["problem"]["name"])
+        solution = 0
+        if match:
+            solution = 100 * int(match.group(1))
+        result = [] 
+        for fitness in global_best_fitness:
+            result.append(fitness - solution)
+        return result
 
     def evaluation_count(self) -> int:
         result = self.summary["evaluation_count"]

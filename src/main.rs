@@ -33,9 +33,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   let g0 = 1.0;
   let gamma = 1.0;
   let theta = 0.0;
-  let sigma = 100.;
-  let edge = Edge::Reflect;
-  let dims = vec![10];
+  let sigma = 100000.;
+  let edge = Edge::Pass;
+  let dims = vec![30];
 
   match args[1].as_str() {
     "single" => single(dims, g0, gamma, theta, elite, sigma, edge)?,
@@ -57,13 +57,13 @@ fn single(
   edge: Edge,
 ) -> Result<(), Box<dyn std::error::Error>> {
   // let dims = [0];
-  let iterations = 1000;
+  let iterations = 10000;
   let attempts = 1;
   let particle_count = 50;
 
   for dim in dims {
     // let problem = problems::cec17(10, dim);
-    let problem = problems::cec17(26, dim);
+    let problem = problems::cec17(9, dim);
     utils::check_problem::<MgsaParticle, Mgsa<MgsaParticle>>(
       "test",
       "mgsa_test",
@@ -156,7 +156,7 @@ fn cec(
           }),
         ),
       ],
-      true,
+      false,
     )?;
     utils::check_cec17::<GsaParticle, Gsa<GsaParticle>>(
       "test",
@@ -178,7 +178,7 @@ fn cec(
           }),
         ),
       ],
-      true,
+      false,
     )?;
   }
   Ok(())
@@ -190,11 +190,11 @@ fn grid(
   gamma: f64,
   theta: f64,
   elite: bool,
-  sigma: f64,
+  _sigma: f64,
   edge: Edge,
 ) -> Result<(), Box<dyn std::error::Error>> {
-  let iterations = 1000;
-  let attempts = 10;
+  let iterations = 10000;
+  let attempts = 1;
   let particle_count = 50;
 
   for dim in dims {
@@ -245,11 +245,19 @@ fn grid(
       dim,
       (
         "sigma".to_owned(),
-        vec![f(0.5), f(1.0), f(5.0), f(10.0), f(50.0), f(100.0), f(500.0), f(1000.0)],
+        vec![
+          f(1000.0),
+          f(5000.0),
+          f(10000.0),
+          f(50000.0),
+          f(100000.0),
+          f(500000.0),
+          f(1000000.0),
+        ],
       ),
       (
         "g0".to_owned(),
-        vec![f(0.1), f(0.5), f(1.0), f(2.0), f(5.0), f(10.0)],
+        vec![f(0.01), f(0.05), f(0.1), f(0.5), f(1.0), f(5.0), f(10.0)],
       ),
       vec![
         ("particle_count", i(particle_count)),
