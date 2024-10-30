@@ -26,19 +26,17 @@ pub fn skewed_sphere(v: &DVector<f64>) -> f64 {
 pub fn hyper_ellipsoid(v: &DVector<f64>) -> f64 {
   let mut sum = 0.0;
   for k in 0..v.len() {
-      sum += (k as f64 * v[k]).powi(2);
+    sum += (k as f64 * v[k]).powi(2);
   }
   sum
 }
 
 #[allow(dead_code)]
 pub fn griewank(v: &DVector<f64>) -> f64 {
-    let sum_part: f64 = v.iter().map(|&u| u.powi(2)).sum::<f64>() / 4000.0;
-    let product_part: f64 = v.iter().enumerate().map(|(i, &u)| {
-        (u / ((i + 1) as f64).sqrt()).cos()
-    }).product();
-    
-    sum_part - product_part + 1.0
+  let sum_part: f64 = v.iter().map(|&u| u.powi(2)).sum::<f64>() / 4000.0;
+  let product_part: f64 = v.iter().enumerate().map(|(i, &u)| (u / ((i + 1) as f64).sqrt()).cos()).product();
+
+  sum_part - product_part + 1.0
 }
 
 #[allow(dead_code)]
@@ -57,7 +55,9 @@ pub fn rastrigin(v: &DVector<f64>) -> f64 {
   let a = 10.0;
   let mut sum = a * v.len() as f64;
   for i in 0..v.len() {
-    sum += (v[i] + 75.) * (v[i] + 75.) - a * (2.0 * std::f64::consts::PI * v[i]).cos();
+    sum += (v[i] - 50.) * (v[i] - 50.) - a * (2.0 * std::f64::consts::PI * (v[i] - 50.)).cos();
+    // sum += (v[i].powi(2) - 50.0_f64.powi(2)).powi(2);
+    // sum += (v[i] + 50.) * (v[i] + 50.);
   }
   sum
 }

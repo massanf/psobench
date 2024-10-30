@@ -90,7 +90,8 @@ pub fn run_attempts<U: Position + Velocity + Clone, T: Optimizer<U> + DataExport
   save_data: bool,
   bar: &indicatif::ProgressBar,
 ) -> Result<(), Box<dyn std::error::Error>> {
-  (0..attempts).into_par_iter().for_each(|attempt| {
+  for attempt in 0..attempts {
+  //(0..attempts).into_par_iter().for_each(|attempt| {
     let save = save_data && attempt < 1;
     let mut pso: T = T::new(
       name.clone(),
@@ -106,7 +107,8 @@ pub fn run_attempts<U: Position + Velocity + Clone, T: Optimizer<U> + DataExport
       let _ = pso.save_data();
     }
     bar.inc(1);
-  });
+  // });
+  }
   Ok(())
 }
 
@@ -300,6 +302,20 @@ pub fn original_gsa_mass(input: Vec<f64>) -> Vec<f64> {
     return vec![0.0; input.len()];
   }
   input.iter().map(|&x| x / sum).collect()
+}
+
+pub fn original_gsa_mass_with_record(input: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
+    let flattened: Vec<f64> = input.iter().flat_map(|inner| inner.iter().cloned()).collect();
+    let normalized: Vec<f64> = min_max_normalize(flattened).iter().map(|&x| 1.0 - x).collect();
+    
+    let mut result = Vec::new();
+    let mut start = 0;
+    for inner in input {
+        let end = start + inner.len();
+        result.push(normalized[start..end].to_vec());
+        start = end;
+    }
+    result
 }
 
 pub fn z_mass(input: Vec<f64>) -> Vec<f64> {

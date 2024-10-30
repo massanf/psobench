@@ -8,6 +8,7 @@ use crate::problems;
 use crate::utils;
 use nalgebra::DVector;
 use problems::Problem;
+use rayon::prelude::*;
 use serde_json::json;
 use std::collections::HashMap;
 use std::fs;
@@ -23,7 +24,7 @@ pub struct Mgsa<T> {
   g: f64,
   data: Vec<(f64, Option<Vec<T>>)>,
   out_directory: PathBuf,
-  _g0: f64,
+  g0: f64,
   _alpha: f64,
   theta: f64,
   gamma: f64,
@@ -133,7 +134,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
       g: g0,
       data: Vec::new(),
       out_directory,
-      _g0: g0,
+      g0,
       _alpha: alpha,
       theta,
       gamma,
@@ -168,13 +169,18 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
   }
 
   fn calculate_vel(&mut self, _i: usize) -> DVector<f64> {
-    panic!("unused");
+    panic!("deprecated");
   }
 
   fn run(&mut self, iterations: usize) {
     let n = self.particles().len();
-    let mut initial_distance_avg: Option<f64> = None;
+    let mut initial_spread: Option<f64> = None;
+
+    let mut x_record: Vec<Vec<DVector<f64>>> = Vec::new();
+    let mut f_record: Vec<Vec<f64>> = Vec::new();
+
     for iter in 0..iterations {
+      // for iter in 0..100 {
       // self.g = self.g0 * (-self.alpha * iter as f64 / iterations as f64).exp();
       let mut distances = Vec::new();
       for i in 0..n {
@@ -185,10 +191,23 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
           distances.push((self.particles()[i].pos() - self.particles()[j].pos()).norm());
         }
       }
-      let distance_avg = distances.iter().sum::<f64>() / (n * n - 1) as f64;
+      let use_avg = false;
+      let sprad = match use_avg {
+        true => distances.iter().sum::<f64>() / distances.len() as f64,
+        false => calculate_std(&distances),
+      };
       if iter == 0 {
-        initial_distance_avg = Some(distance_avg);
+        initial_spread = Some(sprad);
       }
+      let spread_ratio = sprad / initial_spread.unwrap();
+      // println!("s: {} i: {}", spread_ratio, 1. - iter as f64 / iterations as f64);
+
+      let iteration_ratio = 1. - iter as f64 / iterations as f64;
+
+      // self.g = self.g0 - 0.01 * self.g0 * iter as f64 / iterations as f64;
+      println!("s: {} i: {}", spread_ratio, iteration_ratio);
+      // self.g = self.g0 * f64::min(spread_ratio, iteration_ratio);
+      self.g = self.g0 * spread_ratio;
 
       let mut fitness = Vec::new();
       for idx in 0..n {
@@ -196,37 +215,38 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
         fitness.push(self.problem().f(&pos));
       }
 
-      let m = match self.normalizer {
-        Normalizer::MinMax => utils::original_gsa_mass(fitness),
-        Normalizer::ZScore => utils::z_mass(fitness),
-        Normalizer::Robust => utils::robust_mass(fitness),
-        Normalizer::Rank => utils::rank_mass(fitness),
-        Normalizer::Sigmoid2 => utils::sigmoid2_mass(fitness),
-        Normalizer::Sigmoid4 => utils::sigmoid4_mass(fitness),
-      };
+      f_record.push(fitness);
+      let m_record = utils::original_gsa_mass_with_record(f_record.clone());
+      // let m = match self.normalizer {
+      //   Normalizer::MinMax => utils::original_gsa_mass(fitness),
+      //   Normalizer::ZScore => utils::z_mass(fitness),
+      //   Normalizer::Robust => utils::robust_mass(fitness),
+      //   Normalizer::Rank => utils::rank_mass(fitness),
+      //   Normalizer::Sigmoid2 => utils::sigmoid2_mass(fitness),
+      //   Normalizer::Sigmoid4 => utils::sigmoid4_mass(fitness),
+      // };
       // let m: Vec<f64> = fitness.iter().map(|&f| 1. / f).collect();
 
-      for (mass, particle) in m.iter().zip(self.particles_mut().iter_mut()) {
+      for (mass, particle) in m_record[m_record.len() - 1].iter().zip(self.particles_mut().iter_mut()) {
         particle.set_mass(*mass);
       }
 
       // Calculate vels.
-      let mut x = Vec::new();
+      let mut x: Vec<DVector<f64>> = Vec::new();
       let mut v = Vec::new();
       for idx in 0..n {
         x.push(self.particles()[idx].pos().clone());
         v.push(self.particles()[idx].vel().clone());
       }
-
-      let avg_dist_rate = distance_avg / initial_distance_avg.unwrap();
+      x_record.push(x);
 
       let vels = calculate_vels(
-        x,
-        v,
-        m,
+        x_record.clone(),
+        m_record.clone(),
+        &v,
         self.g,
         iter as f64 / iterations as f64,
-        avg_dist_rate,
+        spread_ratio,
         self.theta,
         self.gamma,
         self.elite,
@@ -263,60 +283,71 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
 }
 
 fn calculate_vels(
-  x: Vec<DVector<f64>>,
-  _v: Vec<DVector<f64>>,
-  f: Vec<f64>,
-  g: f64,
+  x: Vec<Vec<DVector<f64>>>,
+  f: Vec<Vec<f64>>,
+  _v: &Vec<DVector<f64>>,
+  large_g: f64,
   progress: f64,
-  avg_dist_rate: f64,
+  spread: f64,
   theta: f64,
   gamma: f64,
   _elite: bool,
   sigma: f64,
 ) -> Vec<DVector<f64>> {
-  let n = x.len();
-  let d = x[0].len();
-  let mut vels = Vec::with_capacity(n);
+  let t = x.len();
+  let n = x[0].len();
+  let d = x[0][0].len();
 
-  for k in 0..n {
-    let mut a: DVector<f64> = DVector::from_element(d, 0.);
+  // for f_ in f.clone() {
+  //   println!("{}", f_.iter().sum::<f64>() / f_.len() as f64);
+  // }
+  let vels: Vec<DVector<f64>> = (0..n)
+    .into_par_iter()
+    .map(|k| {
+      // for k in 0..n {
+      let mut a: DVector<f64> = DVector::from_element(d, 0.);
 
-    let mut sum_fg = 0.;
-    let mut sum_g = 0.;
-    for j in 0..n {
-      sum_fg += f[j] * mock_gaussian(&x[j], &x[k], avg_dist_rate, sigma);
-      sum_g += mock_gaussian(&x[j], &x[k], avg_dist_rate, sigma);
-    }
+      for l in 0..t {
+        let mut sum_fg = 0.;
+        let mut sum_g = 0.;
+        for j in 0..n {
+          let g_jk = mock_gaussian(&x[l][j], &x[t - 1][k], spread, sigma);
+          sum_fg += f[l][j] * g_jk;
+          sum_g += g_jk;
+        }
 
-    for i in 0..n {
-      if k == i {
-        continue;
+        for i in 0..n {
+          if k == i {
+            continue;
+          }
+
+          let r: DVector<f64> = &x[l][i] - &x[t - 1][k];
+          let g = mock_gaussian(&x[l][i], &x[t - 1][k], spread, sigma);
+
+          let gravity = f[l][i] * g / sum_fg;
+          let repellent = gamma * (1. - progress * theta) * g / sum_g;
+
+          let a_delta = (gravity - repellent) * r;
+
+          a += large_g * a_delta;
+        }
       }
-
-      let r = x[i].clone() - x[k].clone();
-      let dist = mock_gaussian(&x[i], &x[k], avg_dist_rate, sigma);
-
-      let gravity = f[i] * dist / sum_fg;
-      let repellent = gamma * (1. - progress * theta) * dist / sum_g;
-
-      let a_delta = (gravity - repellent) * r.clone();
-
-      a += g * a_delta;
-    }
-
-    vels.push(a);
-  }
+      a
+    })
+    .collect();
   vels
 }
 
-fn mock_gaussian(i: &DVector<f64>, j: &DVector<f64>, avg_dist_rate: f64, sigma: f64) -> f64 {
-  if !avg_dist_rate.is_finite() {
+fn mock_gaussian(i: &DVector<f64>, j: &DVector<f64>, spread: f64, sigma: f64) -> f64 {
+  if !spread.is_finite() {
     return 1.;
   }
-  let res = (-(i - j).norm_squared() / (sigma * avg_dist_rate.powi(2))).exp();
-  // let res = (-(i - j).norm() / (sigma * avg_dist_rate)).exp();
+  let d = i.len();
+  let variance = (sigma * spread).powi(2);
+  let constant = 1.0 / ((2.0 * std::f64::consts::PI * variance).powf(d as f64 / 2.));
+  let res = constant * (-(i - j).norm_squared() / (2. * variance)).exp();
   if !res.is_finite() {
-    panic!("infinite gaussian: {}", avg_dist_rate);
+    panic!("infinite gaussian: {}", spread);
   }
   res
 }
@@ -413,6 +444,19 @@ fn mock_gaussian(i: &DVector<f64>, j: &DVector<f64>, avg_dist_rate: f64, sigma: 
 //   vels
 //   // no_movement_vels
 // }
+
+fn calculate_std(data: &Vec<f64>) -> f64 {
+  let mean = data.iter().sum::<f64>() / data.len() as f64;
+  let variance = data
+    .iter()
+    .map(|value| {
+      let diff = value - mean;
+      diff * diff
+    })
+    .sum::<f64>()
+    / data.len() as f64;
+  variance.sqrt()
+}
 
 impl<T> Particles<T> for Mgsa<T> {
   fn particles(&self) -> &Vec<T> {

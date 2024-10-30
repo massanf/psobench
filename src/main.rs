@@ -30,10 +30,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   let args: Vec<String> = env::args().collect();
 
   let elite = false;
-  let g0 = 1.0;
+  let g0 = 0.1;
   let gamma = 1.0;
   let theta = 0.0;
-  let sigma = 100000.;
+  let sigma = 100.;
   let edge = Edge::Pass;
   let dims = vec![30];
 
@@ -56,14 +56,13 @@ fn single(
   sigma: f64,
   edge: Edge,
 ) -> Result<(), Box<dyn std::error::Error>> {
-  // let dims = [0];
-  let iterations = 10000;
+  let iterations = 1000;
   let attempts = 1;
   let particle_count = 50;
 
   for dim in dims {
-    // let problem = problems::cec17(10, dim);
-    let problem = problems::cec17(9, dim);
+    let problem = problems::rastrigin_100(dim);
+    // let problem = problems::cec17(9, dim);
     utils::check_problem::<MgsaParticle, Mgsa<MgsaParticle>>(
       "test",
       "mgsa_test",
@@ -79,7 +78,7 @@ fn single(
         ("sigma", f(sigma)),
         ("tiled", ParamValue::Bool(false)),
         ("elite", ParamValue::Bool(elite)),
-        ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
+        ("normalizer", ParamValue::Normalizer(Normalizer::Sigmoid2)),
         (
           "behavior",
           ParamValue::Behavior(Behavior {

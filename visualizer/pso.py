@@ -158,6 +158,8 @@ class PSO:
         plt.grid()
         plt.xlim(self.lim)
         plt.ylim(self.lim)
+        # plt.xlim(-70, -80)
+        # plt.ylim(-70, -80)
         plt.title(f"Iteration: {frame}" +
                   f" Best: {self.iterations[frame].global_best_fitness:.3e}")
         plt.gca().set_aspect('equal', adjustable='box')
