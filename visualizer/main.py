@@ -83,6 +83,7 @@ if graph_type == 'single':
     plt.cla()
     plt.rcdefaults()
     plt.yscale("log")
+    fig, ax = plt.subplots()
 
     for attempt in attempts:
         data = DATA / attempt
@@ -90,7 +91,7 @@ if graph_type == 'single':
         graphs.mkdir(parents=True, exist_ok=True)
         pso = PSO(data)
         pso.load_full()
-        plt.plot(pso.global_best_fitness_progress(), label=attempt)
+        utils.plot_and_fill_best_worst(ax=ax, btm=pso.global_best_fitness_progress(), top=pso.global_worst_fitness_progress(), log=True, label=attempt)
 
     plt.legend()
     plt.gca().autoscale(axis='y', tight=False)

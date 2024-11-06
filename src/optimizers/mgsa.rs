@@ -7,6 +7,7 @@ use crate::problems;
 // use crate::rand::Rng;
 use crate::utils;
 use nalgebra::DVector;
+use crate::rand::Rng;
 use problems::Problem;
 use rayon::prelude::*;
 use serde_json::json;
@@ -21,11 +22,12 @@ pub struct Mgsa<T> {
   problem: Problem,
   particles: Vec<T>,
   global_best_pos: Option<DVector<f64>>,
+  global_worst_pos: Option<DVector<f64>>,
   g: f64,
-  data: Vec<(f64, Option<Vec<T>>)>,
+  data: Vec<(f64, f64, Option<Vec<T>>)>,
   out_directory: PathBuf,
   g0: f64,
-  _alpha: f64,
+  alpha: f64,
   theta: f64,
   gamma: f64,
   sigma: f64,
@@ -131,11 +133,12 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
       problem,
       particles: Vec::new(),
       global_best_pos: None,
+      global_worst_pos: None,
       g: g0,
       data: Vec::new(),
       out_directory,
       g0,
-      _alpha: alpha,
+      alpha,
       theta,
       gamma,
       sigma,
@@ -156,14 +159,19 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
     }
 
     let mut global_best_pos = None;
+    let mut global_worst_pos = None;
     for particle in particles.clone() {
       if global_best_pos.is_none() || problem.f(particle.pos()) < problem.f(global_best_pos.as_ref().unwrap()) {
         global_best_pos = Some(particle.pos().clone());
+      }
+      if global_worst_pos.is_none() || problem.f(particle.pos()) > problem.f(global_worst_pos.as_ref().unwrap()) {
+        global_worst_pos = Some(particle.pos().clone());
       }
     }
 
     self.particles = particles;
     self.set_global_best_pos(global_best_pos.unwrap());
+    self.set_global_worst_pos(global_worst_pos.unwrap());
 
     utils::create_directory(self.out_directory().to_path_buf(), true, false);
   }
@@ -174,40 +182,49 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
 
   fn run(&mut self, iterations: usize) {
     let n = self.particles().len();
-    let mut initial_spread: Option<f64> = None;
 
+    let mut initial_spread = None;
     let mut x_record: Vec<Vec<DVector<f64>>> = Vec::new();
     let mut f_record: Vec<Vec<f64>> = Vec::new();
 
     for iter in 0..iterations {
-      // for iter in 0..100 {
+      println!("--{}--", iter);
+      x_record = Vec::new();
+      f_record = Vec::new();
       // self.g = self.g0 * (-self.alpha * iter as f64 / iterations as f64).exp();
+
       let mut distances = Vec::new();
       for i in 0..n {
         for j in 0..n {
           if i == j {
             continue;
           }
-          distances.push((self.particles()[i].pos() - self.particles()[j].pos()).norm());
+          let distance = (self.particles()[i].pos() - self.particles()[j].pos()).norm();
+          distances.push(distance);
         }
       }
       let use_avg = false;
-      let sprad = match use_avg {
+      let spread = match use_avg {
         true => distances.iter().sum::<f64>() / distances.len() as f64,
-        false => calculate_std(&distances),
+        false => utils::calculate_std(&distances),
       };
-      if iter == 0 {
-        initial_spread = Some(sprad);
+      if initial_spread.is_none() {
+        initial_spread = Some(spread);
       }
-      let spread_ratio = sprad / initial_spread.unwrap();
-      // println!("s: {} i: {}", spread_ratio, 1. - iter as f64 / iterations as f64);
+      println!("spread: {}", spread / initial_spread.unwrap());
+      //let ratio = spread / initial_spread.unwrap() / (-self.alpha * iter as f64 / iterations as f64).exp();
+      // let ratio = spread / initial_spread.unwrap();
 
-      let iteration_ratio = 1. - iter as f64 / iterations as f64;
+      let ratio = (-self.alpha * iter as f64 / iterations as f64).exp();
+      //
+      // let spread_ratio = 1.;
+      // let spread_ratio = f64::max(f64::max(1. - iter as f64 / iterations as f64, 0.1), spread_ratio);
+      // println!("s: {} i: {}", spread_ratio, 1. - iter as f64 / iterations as f64);
+      // let iteration_ratio = 1. - iter as f64 / iterations as f64;
 
       // self.g = self.g0 - 0.01 * self.g0 * iter as f64 / iterations as f64;
-      println!("s: {} i: {}", spread_ratio, iteration_ratio);
-      // self.g = self.g0 * f64::min(spread_ratio, iteration_ratio);
-      self.g = self.g0 * spread_ratio;
+      // println!("s: {} i: {}", initial_spread, iteration_ratio);
+      self.g = self.g0 * ratio;
 
       let mut fitness = Vec::new();
       for idx in 0..n {
@@ -216,7 +233,9 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
       }
 
       f_record.push(fitness);
-      let m_record = utils::original_gsa_mass_with_record(f_record.clone());
+      // let m_record: Vec<Vec<f64>> = f_record.clone().iter().map(|ms| ms.iter().map(|m| 100000000000. / m).collect()).collect();
+      let m_record = utils::original_gsa_mass_with_record(f_record.clone(), 100);
+
       // let m = match self.normalizer {
       //   Normalizer::MinMax => utils::original_gsa_mass(fitness),
       //   Normalizer::ZScore => utils::z_mass(fitness),
@@ -246,7 +265,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
         &v,
         self.g,
         iter as f64 / iterations as f64,
-        spread_ratio,
+        ratio,
         self.theta,
         self.gamma,
         self.elite,
@@ -258,6 +277,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
 
       // Update the position, best and worst.
       let mut new_global_best_pos = None;
+      let mut new_global_worst_pos = None;
       // for (i, m_i) in 0.. {
       for (i, vel) in vels.iter().enumerate().take(n) {
         let mut temp_problem = mem::take(&mut self.problem);
@@ -265,19 +285,31 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
         particle.update_vel(vel.clone(), &mut temp_problem);
         particle.move_pos(&mut temp_problem);
         let pos = particle.pos().clone();
+
+        // Update best.
         if new_global_best_pos.is_none()
-          || (self.problem().f(&pos) < self.problem().f(&new_global_best_pos.clone().unwrap()))
+          || (temp_problem.f(&pos) < temp_problem.f(&new_global_best_pos.clone().unwrap()))
         {
-          new_global_best_pos = Some(pos);
+          new_global_best_pos = Some(pos.clone());
+        }
+
+        // Update worst.
+        if new_global_worst_pos.is_none()
+          || (temp_problem.f(&pos) > temp_problem.f(&new_global_worst_pos.clone().unwrap()))
+        {
+          new_global_worst_pos = Some(pos.clone());
         }
         self.problem = temp_problem;
       }
-      self.update_global_best_pos(new_global_best_pos.unwrap());
+      self.update_global_best_pos(new_global_best_pos.clone().unwrap());
+      self.update_global_worst_pos(new_global_worst_pos.unwrap());
 
       // Save the data for current iteration.
       let gbest = self.problem.f(&self.global_best_pos());
+      let gworst = self.problem.f(&self.global_worst_pos());
+
       let particles = self.particles.clone();
-      self.add_data(self.save, gbest, particles);
+      self.add_data(self.save, gbest, gworst, particles);
     }
   }
 }
@@ -291,7 +323,7 @@ fn calculate_vels(
   spread: f64,
   theta: f64,
   gamma: f64,
-  _elite: bool,
+  elite: bool,
   sigma: f64,
 ) -> Vec<DVector<f64>> {
   let t = x.len();
@@ -301,6 +333,7 @@ fn calculate_vels(
   // for f_ in f.clone() {
   //   println!("{}", f_.iter().sum::<f64>() / f_.len() as f64);
   // }
+
   let vels: Vec<DVector<f64>> = (0..n)
     .into_par_iter()
     .map(|k| {
@@ -308,19 +341,37 @@ fn calculate_vels(
       let mut a: DVector<f64> = DVector::from_element(d, 0.);
 
       for l in 0..t {
+        let p = std::cmp::min(std::cmp::max((n as f64 * (1. - progress as f64)) as usize, 1), n);
+        let mut sorted_f = f[l].clone();
+        sorted_f.sort_by(|a, b| b.partial_cmp(a).unwrap_or(std::cmp::Ordering::Equal));
+        let p_largest: Vec<f64> = sorted_f.iter().take(p).copied().collect();
+        let influences: Vec<bool> = match elite {
+          true => f[l].iter().map(|x| p_largest.contains(x)).collect(),
+          false => vec![true; n],
+        };
+
         let mut sum_fg = 0.;
         let mut sum_g = 0.;
         for j in 0..n {
+          if !influences[j] {
+            continue;
+          }
           let g_jk = mock_gaussian(&x[l][j], &x[t - 1][k], spread, sigma);
           sum_fg += f[l][j] * g_jk;
           sum_g += g_jk;
         }
 
+        if sum_g == 0. || sum_fg == 0. {
+          // This happens when particle k is a loner.
+          // I think we can safely ignore.
+          println!("warn: 0 sum.");
+          continue;
+        }
+
         for i in 0..n {
-          if k == i {
+          if !influences[i] {
             continue;
           }
-
           let r: DVector<f64> = &x[l][i] - &x[t - 1][k];
           let g = mock_gaussian(&x[l][i], &x[t - 1][k], spread, sigma);
 
@@ -332,9 +383,18 @@ fn calculate_vels(
           a += large_g * a_delta;
         }
       }
+      // let mut rng = rand::thread_rng();
+      // for e in a.iter_mut() {
+      //   let rand: f64 = rng.gen_range(0.0..1.0);
+      //   *e *= rand;
+      // }
       a
     })
     .collect();
+  println!(
+    "vel: {}",
+    vels.iter().map(|x| x.norm()).sum::<f64>() / vels.len() as f64
+  );
   vels
 }
 
@@ -445,19 +505,6 @@ fn mock_gaussian(i: &DVector<f64>, j: &DVector<f64>, spread: f64, sigma: f64) ->
 //   // no_movement_vels
 // }
 
-fn calculate_std(data: &Vec<f64>) -> f64 {
-  let mean = data.iter().sum::<f64>() / data.len() as f64;
-  let variance = data
-    .iter()
-    .map(|value| {
-      let diff = value - mean;
-      diff * diff
-    })
-    .sum::<f64>()
-    / data.len() as f64;
-  variance.sqrt()
-}
-
 impl<T> Particles<T> for Mgsa<T> {
   fn particles(&self) -> &Vec<T> {
     &self.particles
@@ -473,12 +520,24 @@ impl<T> GlobalBestPos for Mgsa<T> {
     self.global_best_pos.clone().unwrap()
   }
 
+  fn global_worst_pos(&self) -> DVector<f64> {
+    self.global_worst_pos.clone().unwrap()
+  }
+
   fn option_global_best_pos(&self) -> &Option<DVector<f64>> {
     &self.global_best_pos
   }
 
+  fn option_global_worst_pos(&self) -> &Option<DVector<f64>> {
+    &self.global_worst_pos
+  }
+
   fn set_global_best_pos(&mut self, pos: DVector<f64>) {
     self.global_best_pos = Some(pos);
+  }
+
+  fn set_global_worst_pos(&mut self, pos: DVector<f64>) {
+    self.global_worst_pos = Some(pos);
   }
 }
 
@@ -495,11 +554,11 @@ impl<T> Name for Mgsa<T> {
 }
 
 impl<T: Clone> Data<T> for Mgsa<T> {
-  fn data(&self) -> &Vec<(f64, Option<Vec<T>>)> {
+  fn data(&self) -> &Vec<(f64, f64, Option<Vec<T>>)> {
     &self.data
   }
 
-  fn add_data_impl(&mut self, datum: (f64, Option<Vec<T>>)) {
+  fn add_data_impl(&mut self, datum: (f64, f64, Option<Vec<T>>)) {
     self.data.push(datum);
   }
 }
@@ -514,7 +573,7 @@ impl<T: Position + Velocity + Mass + Clone> DataExporter<T> for Mgsa<T> {
     let mut vec_data = Vec::new();
     for t in 0..self.data().len() {
       let mut iter_data = Vec::new();
-      let datum = self.data()[t].1.clone().unwrap();
+      let datum = self.data()[t].2.clone().unwrap();
       for particle_datum in &datum {
         let pos = particle_datum.pos().clone();
         iter_data.push(json!({
@@ -526,6 +585,7 @@ impl<T: Position + Velocity + Mass + Clone> DataExporter<T> for Mgsa<T> {
       }
       vec_data.push(json!({
         "global_best_fitness": self.data()[t].0,
+        "global_worst_fitness": self.data()[t].1,
         "particles": iter_data
       }));
     }

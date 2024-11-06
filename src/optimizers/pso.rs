@@ -15,7 +15,7 @@ pub struct Pso<T> {
   problem: Problem,
   particles: Vec<T>,
   global_best_pos: Option<DVector<f64>>,
-  data: Vec<(f64, Option<Vec<T>>)>,
+  data: Vec<(f64, f64, Option<Vec<T>>)>,
   out_directory: PathBuf,
   w: f64,
   phi_p: f64,
@@ -141,6 +141,7 @@ impl<T: Particle + Position + Velocity + BestPosition + Clone> Optimizer<T> for 
       self.problem().clear_memo();
 
       let mut new_global_best_pos = None;
+      let mut new_global_worst_pos = None;
       for idx in 0..self.particles().len() {
         let vel = self.calculate_vel(idx);
         let mut temp_problem = mem::take(&mut self.problem);
@@ -154,6 +155,12 @@ impl<T: Particle + Position + Velocity + BestPosition + Clone> Optimizer<T> for 
         {
           new_global_best_pos = Some(self.particles()[idx].best_pos().clone());
         }
+        if new_global_worst_pos.is_none()
+          || self.problem().f(&worst_pos) < self.problem.f(&new_global_worst_pos.clone().unwrap())
+        {
+          new_global_worst_pos = Some(self.particles()[idx].worst_pos().clone());
+        }
+
         self.problem = temp_problem;
       }
       self.update_global_best_pos(new_global_best_pos.unwrap());
@@ -161,7 +168,7 @@ impl<T: Particle + Position + Velocity + BestPosition + Clone> Optimizer<T> for 
       // Save the data for current iteration.
       let gbest = self.problem.f(&self.global_best_pos());
       let particles = self.particles.clone();
-      self.add_data(self.save, gbest, particles);
+      self.add_data(self.save, gbest, gworst, particles);
     }
   }
 }
@@ -181,13 +188,27 @@ impl<T> GlobalBestPos for Pso<T> {
     self.global_best_pos.clone().unwrap()
   }
 
+  fn global_worst_pos(&self) -> DVector<f64> {
+    self.global_worst_pos.clone().unwrap()
+  }
+
+
   fn option_global_best_pos(&self) -> &Option<DVector<f64>> {
     &self.global_best_pos
+  }
+
+  fn option_global_worst_pos(&self) -> &Option<DVector<f64>> {
+    &self.global_worst_pos
   }
 
   fn set_global_best_pos(&mut self, pos: DVector<f64>) {
     self.global_best_pos = Some(pos);
   }
+
+  fn set_global_worst_pos(&mut self, pos: DVector<f64>) {
+    self.global_worst_pos = Some(pos);
+  }
+
 }
 
 impl<T> OptimizationProblem for Pso<T> {
@@ -203,11 +224,11 @@ impl<T> Name for Pso<T> {
 }
 
 impl<T: Clone> Data<T> for Pso<T> {
-  fn data(&self) -> &Vec<(f64, Option<Vec<T>>)> {
+  fn data(&self) -> &Vec<(f64, f64, Option<Vec<T>>)> {
     &self.data
   }
 
-  fn add_data_impl(&mut self, datum: (f64, Option<Vec<T>>)) {
+  fn add_data_impl(&mut self, datum: (f64, f64, Option<Vec<T>>)) {
     self.data.push(datum);
   }
 }

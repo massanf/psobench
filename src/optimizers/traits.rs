@@ -79,15 +79,26 @@ pub trait Particles<T> {
 
 pub trait GlobalBestPos: OptimizationProblem {
   fn global_best_pos(&self) -> DVector<f64>;
+  fn global_worst_pos(&self) -> DVector<f64>;
   #[allow(dead_code)]
   fn option_global_best_pos(&self) -> &Option<DVector<f64>>;
+  #[allow(dead_code)]
+  fn option_global_worst_pos(&self) -> &Option<DVector<f64>>;
   fn set_global_best_pos(&mut self, pos: DVector<f64>);
+  fn set_global_worst_pos(&mut self, pos: DVector<f64>);
   fn update_global_best_pos(&mut self, pos: DVector<f64>) {
-    let gb = self.global_best_pos().clone();
-    if self.problem().f(&pos) < self.problem().f(&gb) {
+    // let gb = self.global_best_pos().clone();
+    // if self.problem().f(&pos) < self.problem().f(&gb) {
       self.set_global_best_pos(pos);
-    }
+    // }
   }
+  fn update_global_worst_pos(&mut self, pos: DVector<f64>) {
+    // let gb = self.global_best_pos().clone();
+    // if self.problem().f(&pos) < self.problem().f(&gb) {
+      self.set_global_worst_pos(pos);
+    // }
+  }
+
 }
 
 pub trait Name {
@@ -99,15 +110,15 @@ pub trait OptimizationProblem {
 }
 
 pub trait Data<T>: OptimizationProblem + GlobalBestPos {
-  fn data(&self) -> &Vec<(f64, Option<Vec<T>>)>;
-  fn add_data(&mut self, save: bool, gbest: f64, particles: Vec<T>) {
+  fn data(&self) -> &Vec<(f64, f64, Option<Vec<T>>)>;
+  fn add_data(&mut self, save: bool, gbest: f64, gworst: f64, particles: Vec<T>) {
     if save {
-      self.add_data_impl((gbest, Some(particles)));
+      self.add_data_impl((gbest, gworst, Some(particles)));
     } else {
-      self.add_data_impl((gbest, None));
+      self.add_data_impl((gbest, gworst, None));
     }
   }
-  fn add_data_impl(&mut self, datum: (f64, Option<Vec<T>>));
+  fn add_data_impl(&mut self, datum: (f64, f64, Option<Vec<T>>));
 }
 
 pub trait DataExporter<T: Position + Velocity + Clone>: Data<T> + Name + OptimizationProblem {
@@ -117,7 +128,7 @@ pub trait DataExporter<T: Position + Velocity + Clone>: Data<T> + Name + Optimiz
     let mut vec_data = Vec::new();
     for t in 0..self.data().len() {
       let mut iter_data = Vec::new();
-      let datum = self.data()[t].1.clone().unwrap();
+      let datum = self.data()[t].2.clone().unwrap();
       for particle_datum in &datum {
         let pos = particle_datum.pos().clone();
         iter_data.push(json!({
@@ -128,6 +139,7 @@ pub trait DataExporter<T: Position + Velocity + Clone>: Data<T> + Name + Optimiz
       }
       vec_data.push(json!({
         "global_best_fitness": self.data()[t].0,
+        "global_worst_fitness": self.data()[t].1,
         "particles": iter_data
       }));
     }
@@ -155,11 +167,14 @@ pub trait DataExporter<T: Position + Velocity + Clone>: Data<T> + Name + Optimiz
 
   fn save_summary(&mut self) -> Result<(), Box<dyn std::error::Error>> {
     let mut global_best_progress = Vec::new();
+    let mut global_worst_progress = Vec::new();
     for t in 0..self.data().len() {
       global_best_progress.push(self.data()[t].0);
+      global_worst_progress.push(self.data()[t].1);
     }
     let serialized = serde_json::to_string(&json!({
       "global_best_fitness": global_best_progress,
+      "global_worst_fitness": global_worst_progress,
       "evaluation_count": self.problem().cnt(),
     }))?;
     fs::write(self.out_directory().join("summary.json"), serialized)?;

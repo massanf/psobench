@@ -66,6 +66,20 @@ class PSO:
             result.append(fitness - solution)
         return result
 
+    def global_worst_fitness_progress(self) -> List[float]:
+        global_worst_fitness = self.summary["global_worst_fitness"]
+        if not (isinstance(global_worst_fitness, list) and all(isinstance(i, float)
+                                            for i in global_worst_fitness)):
+            raise ValueError("Incorrect dictionary type.")
+        match = re.match(r"CEC2017_F(\d+)", self.config["problem"]["name"])
+        solution = 0
+        if match:
+            solution = 100 * int(match.group(1))
+        result = [] 
+        for fitness in global_worst_fitness:
+            result.append(fitness - solution)
+        return result
+
     def evaluation_count(self) -> int:
         result = self.summary["evaluation_count"]
         if isinstance(result, int):
@@ -80,6 +94,15 @@ class PSO:
         if isinstance(result, float):
             return result
         raise ValueError("Unexpected `global_best_fitness` value")
+
+    def global_worst_fitness(self, idx: int = -1) -> float:
+        progress = self.summary["global_worst_fitness"]
+        if idx != -1 and not (idx >= 0 and idx < len(progress)):
+            raise ValueError("Index is out of bounds.")
+        result = progress[idx]
+        if isinstance(result, float):
+            return result
+        raise ValueError("Unexpected `global_worst_fitness` value")
 
     def fitness(self) -> List[List[float]]:
         assert self.fully_loaded
@@ -147,10 +170,11 @@ class PSO:
             for particle in iteration.particles:
                 masses.append(particle.mass)
             max_mass = np.max(masses)
+        dim = 0
         for i, particle in enumerate(iteration.particles):
             assert len(particle.pos) >= 2
             if self.has_mass() and max_mass != 0.0:
-                plt.scatter(particle.pos[0], particle.pos[1],
+                plt.scatter(particle.pos[dim], particle.pos[dim + 1],
                             s=particle.mass * 10 / max_mass, color=colors[i % len(colors)])
             else:
                 plt.scatter(particle.pos[0], particle.pos[1], c='c')
@@ -158,8 +182,8 @@ class PSO:
         plt.grid()
         plt.xlim(self.lim)
         plt.ylim(self.lim)
-        # plt.xlim(-70, -80)
-        # plt.ylim(-70, -80)
+        # plt.xlim(40, 60)
+        # plt.ylim(40, 60)
         plt.title(f"Iteration: {frame}" +
                   f" Best: {self.iterations[frame].global_best_fitness:.3e}")
         plt.gca().set_aspect('equal', adjustable='box')

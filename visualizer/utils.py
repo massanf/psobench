@@ -42,6 +42,22 @@ def plot_and_fill(ax: Axes, iterations: List[List[float]],
         ax.set_yscale("linear")
     return ax
 
+def plot_and_fill_best_worst(ax: Axes, btm: List[float], top: List[float],
+                  log: bool = True, label: str = "",
+                  alpha: float = 0.15) -> Axes:
+    t = np.linspace(0, len(btm), len(top))
+
+    line = ax.plot(t, top)
+    color = line[0].get_color()
+    ax.plot(t, btm, color=color)
+    ax.fill_between(t, top, btm, alpha=alpha, color=color, label=label)
+    ax.set_xlim(0, len(top))
+
+    if log:
+        ax.set_yscale("log")
+    else:
+        ax.set_yscale("linear")
+    return ax
 
 def generate_gridmap_collage(path: pathlib.Path,
                              average_mse: bool = False) -> None:
@@ -82,7 +98,6 @@ def generate_final_results(name: pathlib.Path) -> None:
     plt.tight_layout()
     print(f"Saving: {graphs/ f'final_results.png'}")
     plt.savefig(graphs / "final_results.png")
-
 
 def get_final_results(name: pathlib.Path) -> Dict[str, Dict[str, List[float]]]:
     data = HOME / "data" / name

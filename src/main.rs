@@ -9,13 +9,18 @@ mod problems;
 mod utils;
 use crate::optimizers::{gsa::Normalizer, traits::ParamValue};
 #[allow(unused_imports)]
-use optimizers::{gaussian::Gaussian, gsa::Gsa, mgsa::Mgsa, pso::Pso};
+use optimizers::{
+  //gaussian::Gaussian,
+  gsa::Gsa,
+  mgsa::Mgsa,
+  // pso::Pso,
+};
 #[allow(unused_imports)]
 use particles::{
-  gaussian::GaussianParticle,
+  // gaussian::GaussianParticle,
   gsa::GsaParticle,
   mgsa::MgsaParticle,
-  pso::PsoParticle,
+  // pso::PsoParticle,
   traits::{Behavior, Edge},
 };
 use std::env;
@@ -30,17 +35,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   let args: Vec<String> = env::args().collect();
 
   let elite = false;
-  let g0 = 0.1;
-  let gamma = 1.0;
-  let theta = 0.0;
+  let g0 = 1.;
+  let alpha = 1.; // unused
+  let gamma = 1.0; // fix
+  let theta = 0.0; // fix
   let sigma = 100.;
   let edge = Edge::Pass;
-  let dims = vec![30];
+  let dims = vec![2];
 
   match args[1].as_str() {
-    "single" => single(dims, g0, gamma, theta, elite, sigma, edge)?,
-    "cec" => cec(dims, g0, gamma, theta, elite, sigma, edge)?,
-    "grid" => grid(dims, g0, gamma, theta, elite, sigma, edge)?,
+    "single" => single(dims, g0, alpha, gamma, theta, elite, sigma, edge)?,
+    "cec" => cec(dims, g0, alpha, gamma, theta, elite, sigma, edge)?,
+    "grid" => grid(dims, g0, alpha, gamma, theta, elite, sigma, edge)?,
     _ => panic!("Unknown argument: {}. Please use fn1, fn2, or fn3", args[1]),
   }
 
@@ -50,6 +56,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 fn single(
   dims: Vec<usize>,
   g0: f64,
+  alpha: f64,
   gamma: f64,
   theta: f64,
   elite: bool,
@@ -61,8 +68,8 @@ fn single(
   let particle_count = 50;
 
   for dim in dims {
-    let problem = problems::rastrigin_100(dim);
-    // let problem = problems::cec17(9, dim);
+    // let problem = problems::rastrigin_100(dim);
+    let problem = problems::cec17(1, dim);
     utils::check_problem::<MgsaParticle, Mgsa<MgsaParticle>>(
       "test",
       "mgsa_test",
@@ -74,6 +81,7 @@ fn single(
         ("alpha", f(1.)),
         ("g0", f(g0)),
         ("theta", f(theta)),
+        ("alpha", f(alpha)),
         ("gamma", f(gamma)),
         ("sigma", f(sigma)),
         ("tiled", ParamValue::Bool(false)),
@@ -120,14 +128,15 @@ fn single(
 fn cec(
   dims: Vec<usize>,
   g0: f64,
+  alpha: f64,
   gamma: f64,
   theta: f64,
   elite: bool,
   sigma: f64,
   edge: Edge,
 ) -> Result<(), Box<dyn std::error::Error>> {
-  let iterations = 10000;
-  let attempts = 10;
+  let iterations = 1000;
+  let attempts = 1;
   let particle_count = 50;
 
   for dim in dims {
@@ -139,10 +148,10 @@ fn cec(
       attempts,
       vec![
         ("particle_count", i(particle_count)),
-        ("alpha", f(5.)),
         ("g0", f(g0)),
         ("theta", f(theta)),
         ("gamma", f(gamma)),
+        ("alpha", f(alpha)),
         ("sigma", f(sigma)),
         ("tiled", ParamValue::Bool(false)),
         ("elite", ParamValue::Bool(elite)),
@@ -186,6 +195,7 @@ fn cec(
 fn grid(
   dims: Vec<usize>,
   _g0: f64,
+  alpha: f64,
   gamma: f64,
   theta: f64,
   elite: bool,
@@ -262,7 +272,7 @@ fn grid(
         ("particle_count", i(particle_count)),
         ("gamma", f(gamma)),
         ("theta", f(theta)),
-        ("alpha", f(5.0)),
+        ("alpha", f(alpha)),
         ("elite", ParamValue::Bool(elite)),
         ("tiled", ParamValue::Bool(false)),
         ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),

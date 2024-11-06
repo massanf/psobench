@@ -31,9 +31,10 @@ pub struct Gsa<T> {
   problem: Problem,
   particles: Vec<T>,
   global_best_pos: Option<DVector<f64>>,
+  global_worst_pos: Option<DVector<f64>>,
   influences: Vec<bool>,
   g: f64,
-  data: Vec<(f64, Option<Vec<T>>)>,
+  data: Vec<(f64, f64, Option<Vec<T>>)>,
   out_directory: PathBuf,
   g0: f64,
   alpha: f64,
@@ -120,6 +121,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
       problem,
       particles: Vec::new(),
       global_best_pos: None,
+      global_worst_pos: None,
       influences: vec![false; number_of_particles],
       g: g0,
       data: Vec::new(),
@@ -249,26 +251,39 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
 
       // Update the position, best and worst.
       let mut new_global_best_pos = None;
-      // for (i, m_i) in 0..self.particles().len() {
+      let mut new_global_worst_pos = None;
+      // for (i, m_i) in 0.. {
       for (i, vel) in vels.iter().enumerate().take(self.particles().len()) {
         let mut temp_problem = mem::take(&mut self.problem);
         let particle = &mut self.particles_mut()[i];
         particle.update_vel(vel.clone(), &mut temp_problem);
         particle.move_pos(&mut temp_problem);
         let pos = particle.pos().clone();
+
+        // Update best.
         if new_global_best_pos.is_none()
-          || (self.problem().f(&pos) < self.problem().f(&new_global_best_pos.clone().unwrap()))
+          || (temp_problem.f(&pos) < temp_problem.f(&new_global_best_pos.clone().unwrap()))
         {
-          new_global_best_pos = Some(pos);
+          new_global_best_pos = Some(pos.clone());
         }
+
+        // Update worst.
+        if new_global_worst_pos.is_none()
+          || (temp_problem.f(&pos) > temp_problem.f(&new_global_worst_pos.clone().unwrap()))
+        {
+          new_global_worst_pos = Some(pos.clone());
+        }
+
         self.problem = temp_problem;
       }
       self.update_global_best_pos(new_global_best_pos.unwrap());
+      self.update_global_worst_pos(new_global_worst_pos.unwrap());
 
       // Save the data for current iteration.
       let gbest = self.problem.f(&self.global_best_pos());
+      let gworst = self.problem.f(&self.global_worst_pos());
       let particles = self.particles.clone();
-      self.add_data(self.save, gbest, particles);
+      self.add_data(self.save, gbest, gworst, particles);
     }
   }
 }
@@ -292,8 +307,20 @@ impl<T> GlobalBestPos for Gsa<T> {
     &self.global_best_pos
   }
 
+  fn global_worst_pos(&self) -> DVector<f64> {
+    self.global_worst_pos.clone().unwrap()
+  }
+
+  fn option_global_worst_pos(&self) -> &Option<DVector<f64>> {
+    &self.global_worst_pos
+  }
+
   fn set_global_best_pos(&mut self, pos: DVector<f64>) {
     self.global_best_pos = Some(pos);
+  }
+
+  fn set_global_worst_pos(&mut self, pos: DVector<f64>) {
+    self.global_worst_pos = Some(pos);
   }
 }
 
@@ -310,11 +337,11 @@ impl<T> Name for Gsa<T> {
 }
 
 impl<T: Clone> Data<T> for Gsa<T> {
-  fn data(&self) -> &Vec<(f64, Option<Vec<T>>)> {
+  fn data(&self) -> &Vec<(f64, f64, Option<Vec<T>>)> {
     &self.data
   }
 
-  fn add_data_impl(&mut self, datum: (f64, Option<Vec<T>>)) {
+  fn add_data_impl(&mut self, datum: (f64, f64, Option<Vec<T>>)) {
     self.data.push(datum);
   }
 }
@@ -329,7 +356,7 @@ impl<T: Position + Velocity + Mass + Clone> DataExporter<T> for Gsa<T> {
     let mut vec_data = Vec::new();
     for t in 0..self.data().len() {
       let mut iter_data = Vec::new();
-      let datum = self.data()[t].1.clone().unwrap();
+      let datum = self.data()[t].2.clone().unwrap();
       for particle_datum in &datum {
         let pos = particle_datum.pos().clone();
         iter_data.push(json!({
@@ -341,6 +368,7 @@ impl<T: Position + Velocity + Mass + Clone> DataExporter<T> for Gsa<T> {
       }
       vec_data.push(json!({
         "global_best_fitness": self.data()[t].0,
+        "global_worst_fitness": self.data()[t].1,
         "particles": iter_data
       }));
     }
