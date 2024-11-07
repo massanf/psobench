@@ -305,6 +305,9 @@ pub fn original_gsa_mass(input: Vec<f64>) -> Vec<f64> {
 }
 
 pub fn original_gsa_mass_with_record(input: Vec<Vec<f64>>, k: usize) -> Vec<Vec<f64>> {
+  let mut result = Vec::new();
+  result.push(original_gsa_mass(input.last().unwrap().clone()));
+  return result;
   let flattened: Vec<f64> = input.iter().flat_map(|inner| inner.iter().cloned()).collect();
   let min = flattened.iter().fold(f64::INFINITY, |a, &b| a.min(b));
   let max = flattened.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
