@@ -13,12 +13,12 @@ from constants import DATA, GRAPHS
 graph_type = questionary.select(
     "Select graph type:",
     choices=[
-        'r',
         'single',
         'grid',
         'animation',
         'collage',
         'last best distance',
+        'r',
     ]).ask()
 
 
