@@ -105,6 +105,7 @@ pub fn run_attempts<U: Position + Velocity + Clone, T: Optimizer<U> + DataExport
     let _ = pso.save_config(&params);
     if save {
       let _ = pso.save_data();
+      let _ = pso.save_additional_data();
     }
     bar.inc(1);
     // });

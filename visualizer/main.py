@@ -2,6 +2,7 @@ import questionary
 import random
 import utils
 import matplotlib.pyplot as plt  # type: ignore
+import numpy as np
 import utils
 from pso import PSO
 import pathlib
@@ -12,6 +13,7 @@ from constants import DATA, GRAPHS
 graph_type = questionary.select(
     "Select graph type:",
     choices=[
+        'r',
         'single',
         'grid',
         'animation',
@@ -152,6 +154,44 @@ if graph_type == 'collage':
             if "bar" in types:
                 utils.generate_final_results(pathlib.Path(test) / dim)
 
+if graph_type == 'r':
+    for attempt in get_paths("attempts"):
+        pso = PSO(DATA / attempt)
+        pso.load_additional()
+
+        ratio_min = []
+        ratio_avg = []
+        ratio_max = []
+        f_avg = []
+
+        for i, iteration in enumerate(pso.additional_data_iterations):
+            print(i)
+            gravity= []
+            repellent= []
+            div = []
+            f= []
+            dist = []
+            fg = []
+
+            for particle in iteration:
+                gravity.append(particle["gravity"])
+                repellent.append(particle["repellent"])
+                div.append(particle["repellent"] / particle["gravity"])
+                f.append(particle["f"])
+                dist.append(particle["dist"])
+                fg.append(particle["gravity"] * particle["f"])
+            ratio_min.append(np.min(div))
+            ratio_avg.append(np.average(div))
+            ratio_max.append(np.max(div))
+            f_avg.append(np.average(f))
+
+        # plt.scatter(dist, gravity, c=f)
+        # plt.scatter(dist, gravity, c=f)
+        plt.plot(ratio_min)
+        plt.plot(ratio_avg)
+        plt.plot(ratio_max)
+        plt.plot(f_avg)
+        plt.show()
 
 # final_results
 # progress comparison
