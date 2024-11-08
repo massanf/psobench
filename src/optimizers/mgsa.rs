@@ -5,9 +5,9 @@ use crate::optimizers::traits::{
 use crate::particles::traits::{Behavior, Mass, Particle, Position, Velocity};
 use crate::problems;
 // use crate::rand::Rng;
+use crate::rand::Rng;
 use crate::utils;
 use nalgebra::DVector;
-use crate::rand::Rng;
 use problems::Problem;
 use rayon::prelude::*;
 use serde_json::json;
@@ -25,6 +25,7 @@ pub struct Mgsa<T> {
   global_worst_pos: Option<DVector<f64>>,
   g: f64,
   data: Vec<(f64, f64, Option<Vec<T>>)>,
+  additional_data: Vec<Vec<Vec<(String, f64)>>>,
   out_directory: PathBuf,
   g0: f64,
   alpha: f64,
@@ -136,6 +137,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
       global_worst_pos: None,
       g: g0,
       data: Vec::new(),
+      additional_data: Vec::new(),
       out_directory,
       g0,
       alpha,
@@ -191,8 +193,6 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
       println!("--{}--", iter);
       x_record = Vec::new();
       f_record = Vec::new();
-      // self.g = self.g0 * (-self.alpha * iter as f64 / iterations as f64).exp();
-
       let mut distances = Vec::new();
       for i in 0..n {
         for j in 0..n {
@@ -212,18 +212,11 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
         initial_spread = Some(spread);
       }
       println!("spread: {}", spread / initial_spread.unwrap());
-      //let ratio = spread / initial_spread.unwrap() / (-self.alpha * iter as f64 / iterations as f64).exp();
       // let ratio = spread / initial_spread.unwrap();
 
       let ratio = (-self.alpha * iter as f64 / iterations as f64).exp();
-      //
-      // let spread_ratio = 1.;
-      // let spread_ratio = f64::max(f64::max(1. - iter as f64 / iterations as f64, 0.1), spread_ratio);
-      // println!("s: {} i: {}", spread_ratio, 1. - iter as f64 / iterations as f64);
       // let iteration_ratio = 1. - iter as f64 / iterations as f64;
 
-      // self.g = self.g0 - 0.01 * self.g0 * iter as f64 / iterations as f64;
-      // println!("s: {} i: {}", initial_spread, iteration_ratio);
       self.g = self.g0 * ratio;
 
       let mut fitness = Vec::new();
@@ -233,7 +226,6 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
       }
 
       f_record.push(fitness);
-      // let m_record: Vec<Vec<f64>> = f_record.clone().iter().map(|ms| ms.iter().map(|m| 100000000000. / m).collect()).collect();
       let m_record = utils::original_gsa_mass_with_record(f_record.clone(), 100);
 
       // let m = match self.normalizer {
@@ -259,7 +251,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
       }
       x_record.push(x);
 
-      let vels = calculate_vels(
+      let (vels, additional_data) = calculate_vels(
         x_record.clone(),
         m_record.clone(),
         &v,
@@ -310,6 +302,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
 
       let particles = self.particles.clone();
       self.add_data(self.save, gbest, gworst, particles);
+      self.add_additional_data(self.save, additional_data);
     }
   }
 }
@@ -317,7 +310,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
 fn calculate_vels(
   x: Vec<Vec<DVector<f64>>>,
   f: Vec<Vec<f64>>,
-  _v: &Vec<DVector<f64>>,
+  v: &Vec<DVector<f64>>,
   large_g: f64,
   progress: f64,
   spread: f64,
@@ -325,78 +318,225 @@ fn calculate_vels(
   gamma: f64,
   elite: bool,
   sigma: f64,
-) -> Vec<DVector<f64>> {
+) -> (Vec<DVector<f64>>, Vec<Vec<(String, f64)>>) {
   let t = x.len();
   let n = x[0].len();
   let d = x[0][0].len();
 
-  // for f_ in f.clone() {
-  //   println!("{}", f_.iter().sum::<f64>() / f_.len() as f64);
-  // }
+  // let vels: Vec<DVector<f64>> = (0..n)
+  // .into_par_iter()
+  // .into_iter()
+  // .map(|k| {
+  let mut additional_data = Vec::new();
+  let mut vels = Vec::new();
+  for k in 0..n {
+    let mut a: DVector<f64> = DVector::from_element(d, 0.);
 
-  let vels: Vec<DVector<f64>> = (0..n)
-    .into_par_iter()
-    .map(|k| {
-      // for k in 0..n {
-      let mut a: DVector<f64> = DVector::from_element(d, 0.);
+    for l in 0..t {
+      let p = std::cmp::min(std::cmp::max((n as f64 * (1. - progress as f64)) as usize, 1), n);
+      let mut sorted_f = f[l].clone();
+      sorted_f.sort_by(|a, b| b.partial_cmp(a).unwrap_or(std::cmp::Ordering::Equal));
+      let p_largest: Vec<f64> = sorted_f.iter().take(p).copied().collect();
+      let influences: Vec<bool> = match elite {
+        true => f[l].iter().map(|x| p_largest.contains(x)).collect(),
+        false => vec![true; n],
+      };
 
-      for l in 0..t {
-        let p = std::cmp::min(std::cmp::max((n as f64 * (1. - progress as f64)) as usize, 1), n);
-        let mut sorted_f = f[l].clone();
-        sorted_f.sort_by(|a, b| b.partial_cmp(a).unwrap_or(std::cmp::Ordering::Equal));
-        let p_largest: Vec<f64> = sorted_f.iter().take(p).copied().collect();
-        let influences: Vec<bool> = match elite {
-          true => f[l].iter().map(|x| p_largest.contains(x)).collect(),
-          false => vec![true; n],
-        };
-
-        let mut sum_fg = 0.;
-        let mut sum_g = 0.;
-        for j in 0..n {
-          if !influences[j] {
-            continue;
-          }
-          let g_jk = mock_gaussian(&x[l][j], &x[t - 1][k], spread, sigma);
-          sum_fg += f[l][j] * g_jk;
-          sum_g += g_jk;
-        }
-
-        if sum_g == 0. || sum_fg == 0. {
-          // This happens when particle k is a loner.
-          // I think we can safely ignore.
-          println!("warn: 0 sum.");
+      for i in 0..n {
+        if (l == t - 1 && i == k) || !influences[i] {
           continue;
         }
+        let r: DVector<f64> = &x[l][i] - &x[t - 1][k];
 
-        for i in 0..n {
-          if !influences[i] {
-            continue;
-          }
-          let r: DVector<f64> = &x[l][i] - &x[t - 1][k];
-          let g = mock_gaussian(&x[l][i], &x[t - 1][k], spread, sigma);
+        let gravity = f[l][i] / (r.norm() + std::f64::EPSILON) * r.clone();
+        let mut a_delta = gravity;
 
-          let gravity = f[l][i] * g / sum_fg;
-          let repellent = gamma * (1. - progress * theta) * g / sum_g;
-
-          let a_delta = (gravity - repellent) * r;
-
-          a += large_g * a_delta;
+        let mut rng = rand::thread_rng();
+        for e in a_delta.iter_mut() {
+          let rand: f64 = rng.gen_range(0.0..1.0);
+          *e *= rand;
         }
+
+        a += large_g * a_delta;
       }
-      // let mut rng = rand::thread_rng();
-      // for e in a.iter_mut() {
-      //   let rand: f64 = rng.gen_range(0.0..1.0);
-      //   *e *= rand;
-      // }
-      a
-    })
-    .collect();
+    }
+    let mut rng = rand::thread_rng();
+    let rand: f64 = rng.gen_range(0.0..1.0);
+    vels.push(rand * v[k].clone() + a);
+  }
   println!(
     "vel: {}",
     vels.iter().map(|x| x.norm()).sum::<f64>() / vels.len() as f64
   );
-  vels
+  (vels, additional_data)
 }
+
+
+
+// fn calculate_vels(
+//   x: Vec<Vec<DVector<f64>>>,
+//   f: Vec<Vec<f64>>,
+//   v: &Vec<DVector<f64>>,
+//   large_g: f64,
+//   progress: f64,
+//   spread: f64,
+//   theta: f64,
+//   gamma: f64,
+//   elite: bool,
+//   sigma: f64,
+// ) -> (Vec<DVector<f64>>, Vec<Vec<(String, f64)>>) {
+//   let t = x.len();
+//   let n = x[0].len();
+//   let d = x[0][0].len();
+// 
+//   // let vels: Vec<DVector<f64>> = (0..n)
+//   // .into_par_iter()
+//   // .into_iter()
+//   // .map(|k| {
+//   let mut additional_data = Vec::new();
+//   let mut vels = Vec::new();
+//   for k in 0..n {
+//     let mut a: DVector<f64> = DVector::from_element(d, 0.);
+// 
+//     for l in 0..t {
+//       let p = std::cmp::min(std::cmp::max((n as f64 * (1. - progress as f64)) as usize, 1), n);
+//       let mut sorted_f = f[l].clone();
+//       sorted_f.sort_by(|a, b| b.partial_cmp(a).unwrap_or(std::cmp::Ordering::Equal));
+//       let p_largest: Vec<f64> = sorted_f.iter().take(p).copied().collect();
+//       let influences: Vec<bool> = match elite {
+//         true => f[l].iter().map(|x| p_largest.contains(x)).collect(),
+//         false => vec![true; n],
+//       };
+// 
+//       let mut sum_fg = 0.;
+//       let mut sum_g = 0.;
+//       for j in 0..n {
+//         if !influences[j] {
+//           continue;
+//         }
+//         let g_jk = mock_gaussian(&x[l][j], &x[t - 1][k], spread, sigma);
+//         sum_fg += f[l][j] * g_jk;
+//         sum_g += g_jk;
+//       }
+// 
+//       for i in 0..n {
+//         if (l == t - 1 && i == k) || !influences[i] {
+//           continue;
+//         }
+//         let r: DVector<f64> = &x[l][i] - &x[t - 1][k];
+// 
+//         let gravity = f[l][i] / (r.norm() + std::f64::EPSILON) * r.clone();
+//         // let repellent = gamma * (1. - progress * theta) * g / sum_g;
+// 
+//         let mut a_delta = gravity;
+//         // let a_delta = gravity - repellent;
+// 
+//         let g = mock_gaussian(&x[l][i], &x[t - 1][k], spread, sigma);
+// 
+//         let gravity = g / sum_fg;
+//         let repellent = gamma * (1. - progress * theta) * g / sum_g;
+//         additional_data.push(vec![
+//           ("gravity".to_owned(), gravity),
+//           ("repellent".to_owned(), repellent),
+//           ("f".to_owned(), f[l][i]),
+//           ("dist".to_owned(), r.norm()),
+//         ]);
+// 
+//         let mut rng = rand::thread_rng();
+//         for e in a_delta.iter_mut() {
+//           let rand: f64 = rng.gen_range(0.0..1.0);
+//           *e *= rand;
+//         }
+// 
+//         a += large_g * a_delta;
+//       }
+//     }
+//     let mut rng = rand::thread_rng();
+//     let rand: f64 = rng.gen_range(0.0..1.0);
+//     vels.push(rand * v[k].clone() + a);
+//   }
+//   println!(
+//     "vel: {}",
+//     vels.iter().map(|x| x.norm()).sum::<f64>() / vels.len() as f64
+//   );
+//   (vels, additional_data)
+// }
+
+// Using Gaussian.
+// fn calculate_vels(
+//   x: Vec<Vec<DVector<f64>>>,
+//   f: Vec<Vec<f64>>,
+//   _v: &Vec<DVector<f64>>,
+//   large_g: f64,
+//   progress: f64,
+//   spread: f64,
+//   theta: f64,
+//   gamma: f64,
+//   elite: bool,
+//   sigma: f64,
+// ) -> Vec<DVector<f64>> {
+//   let t = x.len();
+//   let n = x[0].len();
+//   let d = x[0][0].len();
+//
+//   let vels: Vec<DVector<f64>> = (0..n)
+//     .into_par_iter()
+//     .map(|k| {
+//       // for k in 0..n {
+//       let mut a: DVector<f64> = DVector::from_element(d, 0.);
+//
+//       for l in 0..t {
+//         let p = std::cmp::min(std::cmp::max((n as f64 * (1. - progress as f64)) as usize, 1), n);
+//         let mut sorted_f = f[l].clone();
+//         sorted_f.sort_by(|a, b| b.partial_cmp(a).unwrap_or(std::cmp::Ordering::Equal));
+//         let p_largest: Vec<f64> = sorted_f.iter().take(p).copied().collect();
+//         let influences: Vec<bool> = match elite {
+//           true => f[l].iter().map(|x| p_largest.contains(x)).collect(),
+//           false => vec![true; n],
+//         };
+//
+//         let mut sum_fg = 0.;
+//         let mut sum_g = 0.;
+//         for j in 0..n {
+//           if !influences[j] {
+//             continue;
+//           }
+//           let g_jk = mock_gaussian(&x[l][j], &x[t - 1][k], spread, sigma);
+//           sum_fg += f[l][j] * g_jk;
+//           sum_g += g_jk;
+//         }
+//
+//         if sum_g == 0. || sum_fg == 0. {
+//           // This happens when particle k is a loner.
+//           // I think we can safely ignore.
+//           println!("warn: 0 sum.");
+//           continue;
+//         }
+//
+//         for i in 0..n {
+//           if !influences[i] {
+//             continue;
+//           }
+//           let r: DVector<f64> = &x[l][i] - &x[t - 1][k];
+//           let g = mock_gaussian(&x[l][i], &x[t - 1][k], spread, sigma);
+//
+//           let gravity = f[l][i] * g / sum_fg;
+//           let repellent = gamma * (1. - progress * theta) * g / sum_g;
+//
+//           let a_delta = (gravity - repellent) * r;
+//
+//           a += large_g * a_delta;
+//         }
+//       }
+//       a
+//     })
+//     .collect();
+//   println!(
+//     "vel: {}",
+//     vels.iter().map(|x| x.norm()).sum::<f64>() / vels.len() as f64
+//   );
+//   vels
+// }
 
 fn mock_gaussian(i: &DVector<f64>, j: &DVector<f64>, spread: f64, sigma: f64) -> f64 {
   if !spread.is_finite() {
@@ -558,42 +698,22 @@ impl<T: Clone> Data<T> for Mgsa<T> {
     &self.data
   }
 
+  fn additional_data(&self) -> &Vec<Vec<Vec<(String, f64)>>> {
+    &self.additional_data
+  }
+
   fn add_data_impl(&mut self, datum: (f64, f64, Option<Vec<T>>)) {
     self.data.push(datum);
+  }
+
+  fn add_additional_data_impl(&mut self, datum: Vec<Vec<(String, f64)>>) {
+    self.additional_data.push(datum);
   }
 }
 
 impl<T: Position + Velocity + Mass + Clone> DataExporter<T> for Mgsa<T> {
   fn out_directory(&self) -> &PathBuf {
     &self.out_directory
-  }
-
-  fn save_data(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-    // Serialize it to a JSON string
-    let mut vec_data = Vec::new();
-    for t in 0..self.data().len() {
-      let mut iter_data = Vec::new();
-      let datum = self.data()[t].2.clone().unwrap();
-      for particle_datum in &datum {
-        let pos = particle_datum.pos().clone();
-        iter_data.push(json!({
-          "fitness": self.problem().f_no_memo(&pos),
-          "vel": particle_datum.vel().as_slice(),
-          "pos": particle_datum.pos().as_slice(),
-          "mass": particle_datum.mass(),
-        }));
-      }
-      vec_data.push(json!({
-        "global_best_fitness": self.data()[t].0,
-        "global_worst_fitness": self.data()[t].1,
-        "particles": iter_data
-      }));
-    }
-
-    let serialized = serde_json::to_string(&json!(vec_data))?;
-
-    fs::write(self.out_directory().join("data.json"), serialized)?;
-    Ok(())
   }
 }
 

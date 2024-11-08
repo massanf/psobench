@@ -4,7 +4,7 @@ use crate::problems;
 use nalgebra::DVector;
 use problems::Problem;
 use serde::ser::{Serialize, Serializer};
-use serde_json::json;
+use serde_json::{json, Map};
 use std::collections::HashMap;
 use std::fmt;
 use std::fs;
@@ -89,16 +89,15 @@ pub trait GlobalBestPos: OptimizationProblem {
   fn update_global_best_pos(&mut self, pos: DVector<f64>) {
     // let gb = self.global_best_pos().clone();
     // if self.problem().f(&pos) < self.problem().f(&gb) {
-      self.set_global_best_pos(pos);
+    self.set_global_best_pos(pos);
     // }
   }
   fn update_global_worst_pos(&mut self, pos: DVector<f64>) {
     // let gb = self.global_best_pos().clone();
     // if self.problem().f(&pos) < self.problem().f(&gb) {
-      self.set_global_worst_pos(pos);
+    self.set_global_worst_pos(pos);
     // }
   }
-
 }
 
 pub trait Name {
@@ -111,6 +110,7 @@ pub trait OptimizationProblem {
 
 pub trait Data<T>: OptimizationProblem + GlobalBestPos {
   fn data(&self) -> &Vec<(f64, f64, Option<Vec<T>>)>;
+  fn additional_data(&self) -> &Vec<Vec<Vec<(String, f64)>>>;
   fn add_data(&mut self, save: bool, gbest: f64, gworst: f64, particles: Vec<T>) {
     if save {
       self.add_data_impl((gbest, gworst, Some(particles)));
@@ -118,7 +118,14 @@ pub trait Data<T>: OptimizationProblem + GlobalBestPos {
       self.add_data_impl((gbest, gworst, None));
     }
   }
+  fn add_additional_data(&mut self, save: bool, particles: Vec<Vec<(String, f64)>>) {
+    if !save {
+      return;
+    }
+    self.add_additional_data_impl(particles);
+  }
   fn add_data_impl(&mut self, datum: (f64, f64, Option<Vec<T>>));
+  fn add_additional_data_impl(&mut self, datum: Vec<Vec<(String, f64)>>);
 }
 
 pub trait DataExporter<T: Position + Velocity + Clone>: Data<T> + Name + OptimizationProblem {
@@ -147,6 +154,32 @@ pub trait DataExporter<T: Position + Velocity + Clone>: Data<T> + Name + Optimiz
     let serialized = serde_json::to_string(&json!(vec_data))?;
 
     fs::write(self.out_directory().join("data.json"), serialized)?;
+    Ok(())
+  }
+
+  fn save_additional_data(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    // Serialize it to a JSON string
+    let mut vec_data = Vec::new();
+    for t in 0..self.data().len() {
+      let mut iter_data = Vec::new();
+      let datum = self.additional_data()[t].clone();
+      for particle_datum in &datum {
+        let mut map = Map::new();
+        for datum in &particle_datum.clone() {
+          map.insert(
+            datum.clone().0, datum.clone().1.into()
+          );
+        }
+        iter_data.push(map);
+      }
+      vec_data.push(json!({
+        "particles": iter_data
+      }));
+    }
+
+    let serialized = serde_json::to_string(&json!(vec_data))?;
+
+    fs::write(self.out_directory().join("additional_data.json"), serialized)?;
     Ok(())
   }
 

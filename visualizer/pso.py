@@ -47,6 +47,24 @@ class PSO:
             iterations.append(Iteration(global_best_fitness, particles))
         self.iterations = iterations
 
+    def load_additional(self) -> None:
+        # Data
+        if not (self.experiment_path / "additional_data.json").exists():
+            raise ValueError("Additional data not exported.")
+        self.fully_loaded = True
+        with open(self.experiment_path / "additional_data.json", 'r') as file:
+            data: List[Dict[str, Any]] = json.load(file)
+        iterations = []
+        for iteration_data in data:
+            particles = []
+            for particle in iteration_data["particles"]:
+                dict = {}
+                for key in particle.keys():
+                    dict[key] = particle[key]
+                particles.append(dict)
+            iterations.append(particles)
+        self.additional_data_iterations = iterations
+
     def unload(self) -> None:
         # Data
         self.fully_loaded = False

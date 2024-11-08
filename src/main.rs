@@ -34,9 +34,9 @@ use ParamValue::Int as i;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
   let args: Vec<String> = env::args().collect();
 
-  let elite = false;
-  let g0 = 1.;
-  let alpha = 1.; // unused
+  let elite = true;
+  let g0 = 1000.;
+  let alpha = 5.; // unused
   let gamma = 1.0; // fix
   let theta = 0.0; // fix
   let sigma = 100.;
@@ -68,8 +68,8 @@ fn single(
   let particle_count = 50;
 
   for dim in dims {
-    // let problem = problems::rastrigin_100(dim);
-    let problem = problems::cec17(1, dim);
+    let problem = problems::rastrigin_100(dim);
+    // let problem = problems::cec17(1, dim);
     utils::check_problem::<MgsaParticle, Mgsa<MgsaParticle>>(
       "test",
       "mgsa_test",
@@ -78,7 +78,6 @@ fn single(
       attempts,
       vec![
         ("particle_count", i(particle_count)),
-        ("alpha", f(1.)),
         ("g0", f(g0)),
         ("theta", f(theta)),
         ("alpha", f(alpha)),
@@ -98,29 +97,29 @@ fn single(
       problem.clone(),
       true,
     )?;
-    utils::check_problem::<GsaParticle, Gsa<GsaParticle>>(
-      "test",
-      "gsa_test",
-      iterations,
-      dim,
-      attempts,
-      vec![
-        ("particle_count", i(particle_count)),
-        ("alpha", f(5.)),
-        ("g0", f(1000.)),
-        ("tiled", ParamValue::Bool(false)),
-        ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
-        (
-          "behavior",
-          ParamValue::Behavior(Behavior {
-            edge: Edge::Reflect,
-            vmax: false,
-          }),
-        ),
-      ],
-      problem.clone(),
-      true,
-    )?;
+    // utils::check_problem::<GsaParticle, Gsa<GsaParticle>>(
+    //   "test",
+    //   "gsa_test",
+    //   iterations,
+    //   dim,
+    //   attempts,
+    //   vec![
+    //     ("particle_count", i(particle_count)),
+    //     ("alpha", f(5.)),
+    //     ("g0", f(1000.)),
+    //     ("tiled", ParamValue::Bool(false)),
+    //     ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
+    //     (
+    //       "behavior",
+    //       ParamValue::Behavior(Behavior {
+    //         edge: Edge::Reflect,
+    //         vmax: false,
+    //       }),
+    //     ),
+    //   ],
+    //   problem.clone(),
+    //   true,
+    // )?;
   }
   Ok(())
 }
@@ -135,7 +134,7 @@ fn cec(
   sigma: f64,
   edge: Edge,
 ) -> Result<(), Box<dyn std::error::Error>> {
-  let iterations = 1000;
+  let iterations = 2;
   let attempts = 1;
   let particle_count = 50;
 
