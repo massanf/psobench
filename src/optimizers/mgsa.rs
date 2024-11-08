@@ -190,7 +190,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
     let mut f_record: Vec<Vec<f64>> = Vec::new();
 
     for iter in 0..iterations {
-      println!("--{}--", iter);
+      // println!("--{}--", iter);
       x_record = Vec::new();
       f_record = Vec::new();
       let mut distances = Vec::new();
@@ -211,7 +211,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
       if initial_spread.is_none() {
         initial_spread = Some(spread);
       }
-      println!("spread: {}", spread / initial_spread.unwrap());
+      // println!("spread: {}", spread / initial_spread.unwrap());
       // let ratio = spread / initial_spread.unwrap();
 
       let ratio = (-self.alpha * iter as f64 / iterations as f64).exp();
@@ -364,10 +364,10 @@ fn calculate_vels(
     let rand: f64 = rng.gen_range(0.0..1.0);
     vels.push(rand * v[k].clone() + a);
   }
-  println!(
-    "vel: {}",
-    vels.iter().map(|x| x.norm()).sum::<f64>() / vels.len() as f64
-  );
+  // println!(
+  //   "vel: {}",
+  //   vels.iter().map(|x| x.norm()).sum::<f64>() / vels.len() as f64
+  // );
   (vels, additional_data)
 }
 

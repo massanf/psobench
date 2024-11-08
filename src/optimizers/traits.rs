@@ -160,7 +160,7 @@ pub trait DataExporter<T: Position + Velocity + Clone>: Data<T> + Name + Optimiz
   fn save_additional_data(&mut self) -> Result<(), Box<dyn std::error::Error>> {
     // Serialize it to a JSON string
     let mut vec_data = Vec::new();
-    for t in 0..self.data().len() {
+    for t in 0..self.additional_data().len() {
       let mut iter_data = Vec::new();
       let datum = self.additional_data()[t].clone();
       for particle_datum in &datum {

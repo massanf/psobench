@@ -97,29 +97,29 @@ fn single(
       problem.clone(),
       true,
     )?;
-    // utils::check_problem::<GsaParticle, Gsa<GsaParticle>>(
-    //   "test",
-    //   "gsa_test",
-    //   iterations,
-    //   dim,
-    //   attempts,
-    //   vec![
-    //     ("particle_count", i(particle_count)),
-    //     ("alpha", f(5.)),
-    //     ("g0", f(1000.)),
-    //     ("tiled", ParamValue::Bool(false)),
-    //     ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
-    //     (
-    //       "behavior",
-    //       ParamValue::Behavior(Behavior {
-    //         edge: Edge::Reflect,
-    //         vmax: false,
-    //       }),
-    //     ),
-    //   ],
-    //   problem.clone(),
-    //   true,
-    // )?;
+    utils::check_problem::<GsaParticle, Gsa<GsaParticle>>(
+      "test",
+      "gsa_test",
+      iterations,
+      dim,
+      attempts,
+      vec![
+        ("particle_count", i(particle_count)),
+        ("alpha", f(5.)),
+        ("g0", f(1000.)),
+        ("tiled", ParamValue::Bool(false)),
+        ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
+        (
+          "behavior",
+          ParamValue::Behavior(Behavior {
+            edge: Edge::Reflect,
+            vmax: false,
+          }),
+        ),
+      ],
+      problem.clone(),
+      true,
+    )?;
   }
   Ok(())
 }
