@@ -193,9 +193,9 @@ class PSO:
             assert len(particle.pos) >= 2
             if self.has_mass() and max_mass != 0.0:
                 plt.scatter(particle.pos[dim], particle.pos[dim + 1],
-                            s=particle.mass * 10 / max_mass, color=colors[i % len(colors)])
+                            s=particle.mass * 10 / max_mass, color='r' if i == 0 else 'gray')# colors[i % len(colors)])
             else:
-                plt.scatter(particle.pos[0], particle.pos[1], c='c')
+                plt.scatter(particle.pos[0], particle.pos[1], c='c', s=2)
 
         plt.grid()
         plt.xlim(self.lim)

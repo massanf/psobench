@@ -360,4 +360,33 @@ impl<T: Position + Velocity + Mass + Clone> DataExporter<T> for Gsa<T> {
   fn out_directory(&self) -> &PathBuf {
     &self.out_directory
   }
+
+  fn save_data(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    // Serialize it to a JSON string
+    let mut vec_data = Vec::new();
+    for t in 0..self.data().len() {
+      let mut iter_data = Vec::new();
+      let datum = self.data()[t].2.clone().unwrap();
+      for particle_datum in &datum {
+        let pos = particle_datum.pos().clone();
+        iter_data.push(json!({
+          "fitness": self.problem().f_no_memo(&pos),
+          "vel": particle_datum.vel().as_slice(),
+          "pos": particle_datum.pos().as_slice(),
+          "mass": particle_datum.mass(),
+        }));
+      }
+      vec_data.push(json!({
+        "global_best_fitness": self.data()[t].0,
+        "global_worst_fitness": self.data()[t].1,
+        "particles": iter_data
+      }));
+    }
+
+    let serialized = serde_json::to_string(&json!(vec_data))?;
+
+    fs::write(self.out_directory().join("data.json"), serialized)?;
+    Ok(())
+  }
+
 }

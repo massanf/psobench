@@ -1,11 +1,13 @@
 import questionary
-import random
+from scipy.stats import pearsonr
+import datetime
 import utils
 import matplotlib.pyplot as plt  # type: ignore
 import numpy as np
 import utils
 from pso import PSO
 import pathlib
+import matplotlib.animation as animation
 import os
 from constants import DATA, GRAPHS
 
@@ -18,8 +20,17 @@ graph_type = questionary.select(
         'animation',
         'collage',
         'last best distance',
-        'r',
+        'rmt',
     ]).ask()
+
+def marchenko_pastur_pdf(x, q, sigma=1.0):
+    lambda_min = sigma**2 * (1 - np.sqrt(1 / q))**2
+    lambda_max = sigma**2 * (1 + np.sqrt(1 / q))**2
+    return np.where(
+        (x >= lambda_min) & (x <= lambda_max),
+        q / (2 * np.pi * sigma**2) * np.sqrt((lambda_max - x) * (x - lambda_min)) / x,
+        0,
+    )
 
 
 def get_paths(level: str):
@@ -37,10 +48,9 @@ def get_paths(level: str):
             continue
 
         dim_options = [str(x) for x in sorted([int(folder.name) for folder in (DATA / test).iterdir()
-                              if folder.is_dir()])]
+                                               if folder.is_dir()])]
         dims = questionary.checkbox(
             f"Select dimensions ({test}):", choices=dim_options).ask()
-
 
         for dim in dims:
             if level == "dims":
@@ -64,7 +74,8 @@ def get_paths(level: str):
 
                 for problem in problems:
                     if level == "problems":
-                        results.append(pathlib.Path(test) / dim / optimizer / problem)
+                        results.append(pathlib.Path(test) /
+                                       dim / optimizer / problem)
                         continue
 
                     attempt_options = sorted([folder.name for folder in (DATA / test / dim / optimizer / problem).iterdir()
@@ -75,7 +86,7 @@ def get_paths(level: str):
                     for attempt in attempts:
                         if level == "attempts":
                             results.append(
-                            pathlib.Path(test) / dim / optimizer / problem / attempt)
+                                pathlib.Path(test) / dim / optimizer / problem / attempt)
     return results
 
 
@@ -93,7 +104,8 @@ if graph_type == 'single':
         graphs.mkdir(parents=True, exist_ok=True)
         pso = PSO(data)
         pso.load_full()
-        utils.plot_and_fill_best_worst(ax=ax, btm=pso.global_best_fitness_progress(), top=pso.global_worst_fitness_progress(), log=True, label=attempt)
+        utils.plot_and_fill_best_worst(ax=ax, btm=pso.global_best_fitness_progress(
+        ), top=pso.global_worst_fitness_progress(), log=True, label=attempt)
 
     plt.legend()
     plt.gca().autoscale(axis='y', tight=False)
@@ -101,7 +113,7 @@ if graph_type == 'single':
         os.makedirs(GRAPHS / "custom_singles")
     filestem = questionary.text("Filename:").ask()
     if filestem == "":
-        filestem = str(random.randint(100000, 999999))
+        filestem = str(int(datetime.datetime.now().timestamp()))
     filepath = GRAPHS / "custom_singles" / f"fitness_over_time_{filestem}.png"
     print(f"Saving: {filepath}")
     plt.savefig(filepath)
@@ -154,44 +166,66 @@ if graph_type == 'collage':
             if "bar" in types:
                 utils.generate_final_results(pathlib.Path(test) / dim)
 
-if graph_type == 'r':
-    for attempt in get_paths("attempts"):
-        pso = PSO(DATA / attempt)
-        pso.load_additional()
+if graph_type == 'rmt':
+    for problem in get_paths("problems"):
+        eigenvalues = [[] for _ in range (1000)]
+        d = 0
+        n = 0
+        attempts = sorted([folder.name for folder in (DATA / problem).iterdir() if folder.is_dir()])
+        for attempt in attempts:
+            print(attempt)
+            pso = PSO(DATA / problem / attempt)
+            pso.load_full()
+            diffs = []
 
-        ratio_min = []
-        ratio_avg = []
-        ratio_max = []
-        f_avg = []
+            for i in range(0, len(pso.iterations)):
+                positions = []
+                for particle in pso.iterations[i].particles:
+                    x = particle.pos
+                    x -= np.mean(x)
+                    x /= np.std(x)
+                    positions.append(x)
 
-        for i, iteration in enumerate(pso.additional_data_iterations):
-            print(i)
-            gravity= []
-            repellent= []
-            div = []
-            f= []
-            dist = []
-            fg = []
+                cov_matrix = np.cov(positions)
 
-            for particle in iteration:
-                gravity.append(particle["gravity"])
-                repellent.append(particle["repellent"])
-                div.append(particle["repellent"] / particle["gravity"])
-                f.append(particle["f"])
-                dist.append(particle["dist"])
-                fg.append(particle["gravity"] * particle["f"])
-            ratio_min.append(np.min(div))
-            ratio_avg.append(np.average(div))
-            ratio_max.append(np.max(div))
-            f_avg.append(np.average(f))
+                # eigenvalues.append([np.real(val) for val in np.linalg.eigvals(cov_matrix)])
+                for value in np.linalg.eigvals(cov_matrix):
+                    if np.linalg.norm(value) > 0.00001:
+                        eigenvalues[i].append(np.real(value))
 
-        # plt.scatter(dist, gravity, c=f)
-        # plt.scatter(dist, gravity, c=f)
-        plt.plot(ratio_min)
-        plt.plot(ratio_avg)
-        plt.plot(ratio_max)
-        plt.plot(f_avg)
-        plt.show()
+                d = len(positions[0])
+                n = len(positions)
+
+        # Prepare for animation
+        fig, ax = plt.subplots()
+        q = d / n  # Parameter for Marchenko-Pastur distribution
+        x = np.linspace(0, max([max(ev) if ev else 0 for ev in eigenvalues]) * 1.1, 500)
+        theoretical_pdf = marchenko_pastur_pdf(x, q) * 5
+        
+        def animate(i):
+            ax.clear()
+            if eigenvalues[i]:
+                ax.hist(eigenvalues[i], bins=50, density=True, alpha=0.7, label="Empirical Spectrum")
+                ax.plot(x, theoretical_pdf, 'r-', label="Marchenko-Pastur")
+                ax.set_title(f"Iteration {i+1}")
+                ax.legend()
+            else:
+                ax.text(0.5, 0.5, f"No data at iteration {i+1}", ha='center', va='center')
+        
+        ani = animation.FuncAnimation(fig, animate, frames=1000, interval=100)
+        ani.save('eigenvalue_animation.gif', writer='pillow')
+        plt.close()
+        # plt.hist(eigenvalues[999], bins=50, density=True, label="Empirical Spectrum")
+        # # plt.xlim(3000, 35000)
+        # 
+        # q = d / n
+        # x = np.linspace(0, 20, 500)
+        # theoretical_pdf = marchenko_pastur_pdf(x, q) * 5 
+        # plt.plot(x, theoretical_pdf, label="Marchenko-Pastur")
+
+        # plt.legend()
+        # plt.show()
+
 
 # final_results
 # progress comparison

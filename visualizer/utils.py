@@ -47,9 +47,8 @@ def plot_and_fill_best_worst(ax: Axes, btm: List[float], top: List[float],
                   alpha: float = 0.15) -> Axes:
     t = np.linspace(0, len(btm), len(top))
 
-    line = ax.plot(t, top)
+    line = ax.plot(t, btm)
     color = line[0].get_color()
-    ax.plot(t, btm, color=color)
     ax.fill_between(t, top, btm, alpha=alpha, color=color, label=label)
     ax.set_xlim(0, len(top))
 

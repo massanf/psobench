@@ -4,6 +4,8 @@ use crate::optimizers::traits::{
 };
 use crate::particles::traits::{Behavior, Mass, Particle, Position, Velocity};
 use crate::problems;
+use rand_distr::{Distribution, Normal};
+use std::f64::consts::PI;
 // use crate::rand::Rng;
 use crate::rand::Rng;
 use crate::utils;
@@ -193,6 +195,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
       // println!("--{}--", iter);
       x_record = Vec::new();
       f_record = Vec::new();
+
       let mut distances = Vec::new();
       for i in 0..n {
         for j in 0..n {
@@ -203,7 +206,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
           distances.push(distance);
         }
       }
-      let use_avg = false;
+      let use_avg = true;
       let spread = match use_avg {
         true => distances.iter().sum::<f64>() / distances.len() as f64,
         false => utils::calculate_std(&distances),
@@ -212,12 +215,12 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
         initial_spread = Some(spread);
       }
       // println!("spread: {}", spread / initial_spread.unwrap());
-      // let ratio = spread / initial_spread.unwrap();
+      let spread_ratio = spread / initial_spread.unwrap();
 
       let ratio = (-self.alpha * iter as f64 / iterations as f64).exp();
       // let iteration_ratio = 1. - iter as f64 / iterations as f64;
 
-      self.g = self.g0 * ratio;
+      self.g = self.g0 * (-1. * spread_ratio).exp();
 
       let mut fitness = Vec::new();
       for idx in 0..n {
@@ -299,6 +302,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
       // Save the data for current iteration.
       let gbest = self.problem.f(&self.global_best_pos());
       let gworst = self.problem.f(&self.global_worst_pos());
+      println!("gbest: {}", gbest);
 
       let particles = self.particles.clone();
       self.add_data(self.save, gbest, gworst, particles);
@@ -314,20 +318,16 @@ fn calculate_vels(
   large_g: f64,
   progress: f64,
   spread: f64,
-  theta: f64,
-  gamma: f64,
+  _theta: f64,
+  _gamma: f64,
   elite: bool,
-  sigma: f64,
+  _sigma: f64,
 ) -> (Vec<DVector<f64>>, Vec<Vec<(String, f64)>>) {
   let t = x.len();
   let n = x[0].len();
   let d = x[0][0].len();
 
-  // let vels: Vec<DVector<f64>> = (0..n)
-  // .into_par_iter()
-  // .into_iter()
-  // .map(|k| {
-  let mut additional_data = Vec::new();
+  let additional_data = Vec::new();
   let mut vels = Vec::new();
   for k in 0..n {
     let mut a: DVector<f64> = DVector::from_element(d, 0.);
@@ -342,13 +342,28 @@ fn calculate_vels(
         false => vec![true; n],
       };
 
+      let mut f_sum = 0.;
+      let mut count = 0;
+      for idx in 0..f[l].len() {
+        if !influences[idx] {
+          continue;
+        }
+        f_sum += f[l][idx];
+        count += 1;
+      }
+      let f_avg = f_sum / count as f64;
+      // let f_avg = 0.;
+
       for i in 0..n {
         if (l == t - 1 && i == k) || !influences[i] {
           continue;
         }
         let r: DVector<f64> = &x[l][i] - &x[t - 1][k];
 
+        // let mut rng = rand::thread_rng();
+        // let rnd = rng.gen_range(0.8..1.2);
         let gravity = f[l][i] / (r.norm() + std::f64::EPSILON) * r.clone();
+        // let repellent= f_avg / (r.norm() + std::f64::EPSILON) * r.clone();
         let mut a_delta = gravity;
 
         let mut rng = rand::thread_rng();
@@ -363,15 +378,48 @@ fn calculate_vels(
     let mut rng = rand::thread_rng();
     let rand: f64 = rng.gen_range(0.0..1.0);
     vels.push(rand * v[k].clone() + a);
+
+    // vels.push(perturb_vector(&a, progress));
+    // raw_vels.push(a);
+    // vels.push(perturb_vector(&a, spread));
   }
   // println!(
   //   "vel: {}",
   //   vels.iter().map(|x| x.norm()).sum::<f64>() / vels.len() as f64
   // );
+
+  let vels_avg = vels.iter().map(|x| x.norm()).sum::<f64>() / vels.len() as f64;
+  // println!("{}", vels_avg);
+  let vels = vels.iter().map(|x| perturb_vector(x, vels_avg)).collect();
   (vels, additional_data)
 }
 
+fn perturb_vector(v: &DVector<f64>, _progress: f64) -> DVector<f64> {
+  v.clone()
+  // // Create a random vector with the same dimension as `v`
+  // let dimension = v.len();
+  // let normal_dist = Normal::new(0.0, 10.0).unwrap();
+  // let mut random_vector = DVector::from_element(dimension, 0.0);
 
+  // // Populate `random_vector` with normally distributed random values
+  // for i in 0..dimension {
+  //   random_vector[i] = normal_dist.sample(&mut rand::thread_rng());
+  // }
+
+  // // Normalize the random vector
+  // random_vector /= random_vector.norm();
+
+  // // Scale the random vector by the magnitude of `v` and the sine of the desired angle
+  // random_vector *= 50. * (-5. * progress).exp();
+  // // random_vector *= progress;
+  // // random_vector *=  spread;
+
+  // // Add the perturbation to the original vector
+  // let adjusted_vector = v + random_vector.clone();
+  // // adjusted_vector
+  // let result = adjusted_vector.clone() / adjusted_vector.norm() * v.norm();
+  // result
+}
 
 // fn calculate_vels(
 //   x: Vec<Vec<DVector<f64>>>,
@@ -388,7 +436,7 @@ fn calculate_vels(
 //   let t = x.len();
 //   let n = x[0].len();
 //   let d = x[0][0].len();
-// 
+//
 //   // let vels: Vec<DVector<f64>> = (0..n)
 //   // .into_par_iter()
 //   // .into_iter()
@@ -397,7 +445,7 @@ fn calculate_vels(
 //   let mut vels = Vec::new();
 //   for k in 0..n {
 //     let mut a: DVector<f64> = DVector::from_element(d, 0.);
-// 
+//
 //     for l in 0..t {
 //       let p = std::cmp::min(std::cmp::max((n as f64 * (1. - progress as f64)) as usize, 1), n);
 //       let mut sorted_f = f[l].clone();
@@ -407,7 +455,7 @@ fn calculate_vels(
 //         true => f[l].iter().map(|x| p_largest.contains(x)).collect(),
 //         false => vec![true; n],
 //       };
-// 
+//
 //       let mut sum_fg = 0.;
 //       let mut sum_g = 0.;
 //       for j in 0..n {
@@ -418,21 +466,21 @@ fn calculate_vels(
 //         sum_fg += f[l][j] * g_jk;
 //         sum_g += g_jk;
 //       }
-// 
+//
 //       for i in 0..n {
 //         if (l == t - 1 && i == k) || !influences[i] {
 //           continue;
 //         }
 //         let r: DVector<f64> = &x[l][i] - &x[t - 1][k];
-// 
+//
 //         let gravity = f[l][i] / (r.norm() + std::f64::EPSILON) * r.clone();
 //         // let repellent = gamma * (1. - progress * theta) * g / sum_g;
-// 
+//
 //         let mut a_delta = gravity;
 //         // let a_delta = gravity - repellent;
-// 
+//
 //         let g = mock_gaussian(&x[l][i], &x[t - 1][k], spread, sigma);
-// 
+//
 //         let gravity = g / sum_fg;
 //         let repellent = gamma * (1. - progress * theta) * g / sum_g;
 //         additional_data.push(vec![
@@ -441,13 +489,13 @@ fn calculate_vels(
 //           ("f".to_owned(), f[l][i]),
 //           ("dist".to_owned(), r.norm()),
 //         ]);
-// 
+//
 //         let mut rng = rand::thread_rng();
 //         for e in a_delta.iter_mut() {
 //           let rand: f64 = rng.gen_range(0.0..1.0);
 //           *e *= rand;
 //         }
-// 
+//
 //         a += large_g * a_delta;
 //       }
 //     }
@@ -714,6 +762,34 @@ impl<T: Clone> Data<T> for Mgsa<T> {
 impl<T: Position + Velocity + Mass + Clone> DataExporter<T> for Mgsa<T> {
   fn out_directory(&self) -> &PathBuf {
     &self.out_directory
+  }
+
+  fn save_data(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    // Serialize it to a JSON string
+    let mut vec_data = Vec::new();
+    for t in 0..self.data().len() {
+      let mut iter_data = Vec::new();
+      let datum = self.data()[t].2.clone().unwrap();
+      for particle_datum in &datum {
+        let pos = particle_datum.pos().clone();
+        iter_data.push(json!({
+          "fitness": self.problem().f_no_memo(&pos),
+          "vel": particle_datum.vel().as_slice(),
+          "pos": particle_datum.pos().as_slice(),
+          "mass": particle_datum.mass(),
+        }));
+      }
+      vec_data.push(json!({
+        "global_best_fitness": self.data()[t].0,
+        "global_worst_fitness": self.data()[t].1,
+        "particles": iter_data
+      }));
+    }
+
+    let serialized = serde_json::to_string(&json!(vec_data))?;
+
+    fs::write(self.out_directory().join("data.json"), serialized)?;
+    Ok(())
   }
 }
 

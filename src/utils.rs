@@ -90,9 +90,10 @@ pub fn run_attempts<U: Position + Velocity + Clone, T: Optimizer<U> + DataExport
   save_data: bool,
   bar: &indicatif::ProgressBar,
 ) -> Result<(), Box<dyn std::error::Error>> {
-  for attempt in 0..attempts {
-    // (0..attempts).into_par_iter().for_each(|attempt| {
-    let save = save_data && attempt < 1;
+  // for attempt in 0..attempts {
+  (0..attempts).into_par_iter().for_each(|attempt| {
+    // let save = save_data && attempt < 1;
+    let save = save_data;
     let mut pso: T = T::new(
       name.clone(),
       problem.clone(),
@@ -108,8 +109,8 @@ pub fn run_attempts<U: Position + Velocity + Clone, T: Optimizer<U> + DataExport
       let _ = pso.save_additional_data();
     }
     bar.inc(1);
-    // });
-  }
+  });
+  // }
   Ok(())
 }
 
@@ -308,33 +309,35 @@ pub fn original_gsa_mass(input: Vec<f64>) -> Vec<f64> {
 pub fn original_gsa_mass_with_record(input: Vec<Vec<f64>>, k: usize) -> Vec<Vec<f64>> {
   let mut result = Vec::new();
   result.push(original_gsa_mass(input.last().unwrap().clone()));
-  return result;
-  let flattened: Vec<f64> = input.iter().flat_map(|inner| inner.iter().cloned()).collect();
-  let min = flattened.iter().fold(f64::INFINITY, |a, &b| a.min(b));
-  let max = flattened.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
-  println!("min: {}", min);
-  println!("max: {}", max);
-
-  // println!("mass: {:?}", flattened.iter().map(|x| x - min).collect::<Vec<f64>>());
-  let normalized: Vec<f64> = min_max_normalize(flattened).iter().map(|&x| 1.0 - x).collect();
-  // println!("{:?}", normalized);
-  // let normalized = z_score_normalize(flattened).iter().map(|x| -0.5 * x).map(|x| if x < 0. { 0. } else { x }).collect::<Vec<f64>>();
-  // let normalized: Vec<f64> = rank_normalize(flattened).iter().map(|x| 1. - x).collect();
-  // let normalized: Vec<f64> = flattened.iter().map(|x| 1. / x).collect();
-
-  let mut result = Vec::new();
-  let mut start = 0;
-  for inner in input {
-    let end = start + inner.len();
-    result.push(normalized[start..end].to_vec());
-    start = end;
-  }
-  println!(
-    "mass avg: {:?}",
-    normalized.iter().sum::<f64>() / normalized.len() as f64
-  );
-  println!("mass std: {:?}", calculate_std(&normalized));
+  // println!("{:?}", result);
   result
+
+  // let flattened: Vec<f64> = input.iter().flat_map(|inner| inner.iter().cloned()).collect();
+  // let min = flattened.iter().fold(f64::INFINITY, |a, &b| a.min(b));
+  // let max = flattened.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
+  // println!("min: {}", min);
+  // println!("max: {}", max);
+
+  // // println!("mass: {:?}", flattened.iter().map(|x| x - min).collect::<Vec<f64>>());
+  // let normalized: Vec<f64> = min_max_normalize(flattened).iter().map(|&x| 1.0 - x).collect();
+  // // println!("{:?}", normalized);
+  // // let normalized = z_score_normalize(flattened).iter().map(|x| -0.5 * x).map(|x| if x < 0. { 0. } else { x }).collect::<Vec<f64>>();
+  // // let normalized: Vec<f64> = rank_normalize(flattened).iter().map(|x| 1. - x).collect();
+  // // let normalized: Vec<f64> = flattened.iter().map(|x| 1. / x).collect();
+
+  // let mut result = Vec::new();
+  // let mut start = 0;
+  // for inner in input {
+  //   let end = start + inner.len();
+  //   result.push(normalized[start..end].to_vec());
+  //   start = end;
+  // }
+  // println!(
+  //   "mass avg: {:?}",
+  //   normalized.iter().sum::<f64>() / normalized.len() as f64
+  // );
+  // println!("mass std: {:?}", calculate_std(&normalized));
+  // result
 }
 
 fn retain_k_smallest_in_order(vec: &mut Vec<f64>, k: usize) {

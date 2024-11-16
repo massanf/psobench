@@ -36,12 +36,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
   let elite = true;
   let g0 = 1000.;
-  let alpha = 5.; // unused
+  let alpha = 5.;
   let gamma = 1.0; // fix
   let theta = 0.0; // fix
-  let sigma = 100.;
+  let sigma = 10.;
   let edge = Edge::Pass;
-  let dims = vec![2];
+  let dims = vec![10];
 
   match args[1].as_str() {
     "single" => single(dims, g0, alpha, gamma, theta, elite, sigma, edge)?,
@@ -64,39 +64,39 @@ fn single(
   edge: Edge,
 ) -> Result<(), Box<dyn std::error::Error>> {
   let iterations = 1000;
-  let attempts = 1;
+  let attempts = 100;
   let particle_count = 50;
 
   for dim in dims {
     let problem = problems::rastrigin_100(dim);
     // let problem = problems::cec17(1, dim);
-    utils::check_problem::<MgsaParticle, Mgsa<MgsaParticle>>(
-      "test",
-      "mgsa_test",
-      iterations,
-      dim,
-      attempts,
-      vec![
-        ("particle_count", i(particle_count)),
-        ("g0", f(g0)),
-        ("theta", f(theta)),
-        ("alpha", f(alpha)),
-        ("gamma", f(gamma)),
-        ("sigma", f(sigma)),
-        ("tiled", ParamValue::Bool(false)),
-        ("elite", ParamValue::Bool(elite)),
-        ("normalizer", ParamValue::Normalizer(Normalizer::Sigmoid2)),
-        (
-          "behavior",
-          ParamValue::Behavior(Behavior {
-            edge: edge,
-            vmax: false,
-          }),
-        ),
-      ],
-      problem.clone(),
-      true,
-    )?;
+    // utils::check_problem::<MgsaParticle, Mgsa<MgsaParticle>>(
+    //   "test",
+    //   "mgsa_test",
+    //   iterations,
+    //   dim,
+    //   attempts,
+    //   vec![
+    //     ("particle_count", i(particle_count)),
+    //     ("g0", f(g0)),
+    //     ("theta", f(theta)),
+    //     ("alpha", f(alpha)),
+    //     ("gamma", f(gamma)),
+    //     ("sigma", f(sigma)),
+    //     ("tiled", ParamValue::Bool(false)),
+    //     ("elite", ParamValue::Bool(elite)),
+    //     ("normalizer", ParamValue::Normalizer(Normalizer::Sigmoid2)),
+    //     (
+    //       "behavior",
+    //       ParamValue::Behavior(Behavior {
+    //         edge: edge,
+    //         vmax: false,
+    //       }),
+    //     ),
+    //   ],
+    //   problem.clone(),
+    //   true,
+    // )?;
     utils::check_problem::<GsaParticle, Gsa<GsaParticle>>(
       "test",
       "gsa_test",
@@ -112,7 +112,7 @@ fn single(
         (
           "behavior",
           ParamValue::Behavior(Behavior {
-            edge: Edge::Reflect,
+            edge: Edge::Pass,
             vmax: false,
           }),
         ),
@@ -134,7 +134,7 @@ fn cec(
   sigma: f64,
   edge: Edge,
 ) -> Result<(), Box<dyn std::error::Error>> {
-  let iterations = 2;
+  let iterations = 5000;
   let attempts = 1;
   let particle_count = 50;
 
