@@ -2,6 +2,7 @@ import pathlib
 from matplotlib.animation import FuncAnimation  # type: ignore
 from scipy.spatial import distance_matrix  # type: ignore
 import matplotlib.pyplot as plt  # type: ignore
+import concurrent.futures
 from tqdm import tqdm  # type: ignore
 from cycler import cycler
 import utils
@@ -176,85 +177,108 @@ class PSO:
     def has_mass(self) -> bool:
         return hasattr(self.iterations[0].particles[0], "mass")
 
-    def update_particles_for_animate(self, frame: int) -> None:
+    def update_particles_for_frame(self, frame: int) -> plt.Figure:
+        """
+        Renders a single frame of particles as a plot and returns the figure.
+        """
+        fig, ax = plt.subplots()
         assert self.fully_loaded
-        plt.cla()
-        self.progressbar.update(1)
         iteration = self.iterations[frame]
         max_mass = 0.0
         colors = plt.cm.tab10.colors
+
         if self.has_mass():
-            masses = []
-            for particle in iteration.particles:
-                masses.append(particle.mass)
+            masses = [particle.mass for particle in iteration.particles]
             max_mass = np.max(masses)
+
         dim = 0
         for i, particle in enumerate(iteration.particles):
             assert len(particle.pos) >= 2
             if self.has_mass() and max_mass != 0.0:
-                plt.scatter(particle.pos[dim], particle.pos[dim + 1],
-                            s=particle.mass * 10 / max_mass, color='r' if i == 0 else 'gray')# colors[i % len(colors)])
+                ax.scatter(particle.pos[dim], particle.pos[dim + 1],
+                           s=particle.mass * 10 / max_mass, color=colors[i % len(colors)])
             else:
-                plt.scatter(particle.pos[0], particle.pos[1], c='c', s=2)
+                ax.scatter(particle.pos[0], particle.pos[1], c='c', s=2)
 
-        plt.grid()
-        plt.xlim(self.lim)
-        plt.ylim(self.lim)
-        # plt.xlim(40, 60)
-        # plt.ylim(40, 60)
-        plt.title(f"Iteration: {frame}" +
-                  f" Best: {self.iterations[frame].global_best_fitness:.3e}")
-        plt.gca().set_aspect('equal', adjustable='box')
+        ax.grid()
+        ax.set_xlim(self.lim)
+        ax.set_ylim(self.lim)
+        ax.set_title(f"Iteration: {frame}" +
+                     f" Best: {self.iterations[frame].global_best_fitness:.3e}")
+        ax.set_aspect('equal', adjustable='box')
 
-    def update_mass_for_animate(self, frame: int) -> None:
-        assert self.fully_loaded
-        assert self.has_mass()
+        return fig
 
-        plt.cla()
-        self.progressbar.update(1)
-        iteration = self.iterations[frame]
+    def generate_frame_images(self, frames: List[int], output_dir: pathlib.Path) -> None:
+        """
+        Generate images for the specified frames in parallel.
+        """
+        if not output_dir.exists():
+            output_dir.mkdir(parents=True)
 
-        mass = []
-        for particle in iteration.particles:
-            mass.append(particle.mass)
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            futures = {
+                executor.submit(self.save_frame_image, frame, output_dir): frame
+                for frame in frames
+            }
 
-        plt.hist(mass, bins=self.bins)
-        plt.ylim(0, self.max_y)
-        plt.title(f"Iteration: {frame}")
+            for future in tqdm(concurrent.futures.as_completed(futures), total=len(futures)):
+                frame = futures[future]
+                try:
+                    future.result()
+                except Exception as e:
+                    print(f"Error generating frame {frame}: {e}")
 
-    def animate(self, updater: Callable, destination_path: pathlib.Path,
-                skip_frames: int = 50, start: int = 0, end: int = -1) -> None:
-        fig, ax = plt.subplots()
-        if end == -1:
-            end = len(self.iterations)
-        frames = range(start, end, skip_frames)
-        frames_cast = cast(Iterable[Artist], frames)
-        self.progressbar = tqdm(
-            total=math.ceil((end - start) / skip_frames) + 1)
-        ani = FuncAnimation(fig, updater, frames=frames_cast)
-        if not destination_path.parent.exists():
-            os.makedirs(destination_path.parent)
-        ani.save(destination_path, fps=10)
+    def save_frame_image(self, frame: int, output_dir: pathlib.Path) -> None:
+        """
+        Saves a single frame image.
+        """
+        fig = self.update_particles_for_frame(frame)
+        frame_path = output_dir / f"frame_{frame:04d}.png"
+        fig.savefig(frame_path, dpi=150)
+        plt.close(fig)
 
     def animate_particles(self, destination_path: pathlib.Path,
                           skip_frames: int = 50, start: int = 0,
                           end: int = -1) -> None:
+        """
+        Generate animation from particle frames using parallel image generation.
+        """
         assert self.fully_loaded
-        # Find lim
+
+        # Determine plot limits
         self.lim = [float('inf'), float('-inf')]
         for iteration in self.iterations:
             for particle in iteration.particles:
-                self.lim[0] = min(self.lim[0],
-                                  particle.pos[0],
-                                  particle.pos[1])
-                self.lim[1] = max(self.lim[1],
-                                  particle.pos[0],
-                                  particle.pos[1])
-        # self.lim[0] = -100
-        # self.lim[1] = 100
-        print(f"Saving: {destination_path}")
-        self.animate(self.update_particles_for_animate,
-                     destination_path, skip_frames, start, end)
+                self.lim[0] = min(self.lim[0], particle.pos[0], particle.pos[1])
+                self.lim[1] = max(self.lim[1], particle.pos[0], particle.pos[1])
+
+        # Define frame range
+        if end == -1:
+            end = len(self.iterations)
+        frames = list(range(start, end, skip_frames))
+
+        # Temporary directory for storing frames
+        temp_dir = destination_path.parent / "temp_frames"
+        self.generate_frame_images(frames, temp_dir)
+
+        # Create animation from generated frames
+        fig, ax = plt.subplots()
+        img_paths = [temp_dir / f"frame_{frame:04d}.png" for frame in frames]
+
+        def update(frame_idx):
+            img = plt.imread(img_paths[frame_idx])
+            ax.clear()
+            ax.imshow(img)
+            ax.axis('off')
+
+        ani = FuncAnimation(fig, update, frames=len(img_paths))
+        ani.save(destination_path, fps=10)
+
+        # Cleanup temporary frame files
+        for img_path in img_paths:
+            os.remove(img_path)
+        temp_dir.rmdir()
 
     def animate_mass(self, destination_path: pathlib.Path,
                      skip_frames: int = 50, start: int = 0,

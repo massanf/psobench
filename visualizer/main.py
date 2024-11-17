@@ -1,5 +1,4 @@
 import questionary
-from scipy.stats import pearsonr
 import datetime
 import utils
 import matplotlib.pyplot as plt  # type: ignore
@@ -9,6 +8,10 @@ from pso import PSO
 import pathlib
 import matplotlib.animation as animation
 import os
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from multiprocessing import Pool
 from constants import DATA, GRAPHS
 
 
@@ -166,42 +169,55 @@ if graph_type == 'collage':
             if "bar" in types:
                 utils.generate_final_results(pathlib.Path(test) / dim)
 
+def process_attempt(args):
+    attempt, problem = args
+    pso = PSO(DATA / problem / attempt)
+    pso.load_full()
+    eigenvalues_local = [[] for _ in range(1000)]
+    d_local = 0
+    n_local = 0
+    for i in range(len(pso.iterations)):
+        positions = []
+        for particle in pso.iterations[i].particles:
+            x = particle.pos
+            x -= np.mean(x)
+            x /= np.std(x)
+            positions.append(x)
+        cov_matrix = np.cov(positions)
+        for value in np.linalg.eigvals(cov_matrix):
+            if np.linalg.norm(value) > 0.00001:
+                eigenvalues_local[i].append(np.real(value))
+        d_local = len(positions[0])
+        n_local = len(positions)
+    return eigenvalues_local, d_local, n_local
+
+
 if graph_type == 'rmt':
     for problem in get_paths("problems"):
-        eigenvalues = [[] for _ in range (1000)]
-        d = 0
-        n = 0
         attempts = sorted([folder.name for folder in (DATA / problem).iterdir() if folder.is_dir()])
-        for attempt in attempts:
-            print(attempt)
-            pso = PSO(DATA / problem / attempt)
-            pso.load_full()
-            diffs = []
+        args_list = [(attempt, problem) for attempt in attempts]
 
-            for i in range(0, len(pso.iterations)):
-                positions = []
-                for particle in pso.iterations[i].particles:
-                    x = particle.pos
-                    x -= np.mean(x)
-                    x /= np.std(x)
-                    positions.append(x)
+        with Pool() as pool:
+            results = pool.map(process_attempt, args_list)
 
-                cov_matrix = np.cov(positions)
+        # Initialize variables to collect results
+        eigenvalues = [[] for _ in range(1000)]
+        d = n = 0
 
-                # eigenvalues.append([np.real(val) for val in np.linalg.eigvals(cov_matrix)])
-                for value in np.linalg.eigvals(cov_matrix):
-                    if np.linalg.norm(value) > 0.00001:
-                        eigenvalues[i].append(np.real(value))
-
-                d = len(positions[0])
-                n = len(positions)
+        # Combine eigenvalues from all attempts
+        for eigenvalues_local, d_local, n_local in results:
+            for i in range(len(eigenvalues_local)):
+                eigenvalues[i].extend(eigenvalues_local[i])
+            d = d_local  # Assuming d and n are the same across attempts
+            n = n_local
 
         # Prepare for animation
         fig, ax = plt.subplots()
         q = d / n  # Parameter for Marchenko-Pastur distribution
-        x = np.linspace(0, max([max(ev) if ev else 0 for ev in eigenvalues]) * 1.1, 500)
+        max_ev = max([max(ev) if ev else 0 for ev in eigenvalues]) * 1.1
+        x = np.linspace(0, max_ev, 500)
         theoretical_pdf = marchenko_pastur_pdf(x, q) * 5
-        
+
         def animate(i):
             ax.clear()
             if eigenvalues[i]:
@@ -211,21 +227,10 @@ if graph_type == 'rmt':
                 ax.legend()
             else:
                 ax.text(0.5, 0.5, f"No data at iteration {i+1}", ha='center', va='center')
-        
+
         ani = animation.FuncAnimation(fig, animate, frames=1000, interval=100)
         ani.save('eigenvalue_animation.gif', writer='pillow')
         plt.close()
-        # plt.hist(eigenvalues[999], bins=50, density=True, label="Empirical Spectrum")
-        # # plt.xlim(3000, 35000)
-        # 
-        # q = d / n
-        # x = np.linspace(0, 20, 500)
-        # theoretical_pdf = marchenko_pastur_pdf(x, q) * 5 
-        # plt.plot(x, theoretical_pdf, label="Marchenko-Pastur")
-
-        # plt.legend()
-        # plt.show()
-
 
 # final_results
 # progress comparison

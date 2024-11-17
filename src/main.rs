@@ -68,8 +68,8 @@ fn single(
   let particle_count = 50;
 
   for dim in dims {
-    let problem = problems::rastrigin_100(dim);
-    // let problem = problems::cec17(1, dim);
+    // let problem = problems::rastrigin_100(dim);
+    let problem = problems::cec17(1, dim);
     // utils::check_problem::<MgsaParticle, Mgsa<MgsaParticle>>(
     //   "test",
     //   "mgsa_test",

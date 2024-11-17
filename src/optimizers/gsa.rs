@@ -240,6 +240,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
           Err(val) => val,
         };
         self.influences[i] = (particle_count - loc) <= k;
+        // self.influences[i] = true;
       }
 
       // Calculate vels.
