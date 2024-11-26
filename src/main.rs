@@ -35,7 +35,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   let args: Vec<String> = env::args().collect();
 
   let elite = true;
-  let g0 = 1000.;
+  let g0 = 1.;
   let alpha = 5.;
   let gamma = 1.0; // fix
   let theta = 0.0; // fix
@@ -134,37 +134,37 @@ fn cec(
   sigma: f64,
   edge: Edge,
 ) -> Result<(), Box<dyn std::error::Error>> {
-  let iterations = 5000;
+  let iterations = 1000;
   let attempts = 1;
   let particle_count = 50;
 
   for dim in dims {
-    utils::check_cec17::<MgsaParticle, Mgsa<MgsaParticle>>(
-      "test",
-      "mgsa_test",
-      iterations,
-      dim,
-      attempts,
-      vec![
-        ("particle_count", i(particle_count)),
-        ("g0", f(g0)),
-        ("theta", f(theta)),
-        ("gamma", f(gamma)),
-        ("alpha", f(alpha)),
-        ("sigma", f(sigma)),
-        ("tiled", ParamValue::Bool(false)),
-        ("elite", ParamValue::Bool(elite)),
-        ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
-        (
-          "behavior",
-          ParamValue::Behavior(Behavior {
-            edge: edge,
-            vmax: false,
-          }),
-        ),
-      ],
-      false,
-    )?;
+    // utils::check_cec17::<MgsaParticle, Mgsa<MgsaParticle>>(
+    //   "test",
+    //   "mgsa_test",
+    //   iterations,
+    //   dim,
+    //   attempts,
+    //   vec![
+    //     ("particle_count", i(particle_count)),
+    //     ("g0", f(g0)),
+    //     ("theta", f(theta)),
+    //     ("gamma", f(gamma)),
+    //     ("alpha", f(alpha)),
+    //     ("sigma", f(sigma)),
+    //     ("tiled", ParamValue::Bool(false)),
+    //     ("elite", ParamValue::Bool(elite)),
+    //     ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
+    //     (
+    //       "behavior",
+    //       ParamValue::Behavior(Behavior {
+    //         edge: edge,
+    //         vmax: false,
+    //       }),
+    //     ),
+    //   ],
+    //   false,
+    // )?;
     utils::check_cec17::<GsaParticle, Gsa<GsaParticle>>(
       "test",
       "gsa_test",

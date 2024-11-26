@@ -1,4 +1,5 @@
 import pathlib
+from matplotlib.axes import Axes
 from matplotlib.animation import FuncAnimation  # type: ignore
 from scipy.spatial import distance_matrix  # type: ignore
 import matplotlib.pyplot as plt  # type: ignore
@@ -177,7 +178,7 @@ class PSO:
     def has_mass(self) -> bool:
         return hasattr(self.iterations[0].particles[0], "mass")
 
-    def update_particles_for_frame(self, frame: int) -> plt.Figure:
+    def update_particles_for_frame(self, frame: int) -> Any:
         """
         Renders a single frame of particles as a plot and returns the figure.
         """
@@ -201,8 +202,8 @@ class PSO:
                 ax.scatter(particle.pos[0], particle.pos[1], c='c', s=2)
 
         ax.grid()
-        ax.set_xlim(self.lim)
-        ax.set_ylim(self.lim)
+        ax.set_xlim(*self.lim)
+        ax.set_ylim(*self.lim)
         ax.set_title(f"Iteration: {frame}" +
                      f" Best: {self.iterations[frame].global_best_fitness:.3e}")
         ax.set_aspect('equal', adjustable='box')
@@ -266,7 +267,7 @@ class PSO:
         fig, ax = plt.subplots()
         img_paths = [temp_dir / f"frame_{frame:04d}.png" for frame in frames]
 
-        def update(frame_idx):
+        def update(frame_idx) -> Any:
             img = plt.imread(img_paths[frame_idx])
             ax.clear()
             ax.imshow(img)
@@ -280,26 +281,26 @@ class PSO:
             os.remove(img_path)
         temp_dir.rmdir()
 
-    def animate_mass(self, destination_path: pathlib.Path,
-                     skip_frames: int = 50, start: int = 0,
-                     end: int = -1) -> None:
-        assert self.fully_loaded
-        mass = []
-        for iteration in self.iterations:
-            mass_ = []
-            for particle in iteration.particles:
-                mass_.append(particle.mass)
-            mass.append(mass_)
-        num_bins = 40
-        flat_mass = np.array(mass).flatten()
-        self.bins = np.linspace(min(flat_mass), max(flat_mass), num_bins + 1)
-        max_y = 0
-        for mass_ in mass:
-            counts, _ = np.histogram(mass_, self.bins)
-            max_y = max(max_y, counts.max())
-        self.max_y = max_y
-        self.animate(self.update_mass_for_animate, destination_path,
-                     skip_frames, start, end)
+    # def animate_mass(self, destination_path: pathlib.Path,
+    #                  skip_frames: int = 50, start: int = 0,
+    #                  end: int = -1) -> None:
+    #     assert self.fully_loaded
+    #     mass = []
+    #     for iteration in self.iterations:
+    #         mass_ = []
+    #         for particle in iteration.particles:
+    #             mass_.append(particle.mass)
+    #         mass.append(mass_)
+    #     num_bins = 40
+    #     flat_mass = np.array(mass).flatten()
+    #     self.bins = np.linspace(min(flat_mass), max(flat_mass), num_bins + 1)
+    #     max_y = 0
+    #     for mass_ in mass:
+    #         counts, _ = np.histogram(mass_, self.bins)
+    #         max_y = max(max_y, counts.max())
+    #     self.max_y = max_y
+    #     self.animate(self.update_mass_for_animate, destination_path,
+    #                  skip_frames, start, end)
 
     def plot_global_best_fitness_progress(self,
                                           out_directory: pathlib.Path) -> None:
@@ -314,6 +315,19 @@ class PSO:
         plt.savefig(out_directory / "fitness_over_time.png")
         plt.close()
 
+    def scatter_progress(self, ax: Axes, label: str):
+        self.load_full()
+        x = []
+        y = []
+        for i, iteration in enumerate(self.iterations):
+            for particle in iteration.particles:
+                x.append(i)
+                y.append(particle.fitness)
+
+        ax.scatter(x, y, s=0.01, label=label)
+        ax.set_yscale("log")
+        return ax
+
     def overview(self, animate: bool, out_directory: pathlib.Path) -> None:
         assert self.fully_loaded
         if not out_directory.exists():
@@ -322,7 +336,7 @@ class PSO:
 
         plt.cla()
         plt.rcdefaults()
-        fig, ax = plt.subplots()
+        _fig, ax = plt.subplots()
         ax = utils.plot_and_fill(ax, self.fitness())
         plt.gca().autoscale(axis='y', tight=False)
         print(f"Saving: {out_directory / 'fitness_over_time.png'}")
@@ -331,7 +345,7 @@ class PSO:
 
         plt.cla()
         plt.rcdefaults()
-        fig, ax = plt.subplots()
+        _fig, ax = plt.subplots()
         ax = utils.plot_and_fill(ax, self.speed())
         print(f"Saving: {out_directory / 'speed_over_time.png'}")
         plt.savefig(out_directory / "speed_over_time.png")
@@ -348,7 +362,7 @@ class PSO:
         if self.has_mass():
             plt.cla()
             plt.rcdefaults()
-            fig, ax = plt.subplots()
+            _fig, ax = plt.subplots()
             ax = utils.plot_and_fill(ax, self.mass(), False)
             print(f"Saving: {out_directory / 'mass_over_time.png'}")
             plt.savefig(out_directory / "mass_over_time.png")
