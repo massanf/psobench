@@ -8,6 +8,7 @@ use nalgebra::DVector;
 use problems::Problem;
 extern crate chrono;
 use rand::distributions::{Distribution, Uniform};
+use rand_distr::Normal;
 use rayon::prelude::*;
 use std::{collections::HashMap, fs, io, path::PathBuf};
 
@@ -19,11 +20,26 @@ pub fn uniform_distribution(low: &DVector<f64>, high: &DVector<f64>) -> DVector<
   )
 }
 
+pub fn gaussian_distribution_from_bounds(low: &DVector<f64>, high: &DVector<f64>) -> DVector<f64> {
+    let mut rng = rand::thread_rng();
+    let mean = (low + high) * 0.5; // Mean is the midpoint
+    let stddev = (high - low) * 0.25; // Stddev is a quarter of the range
+
+    DVector::from_iterator(
+        mean.len(),
+        (0..mean.len()).map(|i| {
+            let normal = Normal::new(mean[i], stddev[i]).unwrap();
+            normal.sample(&mut rng)
+        }),
+    )
+}
+
 // TODO: There must be a better place to put this.
 pub fn random_init_pos(problem: &Problem) -> DVector<f64> {
   let b_lo: DVector<f64> = DVector::from_element(problem.dim(), problem.domain().0);
   let b_up: DVector<f64> = DVector::from_element(problem.dim(), problem.domain().1);
   uniform_distribution(&b_lo, &b_up)
+  // gaussian_distribution_from_bounds(&b_lo, &b_up)
 }
 
 // TODO: There must be a better place to put this.

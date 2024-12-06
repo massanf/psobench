@@ -205,7 +205,10 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
 
   fn run(&mut self, iterations: usize) {
     for iter in 0..iterations {
+      // if iter < 500 {
       self.g = self.g0 * (-self.alpha * iter as f64 / iterations as f64).exp();
+      //   self.g = self.g0 * (-self.alpha * 0.5).exp();
+      // }
 
       let mut fitness = Vec::new();
       for idx in 0..self.particles().len() {
@@ -232,6 +235,8 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
       let particle_count = self.particles().len();
       let mut k = (-(particle_count as f64) / (iterations as f64) * iter as f64 + particle_count as f64) as usize;
       k = std::cmp::max(k, 1);
+      // k = std::cmp::min(k, 1);
+      // k = std::cmp::max(k, (particle_count / 2) as usize);
       k = std::cmp::min(k, particle_count);
 
       for (i, m_i) in m.iter().enumerate().take(particle_count) {

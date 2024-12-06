@@ -210,6 +210,30 @@ class PSO:
 
         return fig
 
+    def update_particles_for_histogram_frame(self, frame: int) -> Any:
+        """
+        Renders a single frame of particles as a plot and returns the figure.
+        """
+        fig, ax = plt.subplots()
+        assert self.fully_loaded
+        iteration = self.iterations[frame]
+
+        assert self.has_mass()
+
+        masses = [particle.mass for particle in iteration.particles]
+
+        ax.hist(masses, bins=20, alpha=0.7)
+
+        # ax.grid()
+        ax.set_title(f"Iteration: {frame}" +
+                     f" Best: {self.iterations[frame].global_best_fitness:.3e}")
+        ax.set_xlim(0.0, 0.05)
+        ax.set_ylim(0.0, 50)
+        # ax.set_aspect('equal', adjustable='box')
+
+        return fig
+
+
     def generate_frame_images(self, frames: List[int], output_dir: pathlib.Path) -> None:
         """
         Generate images for the specified frames in parallel.
@@ -229,6 +253,71 @@ class PSO:
                     future.result()
                 except Exception as e:
                     print(f"Error generating frame {frame}: {e}")
+
+    def generate_histogram_frame_images(self, frames: List[int], output_dir: pathlib.Path) -> None:
+        """
+        Generate images for the specified frames in parallel.
+        """
+        if not output_dir.exists():
+            output_dir.mkdir(parents=True)
+
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            futures = {
+                executor.submit(self.save_histogram_frame_image, frame, output_dir): frame
+                for frame in frames
+            }
+
+            for future in tqdm(concurrent.futures.as_completed(futures), total=len(futures)):
+                frame = futures[future]
+                try:
+                    future.result()
+                except Exception as e:
+                    print(f"Error generating frame {frame}: {e}")
+
+
+    def animate_fitness_histogram(self, destination_path: pathlib.Path,
+                          skip_frames: int = 50, start: int = 0,
+                          end: int = -1) -> None:
+        """
+        Generate animation from particle frames using parallel image generation.
+        """
+        assert self.fully_loaded
+
+        # Define frame range
+        if end == -1:
+            end = len(self.iterations)
+        frames = list(range(start, end, skip_frames))
+
+        # Temporary directory for storing frames
+        temp_dir = destination_path.parent / "temp_histogram_frames"
+        self.generate_histogram_frame_images(frames, temp_dir)
+
+        # Create animation from generated frames
+        fig, ax = plt.subplots()
+        img_paths = [temp_dir / f"frame_{frame:04d}.png" for frame in frames]
+
+        def update(frame_idx) -> Any:
+            img = plt.imread(img_paths[frame_idx])
+            ax.clear()
+            ax.imshow(img)
+            ax.axis('off')
+
+        ani = FuncAnimation(fig, update, frames=len(img_paths))
+        ani.save(destination_path, fps=10)
+
+        # Cleanup temporary frame files
+        for img_path in img_paths:
+            os.remove(img_path)
+        temp_dir.rmdir()
+
+    def save_histogram_frame_image(self, frame: int, output_dir: pathlib.Path) -> None:
+        """
+        Saves a single frame image.
+        """
+        fig = self.update_particles_for_histogram_frame(frame)
+        frame_path = output_dir / f"frame_{frame:04d}.png"
+        fig.savefig(frame_path, dpi=150)
+        plt.close(fig)
 
     def save_frame_image(self, frame: int, output_dir: pathlib.Path) -> None:
         """

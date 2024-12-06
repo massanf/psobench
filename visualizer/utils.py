@@ -1,4 +1,5 @@
 from typing import List, Dict
+import questionary
 import pathlib
 from pso import PSO
 import matplotlib.pyplot as plt  # type: ignore
@@ -145,3 +146,60 @@ def shorter_names(names: List[str]) -> List[str]:
                     ans += word[i]
         result.append(ans)
     return result
+
+def get_paths(level: str):
+    results = []
+    test_options = [folder.name for folder in DATA.iterdir()
+                    if folder.is_dir()]
+    tests = questionary.checkbox(
+        "Select tests:",
+        choices=test_options
+    ).ask()
+
+    for test in tests:
+        if level == "tests":
+            results.append(test)
+            continue
+
+        dim_options = [str(x) for x in sorted([int(folder.name) for folder in (DATA / test).iterdir()
+                                               if folder.is_dir()])]
+        dims = questionary.checkbox(
+            f"Select dimensions ({test}):", choices=dim_options).ask()
+
+        for dim in dims:
+            if level == "dims":
+                results.append(pathlib.Path(test) / dim)
+                continue
+
+            optimizer_options = sorted([folder.name for folder in (DATA / test / dim).iterdir()
+                                        if folder.is_dir()])
+            optimizers = questionary.checkbox(
+                f"Select problems ({pathlib.Path(test) / dim}):", choices=optimizer_options).ask()
+
+            for optimizer in optimizers:
+                if level == "optimizers":
+                    results.append(pathlib.Path(test) / dim / optimizer)
+                    continue
+
+                problem_options = sorted([folder.name for folder in (DATA / test / dim / optimizer).iterdir()
+                                          if folder.is_dir()])
+                problems = questionary.checkbox(
+                    f"Select problems ({pathlib.Path(test) / dim / optimizer}):", choices=problem_options).ask()
+
+                for problem in problems:
+                    if level == "problems":
+                        results.append(pathlib.Path(test) /
+                                       dim / optimizer / problem)
+                        continue
+
+                    attempt_options = sorted([folder.name for folder in (DATA / test / dim / optimizer / problem).iterdir()
+                                              if folder.is_dir()])
+                    attempts = questionary.checkbox(
+                        f"Select attempts ({pathlib.Path(test) / dim / optimizer / problem}):", choices=attempt_options).ask()
+
+                    for attempt in attempts:
+                        if level == "attempts":
+                            results.append(
+                                pathlib.Path(test) / dim / optimizer / problem / attempt)
+    return results
+
