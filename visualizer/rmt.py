@@ -10,6 +10,10 @@ def wigner_dyson(s):
     """Wigner-Dyson distribution for GOE."""
     return (np.pi / 2) * s * np.exp(-np.pi * s**2 / 4)
 
+def poisson(s):
+    """Poisson distribution for nearest-neighbor spacings."""
+    return np.exp(-s)
+
 def marchenko_pastur_pdf(x, q, sigma=1.0):
     lambda_min = sigma**2 * (1 - np.sqrt(q))**2
     lambda_max = sigma**2 * (1 + np.sqrt(q))**2
@@ -25,80 +29,76 @@ def marchenko_pastur_pdf(x, q, sigma=1.0):
     )
     return pdf
 
+def compute_cov_matrix(data, cov_type):
+    """Standardizes data and computes the covariance matrix."""
+    if cov_type == "dimension":
+        # Standardize columns (features)
+        data -= np.mean(data, axis=0, keepdims=True)  # Center each feature
+        data /= (np.std(data, axis=0, keepdims=True) + 1e-12)  # Scale each feature
+        n_local = data.shape[0]
+        cov_matrix = np.dot(data.T, data) / n_local
+
+    elif cov_type == "particle":
+        # Standardize rows (particles)
+        data -= np.mean(data, axis=1, keepdims=True)  # Center each particle
+        data /= (np.std(data, axis=1, keepdims=True) + 1e-12)  # Scale each particle
+
+        d_local = data.shape[1]
+        cov_matrix = np.dot(data, data.T) / d_local
+
+    else:
+        raise ValueError(f"Unknown covariance type: {cov_type}")
+
+    return cov_matrix
+
+def process_eigenvalues(cov_matrix):
+    """Computes eigenvalues and spacings."""
+    eigenvalues, _ = np.linalg.eig(cov_matrix)
+    eigenvalues = np.real(eigenvalues)
+    eigenvalues = eigenvalues[np.abs(eigenvalues) > 1e-12]
+
+    sorted_eigenvalues = np.sort(eigenvalues)
+    spacings = np.diff(sorted_eigenvalues)
+
+    return eigenvalues.tolist(), spacings.tolist()
+
 def process_attempt(args):
-    attempt, problem, analysis_type = args
+    attempt, problem, analysis_type, cov_type = args
     pso = PSO(DATA / problem / attempt)
     pso.load_full()
+
     eigenvalues_local = []
     spacings_local = []
     means = []
     stds = []
-    d_local = 0
-    n_local = 0
-
     all_positions = []
 
     for i in range(len(pso.iterations)):
-        positions = []
-        fitness = []
-
-        for particle in pso.iterations[i].particles:
-            positions.append(particle.pos)
-            fitness.append(particle.fitness)
-
-        positions = np.array(positions)
-        fitness = np.array(fitness)
+        positions = np.array([particle.pos for particle in pso.iterations[i].particles])
 
         if analysis_type == "position":
             stds.append(float(np.mean(np.std(positions, axis=0))))
+            cov_matrix = compute_cov_matrix(positions, cov_type)
 
-            positions -= np.mean(positions, axis=0, keepdims=True)
-            positions /= np.std(positions, axis=0, keepdims = True)
-
-            n_local = positions.shape[0]
-            cov_matrix = np.dot(positions, positions.T) / n_local
-
-            d_local = len(positions[0])
-            n_local = len(positions)
-            
         elif analysis_type == "velocity":
             all_positions.append(positions)
             if len(all_positions) > 1:
                 velocities = all_positions[-1] - all_positions[-2]
-                velocities -= np.mean(velocities, axis=0, keepdims=True)
-                velocities /= np.std(velocities, axis=0, keepdims=True)
-                means.append(float(np.mean(np.abs(np.mean(velocities, axis=0)))))
-                stds.append(float(np.mean(np.std(velocities, axis=0))))
-
-                n_local = velocities.shape[0]
-                cov_matrix = np.dot(velocities, velocities.T) / n_local
-
-                d_local = len(velocities[0])
-                n_local = len(velocities)
-
+                cov_matrix = compute_cov_matrix(velocities, cov_type)
             else:
                 continue
-            else:
-            raise ValueError()
-        
-        eigenvalues, _ = np.linalg.eig(cov_matrix)
-        eigenvalues = np.real(eigenvalues)
-        eigenvalues = eigenvalues[np.abs(eigenvalues) > 1e-12]
+        else:
+            raise ValueError(f"Unknown analysis type: {analysis_type}")
 
-        eigenvalues_local.append(eigenvalues.tolist())
+        eigenvalues, spacings = process_eigenvalues(cov_matrix)
+        eigenvalues_local.append(eigenvalues)
+        spacings_local.append(spacings)
 
-        # Compute eigenvalue spacings
-        sorted_eigenvalues = np.sort(eigenvalues)
-        spacings = np.diff(sorted_eigenvalues)
-        spacings_local.append(spacings.tolist())
-
-    return eigenvalues_local, spacings_local, means, stds, d_local, n_local
+    return eigenvalues_local, spacings_local, positions.shape[1], positions.shape[0]
 
 def plot_percentage_of_large_eigenvalues(eigenvalues, lambda_plus, problem, analysis_content):
-    # Initialize the list to store percentages
     percentages_of_large_eigenvalues = []
 
-    # Calculate percentage of eigenvalues > lambda_plus for each iteration
     for iteration_eigenvalues in eigenvalues:
         total = len(iteration_eigenvalues)
         count = sum(x > lambda_plus for x in iteration_eigenvalues)
@@ -106,7 +106,6 @@ def plot_percentage_of_large_eigenvalues(eigenvalues, lambda_plus, problem, anal
             percentage = (count / total) * 100
             percentages_of_large_eigenvalues.append(percentage)
 
-    # Plot the results
     plt.plot(range(len(percentages_of_large_eigenvalues)),
              percentages_of_large_eigenvalues, linestyle='-', label='Percentage > λ+')
     plt.axhline(y=0, color='gray', linestyle='--',
@@ -118,6 +117,21 @@ def plot_percentage_of_large_eigenvalues(eigenvalues, lambda_plus, problem, anal
     plt.legend()
     plt.grid()
     plt.savefig(GRAPHS / problem / f'esa_{analysis_content}_cnt.png')
+    plt.close()
+
+def plot_average_of_largest_eigenvalues(max_eigenvalues, lambda_plus, problem, analysis_content):
+    average_of_largest_eigenvalues = np.average(max_eigenvalues, axis=1) 
+    plt.plot(range(len(average_of_largest_eigenvalues)),
+             average_of_largest_eigenvalues, linestyle='-', label='Percentage > λ+')
+    plt.axhline(y=lambda_plus, color='gray', linestyle='--',
+                linewidth=0.5, label='λ+ Threshold')
+    plt.title("Average of Largest Eigenvalues")
+    plt.xlabel("Iteration")
+    plt.ylabel("Percentage (%)")
+    plt.ylim(0, 15)
+    plt.legend()
+    plt.grid()
+    plt.savefig(GRAPHS / problem / f'esa_{analysis_content}_max.png')
     plt.close()
 
 def plot_all_max_eigenvalue_evolutions(max_eigenvalues, problem, analysis_content):
@@ -177,29 +191,30 @@ def animate_esd(q, eigenvalues, frames, problem, analysis_content):
 
 def animate_esa(spacings, frames, problem, analysis_type):
     fig, ax = plt.subplots()
-    max_evs = max([max(evs) if evs else 0 for evs in spacings]) * 1.1
+    standardized_spacings = spacings
+    for i in range(len(standardized_spacings)):
+        standardized_spacings[i] /= np.average(standardized_spacings[i])
+    max_evs = max([max(evs) for evs in standardized_spacings]) * 1.1
     x = np.linspace(0, max_evs, 500)
-    theoretical_pdf = wigner_dyson(x)
+    wigner_dyson_pdf = wigner_dyson(x)
+    poisson_pdf = poisson(x)
     progress_bar = tqdm(total=len(frames), desc="Graphing ESA")
 
     def animate_spacing(i) -> Any:
         ax.clear()
         progress_bar.update(1)
-        if spacings[i]:
-            ax.hist(spacings[i], bins=50, density=True,
-                    alpha=0.7, label="Empirical Spacing Density")
-            ax.plot(x, theoretical_pdf, 'r-', label="Wigner-Dyson")
-            ax.set_ylim(0, 2.0)
-            ax.set_title(f"Iteration {i+1}")
-            ax.set_xlabel("Spacing")
-            ax.set_ylabel("Density")
-            ax.legend()
-        else:
-            ax.text(
-                0.5, 0.5, f"No data at iteration {i}", ha='center', va='center')
-
+        ax.hist(standardized_spacings[i], bins=50, density=True,
+                alpha=0.7, label="Empirical Spacing Density")
+        ax.plot(x, wigner_dyson_pdf, 'r-', label="Wigner-Dyson")
+        ax.plot(x, poisson_pdf, 'r-', label="Poisson")
+        ax.set_ylim(0, 1.0)
+        ax.set_title(f"Iteration {i}")
+        ax.set_xlabel("Spacing")
+        ax.set_ylabel("Density")
+        ax.legend()
+        
     ani_spacing = animation.FuncAnimation(
         fig, animate_spacing, frames=frames, interval=100)
     ani_spacing.save(GRAPHS / problem /
-                     'esa_{analysis_type}.gif', writer='pillow')
+                     f'esa_{analysis_type}.gif', writer='pillow')
     plt.close()

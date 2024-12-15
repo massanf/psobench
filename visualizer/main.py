@@ -30,8 +30,6 @@ graph_type = questionary.select(
         'fitness histogram animation'
     ]).ask()
 
-
-
 def get_singles_filepath(name: str, extension: str):
     if not (GRAPHS / "custom_singles").exists():
         os.makedirs(GRAPHS / "custom_singles")
@@ -125,16 +123,24 @@ if graph_type == 'rmt':
     analysis_contents = questionary.checkbox(
         "Select analysis content:",
         choices=[
-            '_position',
+            'position',
             'velocity',
             '_fitness_weighted',
         ]).ask()
     analysis_type = questionary.select(
         "Select analysis type:",
         choices=[
+            'eigenvalues',
             'ESD',
             'ESA',
         ]).ask()
+    covariance_type = questionary.select(
+        "Select covariance type:",
+        choices=[
+            'dimension',
+            'particle'
+            ]
+        ).ask()
 
     for problem in utils.get_paths("problems"):
         for analysis_content in analysis_contents:
@@ -144,7 +150,8 @@ if graph_type == 'rmt':
             # Do RMT Calculations.
             attempts = sorted([folder.name for folder in (
                 DATA / problem).iterdir() if folder.is_dir()], key=lambda x: int(x))
-            args_list = [(attempt, problem, analysis_content)
+
+            args_list = [(attempt, problem, analysis_content, covariance_type)
                          for attempt in attempts]
 
             with Pool() as pool:
@@ -164,13 +171,11 @@ if graph_type == 'rmt':
             d = n = 0
                         
             # Combine results from all attempts
-            for eigenvalues_local, spacings_local, means_local, stds_local, d_local, n_local in results:
+            for eigenvalues_local, spacings_local, d_local, n_local in results:
                 for i in range(0, len(eigenvalues_local)):
                     eigenvalues[i].extend(eigenvalues_local[i])
-                    max_eigenvalues[i].append(np.max(eigenvalues_local[i]))
-                    spacings[i].append(spacings_local[i])
-                    means[i].append(means_local[i])
-                    stds[i].append(stds_local[i])
+                    max_eigenvalues[i].append(max(eigenvalues_local[i]))
+                    spacings[i].extend(spacings_local[i])
                 d = d_local
                 n = n_local
             q = d / n
@@ -178,29 +183,26 @@ if graph_type == 'rmt':
             average_of_largest_eigenvalues = np.average(max_eigenvalues, axis=1) 
             
             # Plot.
-            rmt.plot_percentage_of_large_eigenvalues(eigenvalues, lambda_plus, problem, analysis_content)
-
-            rmt.plot_all_max_eigenvalue_evolutions(max_eigenvalues, problem, analysis_content) 
-
-            if analysis_content == "velocity":
-                rmt.plot_mean_average(means, problem, analysis_content)
-
-            rmt.plot_std_average(stds, problem, analysis_content)
+            if 'eigenvalues' in analysis_type:
+                rmt.plot_percentage_of_large_eigenvalues(eigenvalues, lambda_plus, problem, analysis_content)
+                rmt.plot_average_of_largest_eigenvalues(max_eigenvalues, lambda_plus, problem, analysis_content)
+                rmt.plot_all_max_eigenvalue_evolutions(max_eigenvalues, problem, analysis_content) 
 
             # Animations.
-            start= int(questionary.text(
-                "Start: ", default="0").ask())
-            skip = int(questionary.text(
-                "Skip count: ", default="1").ask())
-            end = int(questionary.text(
-                "End: ", default=str(iterations)).ask())
-            frames = list(range(start, end, skip))
+            if analysis_type in ['ESD', 'ESA']:
+                start= int(questionary.text(
+                    "Start: ", default="0").ask())
+                skip = int(questionary.text(
+                    "Skip count: ", default="1").ask())
+                end = int(questionary.text(
+                    "End: ", default=str(iterations)).ask())
+                frames = list(range(start, end, skip))
 
-            if 'ESD' in analysis_type:
-                rmt.animate_esd(q, eigenvalues, frames, problem, analysis_content)
-                
-            if 'ESA' in analysis_type:
-                rmt.animate_esa(spacings, frames, problem, analysis_type)
+                if 'ESD' in analysis_type:
+                    rmt.animate_esd(q, eigenvalues, frames, problem, analysis_content)
+                    
+                if 'ESA' in analysis_type:
+                    rmt.animate_esa(spacings, frames, problem, analysis_content)
 
 # final_results
 # progress comparison

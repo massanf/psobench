@@ -13,6 +13,7 @@ use optimizers::{
   //gaussian::Gaussian,
   gsa::Gsa,
   mgsa::Mgsa,
+  rgsa::Rgsa,
   pso::Pso,
 };
 #[allow(unused_imports)]
@@ -20,6 +21,7 @@ use particles::{
   // gaussian::GaussianParticle,
   gsa::GsaParticle,
   mgsa::MgsaParticle,
+  rgsa::RgsaParticle,
   pso::PsoParticle,
   traits::{Behavior, Edge},
 };
@@ -41,7 +43,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   let theta = 0.0; // fix
   let sigma = 10.;
   let edge = Edge::Pass;
-  let dims = vec![30];
+  let dims = vec![10];
 
   match args[1].as_str() {
     "single" => single(dims, g0, alpha, gamma, theta, elite, sigma, edge)?,
@@ -68,8 +70,8 @@ fn single(
   let particle_count = 50;
 
   for dim in dims {
-    // let problem = problems::rastrigin_100(dim);
-    let problem = problems::cec17(15, dim);
+    // let problem = problems::sphere_100(dim);
+    let problem = problems::cec17(1, dim);
     // utils::check_problem::<MgsaParticle, Mgsa<MgsaParticle>>(
     //   "test",
     //   "mgsa_test",
@@ -97,9 +99,32 @@ fn single(
     //   problem.clone(),
     //   true,
     // )?;
-    utils::check_problem::<GsaParticle, Gsa<GsaParticle>>(
+    //utils::check_problem::<GsaParticle, Gsa<GsaParticle>>(
+    //  "test",
+    //  "ogsa_test",
+    //  iterations,
+    //  dim,
+    //  attempts,
+    //  vec![
+    //    ("particle_count", i(particle_count)),
+    //    ("alpha", f(5.)),
+    //    ("g0", f(1000.)),
+    //    ("tiled", ParamValue::Bool(false)),
+    //    ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
+    //    (
+    //      "behavior",
+    //      ParamValue::Behavior(Behavior {
+    //        edge: Edge::Pass,
+    //        vmax: false,
+    //      }),
+    //    ),
+    //  ],
+    //  problem.clone(),
+    //  true,
+    //)?;
+    utils::check_problem::<RgsaParticle, Rgsa<RgsaParticle>>(
       "test",
-      "ogsa_test",
+      "rgsa_test",
       iterations,
       dim,
       attempts,
@@ -120,6 +145,7 @@ fn single(
       problem.clone(),
       true,
     )?;
+
     // utils::check_problem::<PsoParticle, Pso<PsoParticle>>(
     //   "test",
     //   "pso_test",
@@ -187,39 +213,18 @@ fn cec(
     //   ],
     //   false,
     // )?;
-    // utils::check_cec17::<GsaParticle, Gsa<GsaParticle>>(
-    //   "test",
-    //   "ogsa_test",
-    //   iterations,
-    //   dim,
-    //   attempts,
-    //   vec![
-    //     ("particle_count", i(particle_count)),
-    //     ("alpha", f(5.)),
-    //     ("g0", f(1000.)),
-    //     ("tiled", ParamValue::Bool(false)),
-    //     ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
-    //     (
-    //       "behavior",
-    //       ParamValue::Behavior(Behavior {
-    //         edge: Edge::Pass,
-    //         vmax: false,
-    //       }),
-    //     ),
-    //   ],
-    //   true,
-    // )?;
-    utils::check_cec17::<PsoParticle, Pso<PsoParticle>>(
+    utils::check_cec17::<RgsaParticle, Rgsa<RgsaParticle>>(
       "test",
-      "pso_test",
+      "rgsa_test",
       iterations,
       dim,
       attempts,
       vec![
         ("particle_count", i(particle_count)),
-        ("w", f(0.5)),
-        ("phi_p", f(2.)),
-        ("phi_g", f(2.)),
+        ("alpha", f(10.)),
+        ("g0", f(1000.)),
+        ("tiled", ParamValue::Bool(false)),
+        ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
         (
           "behavior",
           ParamValue::Behavior(Behavior {
@@ -230,6 +235,50 @@ fn cec(
       ],
       true,
     )?;
+    utils::check_cec17::<GsaParticle, Gsa<GsaParticle>>(
+      "test",
+      "ogsa_test",
+      iterations,
+      dim,
+      attempts,
+      vec![
+        ("particle_count", i(particle_count)),
+        ("alpha", f(5.)),
+        ("g0", f(1000.)),
+        ("tiled", ParamValue::Bool(false)),
+        ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
+        (
+          "behavior",
+          ParamValue::Behavior(Behavior {
+            edge: Edge::Pass,
+            vmax: false,
+          }),
+        ),
+      ],
+      true,
+    )?;
+
+    //utils::check_cec17::<PsoParticle, Pso<PsoParticle>>(
+    //  "test",
+    //  "pso_test",
+    //  iterations,
+    //  dim,
+    //  attempts,
+    //  vec![
+    //    ("particle_count", i(particle_count)),
+    //    ("w", f(0.5)),
+    //    ("phi_p", f(2.)),
+    //    ("phi_g", f(2.)),
+    //    (
+    //      "behavior",
+    //      ParamValue::Behavior(Behavior {
+    //        edge: Edge::Pass,
+    //        vmax: false,
+    //      }),
+    //    ),
+    //  ],
+    //  true,
+    //)?;
   }
   Ok(())
 }
