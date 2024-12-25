@@ -1,22 +1,19 @@
-use crate::optimizers::gsa::Normalizer;
 use crate::optimizers::traits::{
   Data, DataExporter, GlobalBestPos, Name, OptimizationProblem, Optimizer, ParamValue, Particles,
 };
 use crate::particles::traits::{Behavior, Mass, Particle, Position, Velocity};
 use crate::problems;
-use rand_distr::{Distribution, Normal};
-use std::f64::consts::PI;
-// use crate::rand::Rng;
 use crate::rand::Rng;
 use crate::utils;
 use nalgebra::DVector;
 use problems::Problem;
-use rayon::prelude::*;
 use serde_json::json;
 use std::collections::HashMap;
 use std::fs;
 use std::mem;
 use std::path::PathBuf;
+
+type VelsAndAdditionalData = (Vec<DVector<f64>>, Vec<Vec<(String, f64)>>);
 
 #[derive(Clone)]
 pub struct Mgsa<T> {
@@ -30,13 +27,8 @@ pub struct Mgsa<T> {
   additional_data: Vec<Vec<Vec<(String, f64)>>>,
   out_directory: PathBuf,
   g0: f64,
-  alpha: f64,
-  theta: f64,
-  gamma: f64,
-  sigma: f64,
   elite: bool,
   save: bool,
-  normalizer: Normalizer,
 }
 
 impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> {
@@ -68,24 +60,6 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
       }
     };
 
-    assert!(parameters.contains_key("alpha"), "Key 'alpha' not found.");
-    let alpha = match parameters["alpha"] {
-      ParamValue::Float(val) => val,
-      _ => {
-        eprintln!("Error: parameter 'alpha' should be of type Param::Float.");
-        std::process::exit(1);
-      }
-    };
-
-    assert!(parameters.contains_key("normalizer"), "Key 'normalizer' not found.");
-    let normalizer = match parameters["normalizer"] {
-      ParamValue::Normalizer(val) => val,
-      _ => {
-        eprintln!("Error: parameter 'normalizer' should be of type Param::Normalizer.");
-        std::process::exit(1);
-      }
-    };
-
     assert!(parameters.contains_key("behavior"), "Key 'behavior' not found.");
     let behavior = match parameters["behavior"] {
       ParamValue::Behavior(val) => val,
@@ -95,38 +69,11 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
       }
     };
 
-    assert!(parameters.contains_key("theta"), "Key 'theta' not found.");
-    let theta = match parameters["theta"] {
-      ParamValue::Float(val) => val,
-      _ => {
-        eprintln!("Error: parameter 'theta' should be of type Param::float.");
-        std::process::exit(1);
-      }
-    };
-
-    assert!(parameters.contains_key("gamma"), "Key 'gamma' not found.");
-    let gamma = match parameters["gamma"] {
-      ParamValue::Float(val) => val,
-      _ => {
-        eprintln!("Error: parameter 'gamma' should be of type Param::float.");
-        std::process::exit(1);
-      }
-    };
-
     assert!(parameters.contains_key("elite"), "Key 'elite' not found.");
     let elite = match parameters["elite"] {
       ParamValue::Bool(val) => val,
       _ => {
         eprintln!("Error: parameter 'elite' should be of type Param::bool.");
-        std::process::exit(1);
-      }
-    };
-
-    assert!(parameters.contains_key("sigma"), "Key 'sigma' not found.");
-    let sigma = match parameters["sigma"] {
-      ParamValue::Float(val) => val,
-      _ => {
-        eprintln!("Error: parameter 'sigma' should be of type Param::f64.");
         std::process::exit(1);
       }
     };
@@ -142,13 +89,8 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
       additional_data: Vec::new(),
       out_directory,
       g0,
-      alpha,
-      theta,
-      gamma,
-      sigma,
       elite,
       save,
-      normalizer,
     };
 
     mgsa.init(number_of_particles, behavior);
@@ -188,8 +130,8 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
     let n = self.particles().len();
 
     let mut initial_spread = None;
-    let mut x_record: Vec<Vec<DVector<f64>>> = Vec::new();
-    let mut f_record: Vec<Vec<f64>> = Vec::new();
+    let mut x_record: Vec<Vec<DVector<f64>>>;
+    let mut f_record: Vec<Vec<f64>>;
 
     for iter in 0..iterations {
       // println!("--{}--", iter);
@@ -217,7 +159,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
       // println!("spread: {}", spread / initial_spread.unwrap());
       let spread_ratio = spread / initial_spread.unwrap();
 
-      let ratio = (-self.alpha * iter as f64 / iterations as f64).exp();
+      // let ratio = (-self.alpha * iter as f64 / iterations as f64).exp();
       // let iteration_ratio = 1. - iter as f64 / iterations as f64;
 
       self.g = self.g0 * (-1. * spread_ratio).exp();
@@ -260,11 +202,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
         &v,
         self.g,
         iter as f64 / iterations as f64,
-        ratio,
-        self.theta,
-        self.gamma,
         self.elite,
-        self.sigma,
       );
 
       // Clear memory.
@@ -314,26 +252,22 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Mgsa<T> 
 fn calculate_vels(
   x: Vec<Vec<DVector<f64>>>,
   f: Vec<Vec<f64>>,
-  v: &Vec<DVector<f64>>,
+  v: &[DVector<f64>],
   large_g: f64,
   progress: f64,
-  spread: f64,
-  _theta: f64,
-  _gamma: f64,
   elite: bool,
-  _sigma: f64,
-) -> (Vec<DVector<f64>>, Vec<Vec<(String, f64)>>) {
+) -> VelsAndAdditionalData {
   let t = x.len();
   let n = x[0].len();
   let d = x[0][0].len();
 
   let additional_data = Vec::new();
   let mut vels = Vec::new();
-  for k in 0..n {
+  for (k, _v) in v.iter().enumerate().take(n) {
     let mut a: DVector<f64> = DVector::from_element(d, 0.);
 
     for l in 0..t {
-      let p = std::cmp::min(std::cmp::max((n as f64 * (1. - progress as f64)) as usize, 1), n);
+      let p = std::cmp::min(std::cmp::max((n as f64 * (1. - progress)) as usize, 1), n);
       let mut sorted_f = f[l].clone();
       sorted_f.sort_by(|a, b| b.partial_cmp(a).unwrap_or(std::cmp::Ordering::Equal));
       let p_largest: Vec<f64> = sorted_f.iter().take(p).copied().collect();
@@ -342,19 +276,7 @@ fn calculate_vels(
         false => vec![true; n],
       };
 
-      let mut f_sum = 0.;
-      let mut count = 0;
-      for idx in 0..f[l].len() {
-        if !influences[idx] {
-          continue;
-        }
-        f_sum += f[l][idx];
-        count += 1;
-      }
-      let f_avg = f_sum / count as f64;
-      // let f_avg = 0.;
-
-      for i in 0..n {
+      for (i, _influences) in influences.iter().enumerate().take(n) {
         if (l == t - 1 && i == k) || !influences[i] {
           continue;
         }
@@ -362,7 +284,7 @@ fn calculate_vels(
 
         // let mut rng = rand::thread_rng();
         // let rnd = rng.gen_range(0.8..1.2);
-        let gravity = f[l][i] / (r.norm() + std::f64::EPSILON) * r.clone();
+        let gravity = f[l][i] / (r.norm() + f64::EPSILON) * r.clone();
         // let repellent= f_avg / (r.norm() + std::f64::EPSILON) * r.clone();
         let mut a_delta = gravity;
 
@@ -586,6 +508,7 @@ fn perturb_vector(v: &DVector<f64>, _progress: f64) -> DVector<f64> {
 //   vels
 // }
 
+#[allow(dead_code)]
 fn mock_gaussian(i: &DVector<f64>, j: &DVector<f64>, spread: f64, sigma: f64) -> f64 {
   if !spread.is_finite() {
     return 1.;

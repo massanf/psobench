@@ -6,6 +6,7 @@ use crate::Normalizer;
 use indicatif::{ProgressBar, ProgressStyle};
 use nalgebra::DVector;
 use problems::Problem;
+use std::sync::Arc;
 extern crate chrono;
 use rand::distributions::{Distribution, Uniform};
 use rand_distr::Normal;
@@ -20,18 +21,19 @@ pub fn uniform_distribution(low: &DVector<f64>, high: &DVector<f64>) -> DVector<
   )
 }
 
+#[allow(dead_code)]
 pub fn gaussian_distribution_from_bounds(low: &DVector<f64>, high: &DVector<f64>) -> DVector<f64> {
-    let mut rng = rand::thread_rng();
-    let mean = (low + high) * 0.5; // Mean is the midpoint
-    let stddev = (high - low) * 0.25; // Stddev is a quarter of the range
+  let mut rng = rand::thread_rng();
+  let mean = (low + high) * 0.5; // Mean is the midpoint
+  let stddev = (high - low) * 0.25; // Stddev is a quarter of the range
 
-    DVector::from_iterator(
-        mean.len(),
-        (0..mean.len()).map(|i| {
-            let normal = Normal::new(mean[i], stddev[i]).unwrap();
-            normal.sample(&mut rng)
-        }),
-    )
+  DVector::from_iterator(
+    mean.len(),
+    (0..mean.len()).map(|i| {
+      let normal = Normal::new(mean[i], stddev[i]).unwrap();
+      normal.sample(&mut rng)
+    }),
+  )
 }
 
 // TODO: There must be a better place to put this.
@@ -106,9 +108,7 @@ pub fn run_attempts<U: Position + Velocity + Clone, T: Optimizer<U> + DataExport
   save_data: bool,
   bar: &indicatif::ProgressBar,
 ) -> Result<(), Box<dyn std::error::Error>> {
-  // for attempt in 0..attempts {
   (0..attempts).into_par_iter().for_each(|attempt| {
-    // let save = save_data && attempt < 1;
     let save = save_data;
     let mut pso: T = T::new(
       name.clone(),
@@ -126,7 +126,6 @@ pub fn run_attempts<U: Position + Velocity + Clone, T: Optimizer<U> + DataExport
     }
     bar.inc(1);
   });
-  // }
   Ok(())
 }
 
@@ -144,7 +143,7 @@ pub fn check_problem<T: Velocity + Clone, U: Optimizer<T>>(
 ) -> Result<(), Box<dyn std::error::Error>> {
   let params = param_hashmap_generator(params_in_vec);
   // Progress Bar.
-  let bar = ProgressBar::new((29 * attempts) as u64);
+  let bar = Arc::new(ProgressBar::new(attempts as u64));
   bar.set_style(
     ProgressStyle::default_bar()
       .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {msg}")
@@ -322,11 +321,12 @@ pub fn original_gsa_mass(input: Vec<f64>) -> Vec<f64> {
   input.iter().map(|&x| x / sum).collect()
 }
 
-pub fn original_gsa_mass_with_record(input: Vec<Vec<f64>>, k: usize) -> Vec<Vec<f64>> {
-  let mut result = Vec::new();
-  result.push(original_gsa_mass(input.last().unwrap().clone()));
+pub fn original_gsa_mass_with_record(input: Vec<Vec<f64>>, _k: usize) -> Vec<Vec<f64>> {
+  // let mut result = Vec::new();
+  // result.push(original_gsa_mass(input.last().unwrap().clone()));
   // println!("{:?}", result);
-  result
+  // result
+  vec![original_gsa_mass(input.last().unwrap().clone())]
 
   // let flattened: Vec<f64> = input.iter().flat_map(|inner| inner.iter().cloned()).collect();
   // let min = flattened.iter().fold(f64::INFINITY, |a, &b| a.min(b));
@@ -356,20 +356,21 @@ pub fn original_gsa_mass_with_record(input: Vec<Vec<f64>>, k: usize) -> Vec<Vec<
   // result
 }
 
-fn retain_k_smallest_in_order(vec: &mut Vec<f64>, k: usize) {
-  let mut smallest_values = vec.iter().cloned().collect::<Vec<f64>>();
+#[allow(dead_code)]
+fn retain_k_smallest_in_order(vecs: &mut [f64], k: usize) {
+  let mut smallest_values = vecs.to_vec();
 
   smallest_values.sort_by(|a, b| a.partial_cmp(b).unwrap());
   let kth_smallest = smallest_values.get(k - 1).cloned().unwrap_or(f64::INFINITY);
 
-  let mut smallest_indices = vec.iter().enumerate().map(|(i, &value)| (i, value)).collect::<Vec<_>>();
+  let mut smallest_indices = vecs.iter().enumerate().map(|(i, &value)| (i, value)).collect::<Vec<_>>();
 
   smallest_indices.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
   let smallest_indices = smallest_indices.into_iter().take(k).map(|(i, _)| i).collect::<Vec<_>>();
 
-  for i in 0..vec.len() {
+  for (i, val) in vecs.iter_mut().enumerate() {
     if !smallest_indices.contains(&i) {
-      vec[i] = kth_smallest;
+      *val = kth_smallest;
     }
   }
 }
@@ -428,7 +429,7 @@ pub fn name_from_normalizer_and_tiled(normalizer: Normalizer, tiled: bool) -> St
   }
 }
 
-pub fn calculate_std(data: &Vec<f64>) -> f64 {
+pub fn calculate_std(data: &[f64]) -> f64 {
   let mean = data.iter().sum::<f64>() / data.len() as f64;
   let variance = data
     .iter()

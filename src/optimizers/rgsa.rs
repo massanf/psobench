@@ -5,18 +5,17 @@ use crate::optimizers::traits::{
 use crate::particles::traits::{Behavior, Mass, Particle, Position, Velocity};
 use crate::problems;
 use rand_distr::{Distribution, Normal};
-use std::f64::consts::PI;
 // use crate::rand::Rng;
-use crate::rand::Rng;
 use crate::utils;
 use nalgebra::DVector;
 use problems::Problem;
-use rayon::prelude::*;
 use serde_json::json;
 use std::collections::HashMap;
 use std::fs;
 use std::mem;
 use std::path::PathBuf;
+
+type VelsAndAdditionalData = (Vec<DVector<f64>>, Vec<Vec<(String, f64)>>);
 
 #[derive(Clone)]
 pub struct Rgsa<T> {
@@ -29,7 +28,7 @@ pub struct Rgsa<T> {
   data: Vec<(f64, f64, Option<Vec<T>>)>,
   additional_data: Vec<Vec<Vec<(String, f64)>>>,
   out_directory: PathBuf,
-  g0: f64,
+  _g0: f64,
   alpha: f64,
   save: bool,
   normalizer: Normalizer,
@@ -101,7 +100,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Rgsa<T> 
       data: Vec::new(),
       additional_data: Vec::new(),
       out_directory,
-      g0,
+      _g0: g0,
       alpha,
       save,
       normalizer,
@@ -176,7 +175,14 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Rgsa<T> 
         fitness.push(self.problem().f(&pos));
       }
 
-      let m = utils::original_gsa_mass(fitness.clone());
+      let m = match self.normalizer {
+        Normalizer::MinMax => utils::original_gsa_mass(fitness),
+        Normalizer::ZScore => utils::z_mass(fitness),
+        Normalizer::Robust => utils::robust_mass(fitness),
+        Normalizer::Rank => utils::rank_mass(fitness),
+        Normalizer::Sigmoid2 => utils::sigmoid2_mass(fitness),
+        Normalizer::Sigmoid4 => utils::sigmoid4_mass(fitness),
+      };
 
       for (mass, particle) in m.iter().zip(self.particles_mut().iter_mut()) {
         particle.set_mass(*mass);
@@ -247,11 +253,11 @@ fn calculate_vels(
   large_g: f64,
   progress: f64,
   _spread: f64,
-) -> (Vec<DVector<f64>>, Vec<Vec<(String, f64)>>) {
+) -> VelsAndAdditionalData {
   let n = x.len();
   let d = x[0].len();
 
-  let elite_count = std::cmp::min(std::cmp::max((n as f64 * (1. - progress as f64)) as usize, 1), n);
+  let elite_count = std::cmp::min(std::cmp::max((n as f64 * (1. - progress)) as usize, 1), n);
   let mut sorted_f = f.clone();
   sorted_f.sort_by(|a, b| b.partial_cmp(a).unwrap_or(std::cmp::Ordering::Equal));
   let elites: Vec<f64> = sorted_f.iter().take(elite_count).copied().collect();

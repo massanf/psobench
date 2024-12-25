@@ -189,7 +189,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
         false => j.pos() - i.pos(),
       };
 
-      let mut a_delta = self.g * j.mass() / (r.norm() + std::f64::EPSILON) * r;
+      let mut a_delta = self.g * j.mass() / (r.norm() + f64::EPSILON) * r;
 
       for e in a_delta.iter_mut() {
         let rand: f64 = rng.gen_range(0.0..1.0);

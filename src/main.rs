@@ -43,7 +43,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   let theta = 0.0; // fix
   let sigma = 10.;
   let edge = Edge::Pass;
-  let dims = vec![10];
+  let dims = vec![30];
 
   match args[1].as_str() {
     "single" => single(dims, g0, alpha, gamma, theta, elite, sigma, edge)?,
@@ -55,6 +55,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn single(
   dims: Vec<usize>,
   _g0: f64,
@@ -66,12 +67,12 @@ fn single(
   _edge: Edge,
 ) -> Result<(), Box<dyn std::error::Error>> {
   let iterations = 1000;
-  let attempts = 100;
+  let attempts = 1000;
   let particle_count = 50;
 
   for dim in dims {
     // let problem = problems::sphere_100(dim);
-    let problem = problems::cec17(1, dim);
+    let problem = problems::cec17(3, dim);
     // utils::check_problem::<MgsaParticle, Mgsa<MgsaParticle>>(
     //   "test",
     //   "mgsa_test",
@@ -99,32 +100,9 @@ fn single(
     //   problem.clone(),
     //   true,
     // )?;
-    //utils::check_problem::<GsaParticle, Gsa<GsaParticle>>(
-    //  "test",
-    //  "ogsa_test",
-    //  iterations,
-    //  dim,
-    //  attempts,
-    //  vec![
-    //    ("particle_count", i(particle_count)),
-    //    ("alpha", f(5.)),
-    //    ("g0", f(1000.)),
-    //    ("tiled", ParamValue::Bool(false)),
-    //    ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
-    //    (
-    //      "behavior",
-    //      ParamValue::Behavior(Behavior {
-    //        edge: Edge::Pass,
-    //        vmax: false,
-    //      }),
-    //    ),
-    //  ],
-    //  problem.clone(),
-    //  true,
-    //)?;
-    utils::check_problem::<RgsaParticle, Rgsa<RgsaParticle>>(
+    utils::check_problem::<GsaParticle, Gsa<GsaParticle>>(
       "test",
-      "rgsa_test",
+      "ogsa_test",
       iterations,
       dim,
       attempts,
@@ -145,7 +123,29 @@ fn single(
       problem.clone(),
       true,
     )?;
-
+    // utils::check_problem::<RgsaParticle, Rgsa<RgsaParticle>>(
+    //   "test",
+    //   "rgsa_test",
+    //   iterations,
+    //   dim,
+    //   attempts,
+    //   vec![
+    //     ("particle_count", i(particle_count)),
+    //     ("alpha", f(5.)),
+    //     ("g0", f(1000.)),
+    //     ("tiled", ParamValue::Bool(false)),
+    //     ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
+    //     (
+    //       "behavior",
+    //       ParamValue::Behavior(Behavior {
+    //         edge: Edge::Pass,
+    //         vmax: false,
+    //       }),
+    //     ),
+    //   ],
+    //   problem.clone(),
+    //   true,
+    // )?;
     // utils::check_problem::<PsoParticle, Pso<PsoParticle>>(
     //   "test",
     //   "pso_test",
@@ -172,6 +172,7 @@ fn single(
   Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn cec(
   dims: Vec<usize>,
   _g0: f64,
@@ -283,6 +284,7 @@ fn cec(
   Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn grid(
   dims: Vec<usize>,
   _g0: f64,
@@ -370,7 +372,7 @@ fn grid(
         (
           "behavior",
           ParamValue::Behavior(Behavior {
-            edge: edge,
+            edge,
             vmax: false,
           }),
         ),

@@ -116,7 +116,7 @@ impl<T: Particle + Position + Velocity + BestPosition + Clone> Optimizer<T> for 
     self.particles = particles;
     self.set_global_best_pos(global_best_pos.unwrap());
 
-    utils::create_directory(self.out_directory().to_path_buf(), false, true);
+    utils::create_directory(self.out_directory().to_path_buf(), true, false);
   }
 
   fn calculate_vel(&mut self, idx: usize) -> DVector<f64> {

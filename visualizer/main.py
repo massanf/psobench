@@ -134,13 +134,6 @@ if graph_type == 'rmt':
             'ESD',
             'ESA',
         ]).ask()
-    covariance_type = questionary.select(
-        "Select covariance type:",
-        choices=[
-            'dimension',
-            'particle'
-            ]
-        ).ask()
 
     for problem in utils.get_paths("problems"):
         for analysis_content in analysis_contents:
@@ -149,9 +142,9 @@ if graph_type == 'rmt':
 
             # Do RMT Calculations.
             attempts = sorted([folder.name for folder in (
-                DATA / problem).iterdir() if folder.is_dir()], key=lambda x: int(x))
+                DATA / problem).iterdir() if folder.is_dir()], key=lambda x: int(x))[:100]
 
-            args_list = [(attempt, problem, analysis_content, covariance_type)
+            args_list = [(attempt, problem, analysis_content)
                          for attempt in attempts]
 
             with Pool() as pool:
