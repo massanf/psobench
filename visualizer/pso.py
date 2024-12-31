@@ -413,7 +413,7 @@ class PSO:
                 x.append(i)
                 y.append(particle.fitness)
 
-        ax.scatter(x, y, s=0.01, label=label)
+        ax.scatter(x, y, s=0.01, label=label, rasterized=True) 
         ax.set_yscale("log")
         return ax
 

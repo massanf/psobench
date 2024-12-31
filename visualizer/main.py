@@ -42,12 +42,16 @@ def get_singles_filepath(name: str, extension: str):
 
 
 if graph_type == 'single':
-    attempts = utils.get_paths("attempts")
     plt.close()
     plt.cla()
     plt.rcdefaults()
-    # plt.yscale("log")
+
+    prod = True
+    if prod:
+        plt.rcParams['font.family'] = 'Times New Roman'
+    attempts = utils.get_paths("attempts")
     fig, ax = plt.subplots()
+    iterations = []
 
     for attempt in attempts:
         data = DATA / attempt
@@ -57,10 +61,19 @@ if graph_type == 'single':
         # utils.plot_and_fill_best_worst(ax=ax, btm=pso.global_best_fitness_progress(
         # ), top=pso.global_worst_fitness_progress(), log=True, label=attempt)
         pso.scatter_progress(ax=ax, label=attempt)
+        iterations.append(len(pso.iterations))
 
-    plt.legend()
+    if not prod:
+        plt.legend()
+    plt.xlabel("Iteration")
+    plt.ylabel("Fitness")
+    plt.xlim(0, max(iterations))
     plt.gca().autoscale(axis='y', tight=False)
-    plt.savefig(get_singles_filepath("fitness_over_time", "png"))
+    if prod:
+        plt.savefig(get_singles_filepath("fitness_over_time", "svg"),
+                     bbox_inches="tight", pad_inches=0.05, dpi=300)
+    else:
+        plt.savefig(get_singles_filepath("fitness_over_time", "png"))
     plt.close()
 
 if graph_type == 'grid':
@@ -135,6 +148,29 @@ if graph_type == 'rmt':
             'ESA',
         ]).ask()
 
+    visualization_type = ""
+    frames = None
+    visualize_iteration = 0
+    if analysis_type != 'eigenvalues':
+        visualization_type = questionary.select(
+            "Select visualization type:", 
+            choices=[
+                "animation",
+                "image"
+            ]).ask()
+        if visualization_type == "animation":
+            start= int(questionary.text(
+                "Start: ", default="0").ask())
+            skip = int(questionary.text(
+                "Skip count: ", default="1").ask())
+            end = int(questionary.text(
+                "End: ", default=str(1000)).ask())
+            frames = list(range(start, end, skip))
+        else:
+            visualize_iteration = int(questionary.text(
+                "Iteration: "
+            ).ask())
+
     for problem in utils.get_paths("problems"):
         for analysis_content in analysis_contents:
             # Make folder.
@@ -173,29 +209,31 @@ if graph_type == 'rmt':
                 n = n_local
             q = d / n
             lambda_plus = (1 + q**0.5)**2
+            lambda_minus = (1 - q**0.5)**2
             average_of_largest_eigenvalues = np.average(max_eigenvalues, axis=1) 
             
             # Plot.
             if 'eigenvalues' in analysis_type:
-                rmt.plot_percentage_of_large_eigenvalues(eigenvalues, lambda_plus, problem, analysis_content)
-                rmt.plot_average_of_largest_eigenvalues(max_eigenvalues, lambda_plus, problem, analysis_content)
-                rmt.plot_all_max_eigenvalue_evolutions(max_eigenvalues, problem, analysis_content) 
+                rmt.plot_percentage_of_outside_eigenvalues(eigenvalues, lambda_plus, lambda_minus, problem, analysis_content)
+                # rmt.plot_average_of_largest_eigenvalues(max_eigenvalues, lambda_plus, problem, analysis_content)
+                # rmt.plot_all_max_eigenvalue_evolutions(max_eigenvalues, problem, analysis_content) 
 
             # Animations.
-            if analysis_type in ['ESD', 'ESA']:
-                start= int(questionary.text(
-                    "Start: ", default="0").ask())
-                skip = int(questionary.text(
-                    "Skip count: ", default="1").ask())
-                end = int(questionary.text(
-                    "End: ", default=str(iterations)).ask())
-                frames = list(range(start, end, skip))
-
+            if visualization_type == "animation":
                 if 'ESD' in analysis_type:
                     rmt.animate_esd(q, eigenvalues, frames, problem, analysis_content)
-                    
                 if 'ESA' in analysis_type:
                     rmt.animate_esa(spacings, frames, problem, analysis_content)
+            else:
+                if 'ESD' in analysis_type:
+                    rmt.plot_esd(q, eigenvalues, problem, analysis_content, visualize_iteration)
+                if 'ESA' in analysis_type:
+                    rmt.plot_esa(spacings, problem, analysis_content, visualize_iteration)
+    plt.legend()
+    plt.ylim(0, 25)
+    plt.savefig(GRAPHS / f'esa_cnt.svg', bbox_inches="tight", pad_inches=0.05)
+    plt.close()
+
 
 # final_results
 # progress comparison

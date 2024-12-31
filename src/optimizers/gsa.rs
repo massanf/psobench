@@ -237,7 +237,8 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
       k = std::cmp::max(k, 1);
       // k = std::cmp::min(k, 1);
       // k = std::cmp::max(k, (particle_count / 2) as usize);
-      k = std::cmp::min(k, particle_count);
+      // k = std::cmp::min(k, particle_count);
+      k = particle_count;
 
       for (i, m_i) in m.iter().enumerate().take(particle_count) {
         let loc = match m_sorted.binary_search_by(|v| v.partial_cmp(m_i).expect("Couldn't compare values")) {

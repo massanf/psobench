@@ -102,7 +102,7 @@ fn single(
     // )?;
     utils::check_problem::<GsaParticle, Gsa<GsaParticle>>(
       "test",
-      "ogsa_test",
+      "ogsa_test_no_elite",
       iterations,
       dim,
       attempts,
