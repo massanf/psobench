@@ -13,16 +13,16 @@ use optimizers::{
   //gaussian::Gaussian,
   gsa::Gsa,
   mgsa::Mgsa,
-  pso::Pso,
   rgsa::Rgsa,
+  pso::Pso,
 };
 #[allow(unused_imports)]
 use particles::{
   // gaussian::GaussianParticle,
   gsa::GsaParticle,
   mgsa::MgsaParticle,
-  pso::PsoParticle,
   rgsa::RgsaParticle,
+  pso::PsoParticle,
   traits::{Behavior, Edge},
 };
 use std::env;
@@ -72,109 +72,102 @@ fn single(
 
   for dim in dims {
     // let problem = problems::sphere_100(dim);
-    let problem = problems::cec17(12, dim);
-    for k in [25, 30, 35, 40, 45, 50, 75, 100] {
-      // for k in [25] {
-      // utils::check_problem::<MgsaParticle, Mgsa<MgsaParticle>>(
-      //   "test",
-      //   "mgsa_test",
-      //   iterations,
-      //   dim,
-      //   attempts,
-      //   vec![
-      //     ("particle_count", i(particle_count)),
-      //     ("g0", f(g0)),
-      //     ("theta", f(theta)),
-      //     ("alpha", f(alpha)),
-      //     ("gamma", f(gamma)),
-      //     ("sigma", f(sigma)),
-      //     ("tiled", ParamValue::Bool(false)),
-      //     ("elite", ParamValue::Bool(elite)),
-      //     ("normalizer", ParamValue::Normalizer(Normalizer::Sigmoid2)),
-      //     (
-      //       "behavior",
-      //       ParamValue::Behavior(Behavior {
-      //         edge: edge,
-      //         vmax: false,
-      //       }),
-      //     ),
-      //   ],
-      //   problem.clone(),
-      //   true,
-      // )?;
-      println!("=== {} ===", format!("ogsa_test_{:03}_elite", k).as_str());
-      utils::check_problem::<GsaParticle, Gsa<GsaParticle>>(
-        "test",
-        // "ogsa_test_100_elite",
-        format!("ogsa_test_{:03}_elite", k).as_str(),
-        iterations,
-        dim,
-        attempts,
-        vec![
-          ("particle_count", i(particle_count)),
-          ("alpha", f(5.)),
-          ("g0", f(1000.)),
-          ("tiled", ParamValue::Bool(false)),
-          ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
-          ("manual_k", f(k as f64)),
-          (
-            "behavior",
-            ParamValue::Behavior(Behavior {
-              edge: Edge::Pass,
-              vmax: false,
-            }),
-          ),
-        ],
-        problem.clone(),
-        true,
-      )?;
-      // utils::check_problem::<RgsaParticle, Rgsa<RgsaParticle>>(
-      //   "test",
-      //   "rgsa_test",
-      //   iterations,
-      //   dim,
-      //   attempts,
-      //   vec![
-      //     ("particle_count", i(particle_count)),
-      //     ("alpha", f(5.)),
-      //     ("g0", f(1000.)),
-      //     ("tiled", ParamValue::Bool(false)),
-      //     ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
-      //     (
-      //       "behavior",
-      //       ParamValue::Behavior(Behavior {
-      //         edge: Edge::Pass,
-      //         vmax: false,
-      //       }),
-      //     ),
-      //   ],
-      //   problem.clone(),
-      //   true,
-      // )?;
-      // utils::check_problem::<PsoParticle, Pso<PsoParticle>>(
-      //   "test",
-      //   "pso_test",
-      //   iterations,
-      //   dim,
-      //   attempts,
-      //   vec![
-      //     ("particle_count", i(particle_count)),
-      //     ("w", f(0.5)),
-      //     ("phi_p", f(2.)),
-      //     ("phi_g", f(2.)),
-      //     (
-      //       "behavior",
-      //       ParamValue::Behavior(Behavior {
-      //         edge: Edge::Pass,
-      //         vmax: false,
-      //       }),
-      //     ),
-      //   ],
-      //   problem.clone(),
-      //   true,
-      // )?;
-      //
-    }
+    let problem = problems::cec17(1, dim);
+    // utils::check_problem::<MgsaParticle, Mgsa<MgsaParticle>>(
+    //   "test",
+    //   "mgsa_test",
+    //   iterations,
+    //   dim,
+    //   attempts,
+    //   vec![
+    //     ("particle_count", i(particle_count)),
+    //     ("g0", f(g0)),
+    //     ("theta", f(theta)),
+    //     ("alpha", f(alpha)),
+    //     ("gamma", f(gamma)),
+    //     ("sigma", f(sigma)),
+    //     ("tiled", ParamValue::Bool(false)),
+    //     ("elite", ParamValue::Bool(elite)),
+    //     ("normalizer", ParamValue::Normalizer(Normalizer::Sigmoid2)),
+    //     (
+    //       "behavior",
+    //       ParamValue::Behavior(Behavior {
+    //         edge: edge,
+    //         vmax: false,
+    //       }),
+    //     ),
+    //   ],
+    //   problem.clone(),
+    //   true,
+    // )?;
+    utils::check_problem::<GsaParticle, Gsa<GsaParticle>>(
+      "test",
+      "ogsa_test_no_elite",
+      iterations,
+      dim,
+      attempts,
+      vec![
+        ("particle_count", i(particle_count)),
+        ("alpha", f(5.)),
+        ("g0", f(1000.)),
+        ("tiled", ParamValue::Bool(false)),
+        ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
+        (
+          "behavior",
+          ParamValue::Behavior(Behavior {
+            edge: Edge::Pass,
+            vmax: false,
+          }),
+        ),
+      ],
+      problem.clone(),
+      true,
+    )?;
+    // utils::check_problem::<RgsaParticle, Rgsa<RgsaParticle>>(
+    //   "test",
+    //   "rgsa_test",
+    //   iterations,
+    //   dim,
+    //   attempts,
+    //   vec![
+    //     ("particle_count", i(particle_count)),
+    //     ("alpha", f(5.)),
+    //     ("g0", f(1000.)),
+    //     ("tiled", ParamValue::Bool(false)),
+    //     ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
+    //     (
+    //       "behavior",
+    //       ParamValue::Behavior(Behavior {
+    //         edge: Edge::Pass,
+    //         vmax: false,
+    //       }),
+    //     ),
+    //   ],
+    //   problem.clone(),
+    //   true,
+    // )?;
+    // utils::check_problem::<PsoParticle, Pso<PsoParticle>>(
+    //   "test",
+    //   "pso_test",
+    //   iterations,
+    //   dim,
+    //   attempts,
+    //   vec![
+    //     ("particle_count", i(particle_count)),
+    //     ("w", f(0.5)),
+    //     ("phi_p", f(2.)),
+    //     ("phi_g", f(2.)),
+    //     (
+    //       "behavior",
+    //       ParamValue::Behavior(Behavior {
+    //         edge: Edge::Pass,
+    //         vmax: false,
+    //       }),
+    //     ),
+    //   ],
+    //   problem.clone(),
+    //   true,
+    // )?;
   }
   Ok(())
 }
@@ -376,7 +369,13 @@ fn grid(
         ("elite", ParamValue::Bool(elite)),
         ("tiled", ParamValue::Bool(false)),
         ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
-        ("behavior", ParamValue::Behavior(Behavior { edge, vmax: false })),
+        (
+          "behavior",
+          ParamValue::Behavior(Behavior {
+            edge,
+            vmax: false,
+          }),
+        ),
       ],
     )?;
   }

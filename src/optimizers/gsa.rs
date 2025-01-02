@@ -34,6 +34,7 @@ pub struct Gsa<T> {
   global_worst_pos: Option<DVector<f64>>,
   influences: Vec<bool>,
   g: f64,
+  manual_k: Option<f64>,
   data: Vec<(f64, f64, Option<Vec<T>>)>,
   additional_data: Vec<Vec<Vec<(String, f64)>>>,
   out_directory: PathBuf,
@@ -100,6 +101,20 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
       }
     };
 
+    let manual_k = match parameters.contains_key("manual_k") {
+      true => Some(match parameters["manual_k"] {
+        ParamValue::Float(val) => val,
+        _ => {
+          eprintln!("Error: parameter 'manual_k' should be of type Param::Float.");
+          std::process::exit(1);
+        }
+      }),
+      false => {
+        println!("Defaulting to linearly decaying k.");
+        None
+      }
+    };
+
     assert!(parameters.contains_key("behavior"), "Key 'behavior' not found.");
     let behavior = match parameters["behavior"] {
       ParamValue::Behavior(val) => val,
@@ -125,6 +140,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
       global_worst_pos: None,
       influences: vec![false; number_of_particles],
       g: g0,
+      manual_k,
       data: Vec::new(),
       additional_data: Vec::new(),
       out_directory,
@@ -233,12 +249,16 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
       m_sorted.sort_by(|a, b| a.partial_cmp(b).expect("Could not compare NaN."));
 
       let particle_count = self.particles().len();
-      let mut k = (-(particle_count as f64) / (iterations as f64) * iter as f64 + particle_count as f64) as usize;
-      k = std::cmp::max(k, 1);
-      // k = std::cmp::min(k, 1);
-      // k = std::cmp::max(k, (particle_count / 2) as usize);
-      // k = std::cmp::min(k, particle_count);
-      k = particle_count;
+
+      let k = match self.manual_k {
+        Some(val) => (particle_count as f64 * val / 100.0) as usize,
+        None => {
+          let mut k = (-(particle_count as f64) / (iterations as f64) * iter as f64 + particle_count as f64) as usize;
+          k = std::cmp::min(k, 1);
+          k = std::cmp::min(k, particle_count);
+          k
+        }
+      };
 
       for (i, m_i) in m.iter().enumerate().take(particle_count) {
         let loc = match m_sorted.binary_search_by(|v| v.partial_cmp(m_i).expect("Couldn't compare values")) {
@@ -396,4 +416,33 @@ impl<T: Position + Velocity + Mass + Clone> DataExporter<T> for Gsa<T> {
     Ok(())
   }
 
+  fn generate_data_json(&mut self) -> Result<String, Box<dyn std::error::Error>> {
+    let mut vec_data = Vec::new();
+
+    for t in 0..self.data().len() {
+      let mut iter_data = Vec::new();
+      // unwrap is for demonstration; handle errors as needed
+      let datum = self.data()[t].2.clone().unwrap();
+
+      for particle_datum in &datum {
+        let pos = particle_datum.pos().clone();
+        iter_data.push(json!({
+            "fitness": self.problem().f_no_memo(&pos),
+            "vel": particle_datum.vel().as_slice(),
+            "pos": particle_datum.pos().as_slice(),
+            "mass": particle_datum.mass(),
+        }));
+      }
+
+      vec_data.push(json!({
+          "global_best_fitness": self.data()[t].0,
+          "global_worst_fitness": self.data()[t].1,
+          "particles": iter_data
+      }));
+    }
+
+    // Convert to a JSON string
+    let serialized = serde_json::to_string(&json!(vec_data))?;
+    Ok(serialized)
+  }
 }

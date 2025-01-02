@@ -6,7 +6,7 @@ use crate::Normalizer;
 use indicatif::{ProgressBar, ProgressStyle};
 use nalgebra::DVector;
 use problems::Problem;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 extern crate chrono;
 use rand::distributions::{Distribution, Uniform};
 use rand_distr::Normal;
@@ -97,6 +97,18 @@ pub fn create_directory(path: PathBuf, addable: bool, ask_clear: bool) {
   }
 }
 
+fn flush_to_separate_files(
+  batch: &[(usize, String)],
+  out_directory: PathBuf,
+) -> Result<(), Box<dyn std::error::Error>> {
+  fs::create_dir_all(out_directory.clone())?;
+  for (attempt, json_str) in batch {
+    let file_path = out_directory.join(format!("{}", attempt)).join("data.json");
+    fs::write(&file_path, json_str)?;
+  }
+  Ok(())
+}
+
 #[allow(clippy::too_many_arguments)]
 pub fn run_attempts<U: Position + Velocity + Clone, T: Optimizer<U> + DataExporter<U>>(
   params: HashMap<String, ParamValue>,
@@ -108,6 +120,8 @@ pub fn run_attempts<U: Position + Velocity + Clone, T: Optimizer<U> + DataExport
   save_data: bool,
   bar: &indicatif::ProgressBar,
 ) -> Result<(), Box<dyn std::error::Error>> {
+  let batch_data = Arc::new(Mutex::new(Vec::new()));
+  let flush_size = 10;
   (0..attempts).into_par_iter().for_each(|attempt| {
     let save = save_data;
     let mut pso: T = T::new(
@@ -120,12 +134,35 @@ pub fn run_attempts<U: Position + Velocity + Clone, T: Optimizer<U> + DataExport
     pso.run(iterations);
     let _ = pso.save_summary();
     let _ = pso.save_config(&params);
-    if save {
-      let _ = pso.save_data();
-      let _ = pso.save_additional_data();
+    if save_data {
+      if let Ok(json_str) = pso.generate_data_json() {
+        let mut batch = batch_data.lock().unwrap();
+        batch.push((attempt, json_str));
+
+        if batch.len() >= flush_size {
+          let to_write = batch.drain(..).collect::<Vec<_>>();
+          drop(batch);
+
+          if let Err(e) = flush_to_separate_files(&to_write, out_directory.clone()) {
+            eprintln!("Failed to write batch to disk: {}", e);
+          }
+        }
+      }
     }
     bar.inc(1);
   });
+  {
+    let mut batch = batch_data.lock().unwrap();
+    if !batch.is_empty() {
+      let to_write = batch.drain(..).collect::<Vec<_>>();
+      drop(batch);
+
+      if let Err(e) = flush_to_separate_files(&to_write, out_directory.clone()) {
+        eprintln!("Failed to write final batch to disk: {}", e);
+      }
+    }
+  }
+
   Ok(())
 }
 

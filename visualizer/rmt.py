@@ -180,7 +180,7 @@ def process_attempt(args):
 
     return eigenvalues_local, spacings_local, positions.shape[1], positions.shape[0]
 
-def plot_percentage_of_outside_eigenvalues(eigenvalues, lambda_plus, lambda_minus, problem, analysis_content):
+def plot_percentage_of_outside_eigenvalues(eigenvalues, lambda_plus, lambda_minus, problem, analysis_content, save):
     percentages_of_large_eigenvalues = []
 
     prod = True
@@ -194,11 +194,21 @@ def plot_percentage_of_outside_eigenvalues(eigenvalues, lambda_plus, lambda_minu
             percentage = (count / total) * 100
             percentages_of_large_eigenvalues.append(percentage)
 
-    name = int(problem.name.split("F")[1])
-    label = r"$F_{" + str(name) + "}$"
-    plt.plot(range(len(percentages_of_large_eigenvalues)),
-             percentages_of_large_eigenvalues, linestyle='-', linewidth=0.5,
-             label=label)
+    name = str(int(problem.parent.name.split("_")[2]))
+    # name = int(problem.name.split("F")[1])
+    # label = r"$F_{" + str(name) + "}$"
+    window_size = 20  # Adjust as needed
+    smoothed_percentages = np.convolve(percentages_of_large_eigenvalues, 
+                                       np.ones(window_size)/window_size, mode='valid')
+    # plt.plot(range(len(percentages_of_large_eigenvalues)),
+    #          percentages_of_large_eigenvalues, linestyle='-', linewidth=0.5, alpha=0.5,
+    #          label=problem)
+    x = range(len(smoothed_percentages))
+    y = smoothed_percentages
+
+    line, = plt.plot(x, y, linewidth=0.8, label=(name + "%"))
+    # for i in range(0, len(smoothed_percentages), 100):  # Place markers every 20 points
+    #     plt.text(x[i], y[i], name, fontsize=8, color=line.get_color())
 
     if not prod:
         plt.title("Percentage of Eigenvalues Exceeding MP Upper Bound")
@@ -206,8 +216,10 @@ def plot_percentage_of_outside_eigenvalues(eigenvalues, lambda_plus, lambda_minu
     plt.xlabel("Iteration")
     plt.ylabel("Percentage (%)")
     plt.ylim(0)
-    # plt.savefig(GRAPHS / problem / f'esa_{analysis_content}_cnt.svg', bbox_inches="tight", pad_inches=0.05)
-    # plt.close()
+
+    if save:
+        plt.savefig(GRAPHS / problem / f'esa_{analysis_content}_cnt.svg', bbox_inches="tight", pad_inches=0.05)
+        plt.close()
 
 def plot_average_of_largest_eigenvalues(max_eigenvalues, lambda_plus, problem, analysis_content):
     average_of_largest_eigenvalues = np.average(max_eigenvalues, axis=1) 

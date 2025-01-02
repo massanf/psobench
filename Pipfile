@@ -10,6 +10,8 @@ scipy = "*"
 autopep8 = "*"
 flake8 = "*"
 questionary = "*"
+joblist = "*"
+joblib = "*"
 
 [dev-packages]
 

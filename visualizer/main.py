@@ -1,4 +1,7 @@
 import questionary
+import pickle
+from joblib import Memory
+import hashlib
 import datetime
 import utils
 from scipy.spatial.distance import pdist
@@ -17,7 +20,6 @@ from tqdm import tqdm
 from typing import Any
 from constants import DATA, GRAPHS
 
-
 graph_type = questionary.select(
     "Select graph type:",
     choices=[
@@ -30,6 +32,62 @@ graph_type = questionary.select(
         'fitness histogram animation'
     ]).ask()
 
+# Define paths
+CACHE_DIR = DATA / "cache"
+CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+def compute_attempt_checksum(attempt_path):
+    """
+    Compute a lightweight checksum based on file metadata for an attempt.
+    """
+    hash_sha256 = hashlib.sha256()
+    for file_path in sorted(attempt_path.iterdir()):
+        if file_path.is_file():
+            stat = file_path.stat()
+            # Incorporate file name, size, and modification time
+            hash_sha256.update(file_path.name.encode())
+            hash_sha256.update(str(stat.st_size).encode())
+            hash_sha256.update(str(stat.st_mtime).encode())
+    return hash_sha256.hexdigest()
+
+def load_attempt_cache(problem, attempt):
+    """
+    Load cached result and checksum for a given problem and attempt.
+    """
+    cache_file = CACHE_DIR / problem / f"{attempt}.pkl"
+    if cache_file.exists():
+        with open(cache_file, 'rb') as f:
+            return pickle.load(f)
+    return None, None
+
+def save_attempt_cache(problem, attempt, checksum, result):
+    """
+    Save result and checksum to cache for a given problem and attempt.
+    """
+    problem_cache_dir = CACHE_DIR / problem
+    problem_cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_file = problem_cache_dir / f"{attempt}.pkl"
+    with open(cache_file, 'wb') as f:
+        pickle.dump((checksum, result), f)
+
+def process_attempt_cached(args):
+    """
+    Wrapper function to handle caching for a single attempt.
+    """
+    attempt, problem, analysis_content = args
+    attempt_path = DATA / problem / attempt
+    checksum = compute_attempt_checksum(attempt_path)
+    
+    cached_checksum, cached_result = load_attempt_cache(problem, attempt)
+    
+    if cached_checksum == checksum and cached_result is not None:
+        return cached_result
+    else:
+        # Process the attempt since cache is invalid or doesn't exist
+        result = rmt.process_attempt(args)
+        save_attempt_cache(problem, attempt, checksum, result)
+        return result
+
 def get_singles_filepath(name: str, extension: str):
     if not (GRAPHS / "custom_singles").exists():
         os.makedirs(GRAPHS / "custom_singles")
@@ -40,13 +98,12 @@ def get_singles_filepath(name: str, extension: str):
     print(f"Saving: {filepath}")
     return filepath
 
-
 if graph_type == 'single':
     plt.close()
     plt.cla()
     plt.rcdefaults()
 
-    prod = True
+    prod = False
     if prod:
         plt.rcParams['font.family'] = 'Times New Roman'
     attempts = utils.get_paths("attempts")
@@ -144,6 +201,7 @@ if graph_type == 'rmt':
         "Select analysis type:",
         choices=[
             'eigenvalues',
+            'eigenvalues_collage',
             'ESD',
             'ESA',
         ]).ask()
@@ -151,7 +209,7 @@ if graph_type == 'rmt':
     visualization_type = ""
     frames = None
     visualize_iteration = 0
-    if analysis_type != 'eigenvalues':
+    if 'eigenvalues' not in analysis_type:
         visualization_type = questionary.select(
             "Select visualization type:", 
             choices=[
@@ -171,8 +229,17 @@ if graph_type == 'rmt':
                 "Iteration: "
             ).ask())
 
-    for problem in utils.get_paths("problems"):
-        for analysis_content in analysis_contents:
+    from cycler import cycler
+    linestyle_cycler=(cycler(color=["#1f77b4", "#ff7f0e", "#2ca02c"]) * 
+                      cycler('linestyle', ['-', '--', ':', '-.']))
+    plt.rc('axes', prop_cycle=linestyle_cycler)
+
+    problem_name = ""
+    problems = utils.get_paths("problems")
+
+    for analysis_content in analysis_contents:
+        for problem in problems:
+            problem_name = problem.name
             # Make folder.
             (GRAPHS / problem).mkdir(parents=True, exist_ok=True)
 
@@ -186,7 +253,7 @@ if graph_type == 'rmt':
             with Pool() as pool:
                 with tqdm(total=len(args_list), desc="Calc...") as pbar:
                     results = []
-                    for result in pool.imap(rmt.process_attempt, args_list):
+                    for result in pool.imap(process_attempt_cached, args_list):
                         results.append(result)
                         pbar.update(1)
 
@@ -214,7 +281,7 @@ if graph_type == 'rmt':
             
             # Plot.
             if 'eigenvalues' in analysis_type:
-                rmt.plot_percentage_of_outside_eigenvalues(eigenvalues, lambda_plus, lambda_minus, problem, analysis_content)
+                rmt.plot_percentage_of_outside_eigenvalues(eigenvalues, lambda_plus, lambda_minus, problem, analysis_content, save=('collage' not in analysis_type))
                 # rmt.plot_average_of_largest_eigenvalues(max_eigenvalues, lambda_plus, problem, analysis_content)
                 # rmt.plot_all_max_eigenvalue_evolutions(max_eigenvalues, problem, analysis_content) 
 
@@ -229,10 +296,13 @@ if graph_type == 'rmt':
                     rmt.plot_esd(q, eigenvalues, problem, analysis_content, visualize_iteration)
                 if 'ESA' in analysis_type:
                     rmt.plot_esa(spacings, problem, analysis_content, visualize_iteration)
-    plt.legend()
-    plt.ylim(0, 25)
-    plt.savefig(GRAPHS / f'esa_cnt.svg', bbox_inches="tight", pad_inches=0.05)
-    plt.close()
+
+        if 'collage' in analysis_type:
+            plt.legend()
+            plt.ylim(0, 25)
+            path = get_singles_filepath(name=f"{analysis_content}_{problem_name}", extension='svg')
+            plt.savefig(path, bbox_inches="tight", pad_inches=0.05)
+            plt.close()
 
 
 # final_results
