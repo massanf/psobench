@@ -417,6 +417,21 @@ class PSO:
         ax.set_yscale("log")
         return ax
 
+    def plot_progress(self, ax: Axes, label: str):
+        self.load_full()
+        y = []
+        for i, iteration in enumerate(self.iterations):
+            min_fitness = 1e20
+            for particle in iteration.particles:
+                min_fitness = min(min_fitness, particle.fitness)
+            y.append(min_fitness)
+
+        window_size = 100  # Adjust as needed
+        # smoothed_y = np.convolve(y, np.ones(window_size)/window_size, mode='valid')
+        ax.plot(range(len(y)), y, label=label, linewidth=0.8)
+        ax.set_yscale("log")
+        return ax
+
     def overview(self, animate: bool, out_directory: pathlib.Path) -> None:
         assert self.fully_loaded
         if not out_directory.exists():

@@ -1,5 +1,7 @@
 import questionary
+from matplotlib.colors import LogNorm
 import pickle
+import matplotlib.cm as cm
 from joblib import Memory
 import hashlib
 import datetime
@@ -11,6 +13,7 @@ import utils
 import rmt
 from pso import PSO
 import pathlib
+import umap
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -18,7 +21,7 @@ import matplotlib.animation as animation
 from multiprocessing import Pool
 from tqdm import tqdm
 from typing import Any
-from constants import DATA, GRAPHS
+from constants import DATA, GRAPHS, CACHE
 
 graph_type = questionary.select(
     "Select graph type:",
@@ -29,12 +32,12 @@ graph_type = questionary.select(
         'collage',
         'last best distance',
         'rmt',
+        'umap',
         'fitness histogram animation'
     ]).ask()
 
 # Define paths
-CACHE_DIR = DATA / "cache"
-CACHE_DIR.mkdir(parents=True, exist_ok=True)
+CACHE.mkdir(parents=True, exist_ok=True)
 
 def compute_attempt_checksum(attempt_path):
     """
@@ -50,23 +53,23 @@ def compute_attempt_checksum(attempt_path):
             hash_sha256.update(str(stat.st_mtime).encode())
     return hash_sha256.hexdigest()
 
-def load_attempt_cache(problem, attempt):
+def load_attempt_cache(problem, attempt, analysis_content):
     """
     Load cached result and checksum for a given problem and attempt.
     """
-    cache_file = CACHE_DIR / problem / f"{attempt}.pkl"
+    cache_file = CACHE / problem / f"{attempt}_{analysis_content}.pkl"
     if cache_file.exists():
         with open(cache_file, 'rb') as f:
             return pickle.load(f)
     return None, None
 
-def save_attempt_cache(problem, attempt, checksum, result):
+def save_attempt_cache(problem, attempt, checksum, result, analysis_content):
     """
     Save result and checksum to cache for a given problem and attempt.
     """
-    problem_cache_dir = CACHE_DIR / problem
+    problem_cache_dir = CACHE / problem
     problem_cache_dir.mkdir(parents=True, exist_ok=True)
-    cache_file = problem_cache_dir / f"{attempt}.pkl"
+    cache_file = problem_cache_dir / f"{attempt}_{analysis_content}.pkl"
     with open(cache_file, 'wb') as f:
         pickle.dump((checksum, result), f)
 
@@ -78,15 +81,19 @@ def process_attempt_cached(args):
     attempt_path = DATA / problem / attempt
     checksum = compute_attempt_checksum(attempt_path)
     
-    cached_checksum, cached_result = load_attempt_cache(problem, attempt)
+    cached_checksum, cached_result = load_attempt_cache(problem, attempt, analysis_content)
     
     if cached_checksum == checksum and cached_result is not None:
         return cached_result
     else:
-        # Process the attempt since cache is invalid or doesn't exist
-        result = rmt.process_attempt(args)
-        save_attempt_cache(problem, attempt, checksum, result)
-        return result
+        try:
+            # Process the attempt since cache is invalid or doesn't exist
+            result = rmt.process_attempt(args)
+            save_attempt_cache(problem, attempt, checksum, result, analysis_content)
+            return result
+        except Exception:
+            print(f"Error on {problem} {attempt}")
+            return None
 
 def get_singles_filepath(name: str, extension: str):
     if not (GRAPHS / "custom_singles").exists():
@@ -103,13 +110,19 @@ if graph_type == 'single':
     plt.cla()
     plt.rcdefaults()
 
-    prod = False
+    from cycler import cycler
+    # linestyle_cycler=(cycler(color=["#1f77b4", "#ff7f0e", "#2ca02c"]) * 
+    #                   cycler('linestyle', ['-', '--', ':', '-.']))
+    linestyle_cycler=(cycler('linestyle', ['-', '--', ':', '-.']) *
+                      cycler(color=["#1f77b4", "#ff7f0e", "#2ca02c"]))
+    plt.rc('axes', prop_cycle=linestyle_cycler)
+
+    prod = True
     if prod:
         plt.rcParams['font.family'] = 'Times New Roman'
     attempts = utils.get_paths("attempts")
     fig, ax = plt.subplots()
     iterations = []
-
     for attempt in attempts:
         data = DATA / attempt
         graphs = GRAPHS / attempt
@@ -117,11 +130,16 @@ if graph_type == 'single':
         pso = PSO(data)
         # utils.plot_and_fill_best_worst(ax=ax, btm=pso.global_best_fitness_progress(
         # ), top=pso.global_worst_fitness_progress(), log=True, label=attempt)
-        pso.scatter_progress(ax=ax, label=attempt)
+        # pso.scatter_progress(ax=ax, label=attempt)
+        try:
+            name = str(int(attempt.parent.parent.name.split("_")[2])) + "%"
+        except Exception:
+            name = "Default"
+
+        pso.plot_progress(ax=ax, label=name)
         iterations.append(len(pso.iterations))
 
-    if not prod:
-        plt.legend()
+    plt.legend()
     plt.xlabel("Iteration")
     plt.ylabel("Fitness")
     plt.xlim(0, max(iterations))
@@ -132,6 +150,52 @@ if graph_type == 'single':
     else:
         plt.savefig(get_singles_filepath("fitness_over_time", "png"))
     plt.close()
+
+if graph_type == 'umap':
+    plt.close()
+    plt.cla()
+    plt.rcdefaults()
+
+    attempts = utils.get_paths("attempts")
+    fig, ax = plt.subplots()
+    iterations = []
+    for attempt in attempts:
+        data = DATA / attempt
+        graphs = GRAPHS / attempt
+        graphs.mkdir(parents=True, exist_ok=True)
+        pso = PSO(data)
+        pso.load_full()
+
+        frames = []
+        folder = GRAPHS / "umap_test" / attempt.parent.name
+        folder.mkdir()
+        for idx, iteration in enumerate(pso.iterations):
+            # if idx % 10 != 0:
+            #     continue 
+            print(idx)
+            positions = []
+            fitness = []
+            for particle in iteration.particles:
+                positions.append(particle.pos)
+                fitness.append(particle.fitness)
+            
+            # Convert positions and fitness to numpy arrays for compatibility with UMAP
+            positions = np.array(positions)
+            fitness = np.array(fitness)
+        
+            # Replace zero or negative fitness values to avoid issues with log scaling
+            fitness[fitness <= 0] = np.min(fitness[fitness > 0]) * 1e-1
+        
+            # UMAP for dimensionality reduction
+            embedding = umap.UMAP().fit_transform(positions)
+        
+            # Scatter plot with log scale for color
+            plt.scatter(embedding[:, 0], embedding[:, 1], c=fitness, cmap=cm.viridis, norm=LogNorm())
+            plt.colorbar(label='Fitness (log scale)')
+        
+            # Save the plot
+            plt.savefig(folder / f'umap_{idx}.png')
+            plt.close()        
 
 if graph_type == 'grid':
     gsa_paths = utils.get_paths(level="optimizers")
@@ -230,8 +294,10 @@ if graph_type == 'rmt':
             ).ask())
 
     from cycler import cycler
-    linestyle_cycler=(cycler(color=["#1f77b4", "#ff7f0e", "#2ca02c"]) * 
-                      cycler('linestyle', ['-', '--', ':', '-.']))
+    # linestyle_cycler=(cycler(color=["#1f77b4", "#ff7f0e", "#2ca02c"]) * 
+    #                   cycler('linestyle', ['-', '--', ':', '-.']))
+    linestyle_cycler=(cycler('linestyle', ['-', '--', ':', '-.']) *
+                      cycler(color=["#1f77b4", "#ff7f0e", "#2ca02c"]))
     plt.rc('axes', prop_cycle=linestyle_cycler)
 
     problem_name = ""
@@ -239,13 +305,14 @@ if graph_type == 'rmt':
 
     for analysis_content in analysis_contents:
         for problem in problems:
+            print(problem)
             problem_name = problem.name
             # Make folder.
             (GRAPHS / problem).mkdir(parents=True, exist_ok=True)
 
             # Do RMT Calculations.
             attempts = sorted([folder.name for folder in (
-                DATA / problem).iterdir() if folder.is_dir()], key=lambda x: int(x))[:100]
+                DATA / problem).iterdir() if folder.is_dir()], key=lambda x: int(x))
 
             args_list = [(attempt, problem, analysis_content)
                          for attempt in attempts]
@@ -254,7 +321,8 @@ if graph_type == 'rmt':
                 with tqdm(total=len(args_list), desc="Calc...") as pbar:
                     results = []
                     for result in pool.imap(process_attempt_cached, args_list):
-                        results.append(result)
+                        if result is not None:
+                            results.append(result)
                         pbar.update(1)
 
             iterations = len(results[0][0])

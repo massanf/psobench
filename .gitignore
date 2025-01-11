@@ -2,6 +2,7 @@
 target/
 graphs/
 data/
+cache/
 Cargo.lock
 out/
 .vscode/

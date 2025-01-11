@@ -110,7 +110,6 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
         }
       }),
       false => {
-        println!("Defaulting to linearly decaying k.");
         None
       }
     };
@@ -254,7 +253,7 @@ impl<T: Particle + Position + Velocity + Mass + Clone> Optimizer<T> for Gsa<T> {
         Some(val) => (particle_count as f64 * val / 100.0) as usize,
         None => {
           let mut k = (-(particle_count as f64) / (iterations as f64) * iter as f64 + particle_count as f64) as usize;
-          k = std::cmp::min(k, 1);
+          k = std::cmp::max(k, 1);
           k = std::cmp::min(k, particle_count);
           k
         }

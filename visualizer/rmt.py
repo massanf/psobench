@@ -194,7 +194,10 @@ def plot_percentage_of_outside_eigenvalues(eigenvalues, lambda_plus, lambda_minu
             percentage = (count / total) * 100
             percentages_of_large_eigenvalues.append(percentage)
 
-    name = str(int(problem.parent.name.split("_")[2]))
+    try:
+        name = str(int(problem.parent.name.split("_")[2])) + "%"
+    except Exception:
+        name = "Default"
     # name = int(problem.name.split("F")[1])
     # label = r"$F_{" + str(name) + "}$"
     window_size = 20  # Adjust as needed
@@ -206,7 +209,7 @@ def plot_percentage_of_outside_eigenvalues(eigenvalues, lambda_plus, lambda_minu
     x = range(len(smoothed_percentages))
     y = smoothed_percentages
 
-    line, = plt.plot(x, y, linewidth=0.8, label=(name + "%"))
+    line, = plt.plot(x, y, linewidth=0.8, label=name)
     # for i in range(0, len(smoothed_percentages), 100):  # Place markers every 20 points
     #     plt.text(x[i], y[i], name, fontsize=8, color=line.get_color())
 
@@ -215,10 +218,13 @@ def plot_percentage_of_outside_eigenvalues(eigenvalues, lambda_plus, lambda_minu
     plt.xlim(0, len(eigenvalues))
     plt.xlabel("Iteration")
     plt.ylabel("Percentage (%)")
-    plt.ylim(0)
+    plt.ylim(0, 20)
 
     if save:
-        plt.savefig(GRAPHS / problem / f'esa_{analysis_content}_cnt.svg', bbox_inches="tight", pad_inches=0.05)
+        if prod:
+            plt.savefig(GRAPHS / problem / f'esa_{analysis_content}_cnt.svg', bbox_inches="tight", pad_inches=0.05)
+        else:
+            plt.savefig(GRAPHS / problem / f'esa_{analysis_content}_cnt.png', bbox_inches="tight", pad_inches=0.05)
         plt.close()
 
 def plot_average_of_largest_eigenvalues(max_eigenvalues, lambda_plus, problem, analysis_content):

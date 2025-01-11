@@ -67,13 +67,39 @@ fn single(
   _edge: Edge,
 ) -> Result<(), Box<dyn std::error::Error>> {
   let iterations = 1000;
-  let attempts = 1000;
+  let attempts = 100;
   let particle_count = 50;
 
   for dim in dims {
     // let problem = problems::sphere_100(dim);
-    let problem = problems::cec17(12, dim);
-    for k in [25, 30, 35, 40, 45, 50, 75, 100] {
+    let problem = problems::cec17(1, dim);
+
+    utils::check_problem::<GsaParticle, Gsa<GsaParticle>>(
+      "test",
+      // "ogsa_test_100_elite",
+      "ogsa_test",
+      iterations,
+      dim,
+      attempts,
+      vec![
+        ("particle_count", i(particle_count)),
+        ("alpha", f(5.)),
+        ("g0", f(1000.)),
+        ("tiled", ParamValue::Bool(false)),
+        ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
+        (
+          "behavior",
+          ParamValue::Behavior(Behavior {
+            edge: Edge::Pass,
+            vmax: false,
+          }),
+        ),
+      ],
+      problem.clone(),
+      true,
+    )?;
+
+    for _k in [5, 10, 25, 50, 75, 100] {
       // for k in [25] {
       // utils::check_problem::<MgsaParticle, Mgsa<MgsaParticle>>(
       //   "test",
@@ -102,32 +128,32 @@ fn single(
       //   problem.clone(),
       //   true,
       // )?;
-      println!("=== {} ===", format!("ogsa_test_{:03}_elite", k).as_str());
-      utils::check_problem::<GsaParticle, Gsa<GsaParticle>>(
-        "test",
-        // "ogsa_test_100_elite",
-        format!("ogsa_test_{:03}_elite", k).as_str(),
-        iterations,
-        dim,
-        attempts,
-        vec![
-          ("particle_count", i(particle_count)),
-          ("alpha", f(5.)),
-          ("g0", f(1000.)),
-          ("tiled", ParamValue::Bool(false)),
-          ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
-          ("manual_k", f(k as f64)),
-          (
-            "behavior",
-            ParamValue::Behavior(Behavior {
-              edge: Edge::Pass,
-              vmax: false,
-            }),
-          ),
-        ],
-        problem.clone(),
-        true,
-      )?;
+      // println!("=== {} ===", format!("ogsa_test_{:03}_elite", k).as_str());
+      // utils::check_problem::<GsaParticle, Gsa<GsaParticle>>(
+      //   "test",
+      //   // "ogsa_test_100_elite",
+      //   format!("ogsa_test_{:03}_elite", k).as_str(),
+      //   iterations,
+      //   dim,
+      //   attempts,
+      //   vec![
+      //     ("particle_count", i(particle_count)),
+      //     ("alpha", f(5.)),
+      //     ("g0", f(1000.)),
+      //     ("tiled", ParamValue::Bool(false)),
+      //     ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
+      //     ("manual_k", f(k as f64)),
+      //     (
+      //       "behavior",
+      //       ParamValue::Behavior(Behavior {
+      //         edge: Edge::Pass,
+      //         vmax: false,
+      //       }),
+      //     ),
+      //   ],
+      //   problem.clone(),
+      //   true,
+      // )?;
       // utils::check_problem::<RgsaParticle, Rgsa<RgsaParticle>>(
       //   "test",
       //   "rgsa_test",
@@ -221,31 +247,53 @@ fn cec(
     //   ],
     //   false,
     // )?;
-    utils::check_cec17::<RgsaParticle, Rgsa<RgsaParticle>>(
-      "test",
-      "rgsa_test",
-      iterations,
-      dim,
-      attempts,
-      vec![
-        ("particle_count", i(particle_count)),
-        ("alpha", f(10.)),
-        ("g0", f(1000.)),
-        ("tiled", ParamValue::Bool(false)),
-        ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
-        (
-          "behavior",
-          ParamValue::Behavior(Behavior {
-            edge: Edge::Pass,
-            vmax: false,
-          }),
-        ),
-      ],
-      true,
-    )?;
+    // utils::check_cec17::<RgsaParticle, Rgsa<RgsaParticle>>(
+    //   "test",
+    //   "rgsa_test",
+    //   iterations,
+    //   dim,
+    //   attempts,
+    //   vec![
+    //     ("particle_count", i(particle_count)),
+    //     ("alpha", f(10.)),
+    //     ("g0", f(1000.)),
+    //     ("tiled", ParamValue::Bool(false)),
+    //     ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
+    //     (
+    //       "behavior",
+    //       ParamValue::Behavior(Behavior {
+    //         edge: Edge::Pass,
+    //         vmax: false,
+    //       }),
+    //     ),
+    //   ],
+    //   true,
+    // )?;
+    // utils::check_cec17::<GsaParticle, Gsa<GsaParticle>>(
+    //   "gachi_test",
+    //   "ogsa_test",
+    //   iterations,
+    //   dim,
+    //   attempts,
+    //   vec![
+    //     ("particle_count", i(particle_count)),
+    //     ("alpha", f(5.)),
+    //     ("g0", f(1000.)),
+    //     ("tiled", ParamValue::Bool(false)),
+    //     ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
+    //     (
+    //       "behavior",
+    //       ParamValue::Behavior(Behavior {
+    //         edge: Edge::Pass,
+    //         vmax: false,
+    //       }),
+    //     ),
+    //   ],
+    //   true,
+    // )?;
     utils::check_cec17::<GsaParticle, Gsa<GsaParticle>>(
-      "test",
-      "ogsa_test",
+      "gachi_test",
+      "mgsa_test_50_elite",
       iterations,
       dim,
       attempts,
@@ -254,6 +302,7 @@ fn cec(
         ("alpha", f(5.)),
         ("g0", f(1000.)),
         ("tiled", ParamValue::Bool(false)),
+        ("manual_k", f(50.)),
         ("normalizer", ParamValue::Normalizer(Normalizer::MinMax)),
         (
           "behavior",

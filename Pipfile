@@ -12,6 +12,8 @@ flake8 = "*"
 questionary = "*"
 joblist = "*"
 joblib = "*"
+umap-learn = "*"
+imageio = "*"
 
 [dev-packages]
 
