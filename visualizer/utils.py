@@ -10,6 +10,14 @@ import numpy as np
 from cycler import cycler
 from constants import HOME, DATA, GRAPHS
 
+def style_legend(plt):
+    plt.rcParams['text.usetex'] = True
+    legend = plt.legend(
+        prop={'size': 'small'},
+        edgecolor='black',
+        fancybox=False
+    )
+    legend.get_frame().set_linewidth(0.8)
 
 def plot_and_fill(ax: Axes, iterations: List[List[float]],
                   log: bool = True, label: str = "",

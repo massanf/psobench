@@ -164,6 +164,53 @@ class PSO:
             entropies.append(entropy_estimate)
         return entropies
 
+    def dwd(self, content) -> List[float]:
+        assert self.fully_loaded
+        dwds = []
+        for iteration in self.iterations:
+            data = []
+            for particle in iteration.particles:
+                if content == "position":
+                    data.append(particle.pos)
+                elif content == "velocity":
+                    data.append(particle.vel)
+
+            mean = np.mean(data, axis=0)
+            std = np.std(data, axis=0)
+            
+            # Standardize all data
+            data = (data - mean) / std
+
+            result = 0
+            for datum in data:
+                diff = datum
+                result += np.sum(np.abs(diff))
+            dwds.append(result / (len(data) * len(data[0])))
+        return dwds
+
+    def adp(self, content) -> List[float]:
+        assert self.fully_loaded
+        adps = []
+        for iteration in self.iterations:
+            data = []
+            for particle in iteration.particles:
+                if content == "position":
+                    data.append(particle.pos)
+                elif content == "velocity":
+                    data.append(particle.vel)
+
+            mean = np.mean(data, axis=0)
+            std = np.std(data, axis=0)
+
+            data = (data - mean) / std
+
+            result = 0
+            for datum in data:
+                diff = datum
+                result += np.sum(diff ** 2)
+            adps.append(np.sqrt(result / (len(data))))
+        return adps
+
     def mass(self) -> List[List[float]]:
         assert self.fully_loaded
         assert self.has_mass()
@@ -178,11 +225,13 @@ class PSO:
     def has_mass(self) -> bool:
         return hasattr(self.iterations[0].particles[0], "mass")
 
-    def update_particles_for_frame(self, frame: int) -> Any:
+    def update_particles_for_frame(self, frame: int, prod) -> Any:
         """
         Renders a single frame of particles as a plot and returns the figure.
         """
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(3, 3))
+        fig.patch.set_facecolor('none')  # Make the figure background transparent
+        ax.patch.set_facecolor('none')  # Make the axes background transparent
         assert self.fully_loaded
         iteration = self.iterations[frame]
         max_mass = 0.0
@@ -197,15 +246,25 @@ class PSO:
             assert len(particle.pos) >= 2
             if self.has_mass() and max_mass != 0.0:
                 ax.scatter(particle.pos[dim], particle.pos[dim + 1],
-                           s=particle.mass * 10 / max_mass, color=colors[i % len(colors)])
+                           s=particle.mass * 10 / max_mass, color='#1f77b4')
             else:
-                ax.scatter(particle.pos[0], particle.pos[1], c='c', s=2)
+                ax.scatter(particle.pos[0], particle.pos[1], color='#ff7f0e', s=6)
+        #     color = "#ff0000"
 
-        ax.grid()
+        # Define the tick interval
+        tick_interval = 50
+        ticks = np.arange(-500, 501, tick_interval)  # Generate ticks from 0 to 500 at intervals of 50
+        
+        # Apply ticks to both axes
+        plt.xticks(ticks)
+        plt.yticks(ticks)
+        plt.grid(which='major', axis='both', linestyle='-', linewidth=0.5)
         ax.set_xlim(*self.lim)
         ax.set_ylim(*self.lim)
-        ax.set_title(f"Iteration: {frame}" +
-                     f" Best: {self.iterations[frame].global_best_fitness:.3e}")
+        if not prod:
+            # ax.set_title(f"Iteration: {frame}" +
+            #              f" Best: {self.iterations[frame].global_best_fitness:.3e}")
+            ax.set_title(f"Iteration: {frame}")
         ax.set_aspect('equal', adjustable='box')
 
         return fig
@@ -234,7 +293,7 @@ class PSO:
         return fig
 
 
-    def generate_frame_images(self, frames: List[int], output_dir: pathlib.Path) -> None:
+    def generate_frame_images(self, frames: List[int], output_dir: pathlib.Path, prod=False) -> None:
         """
         Generate images for the specified frames in parallel.
         """
@@ -243,7 +302,7 @@ class PSO:
 
         with concurrent.futures.ProcessPoolExecutor() as executor:
             futures = {
-                executor.submit(self.save_frame_image, frame, output_dir): frame
+                executor.submit(self.save_frame_image, frame, output_dir, prod): frame
                 for frame in frames
             }
 
@@ -319,13 +378,16 @@ class PSO:
         fig.savefig(frame_path, dpi=150)
         plt.close(fig)
 
-    def save_frame_image(self, frame: int, output_dir: pathlib.Path) -> None:
+    def save_frame_image(self, frame: int, output_dir: pathlib.Path, prod) -> None:
         """
         Saves a single frame image.
         """
-        fig = self.update_particles_for_frame(frame)
-        frame_path = output_dir / f"frame_{frame:04d}.png"
-        fig.savefig(frame_path, dpi=150)
+        fig = self.update_particles_for_frame(frame, prod)
+        if not prod:
+            frame_path = output_dir / f"frame_{frame:04d}.png"
+        else:
+            frame_path = output_dir / f"frame_{frame:04d}.svg"
+        fig.savefig(frame_path, bbox_inches="tight", pad_inches=0.05, dpi=300, transparent=True)
         plt.close(fig)
 
     def animate_particles(self, destination_path: pathlib.Path,
@@ -363,12 +425,31 @@ class PSO:
             ax.axis('off')
 
         ani = FuncAnimation(fig, update, frames=len(img_paths))
-        ani.save(destination_path, fps=10)
+        ani.save(destination_path, fps=10, dpi=300)
 
         # Cleanup temporary frame files
-        for img_path in img_paths:
-            os.remove(img_path)
-        temp_dir.rmdir()
+        #for img_path in img_paths:
+        #    os.remove(img_path)
+        # temp_dir.rmdir()
+
+    def animate_particles_frame(self, destination_path: pathlib.Path, frame) -> None:
+        """
+        Generate animation from particle frames using parallel image generation.
+        """
+        assert self.fully_loaded
+
+        # Determine plot limits
+        self.lim = [float('inf'), float('-inf')]
+        for iteration in self.iterations:
+            for particle in iteration.particles:
+                self.lim[0] = min(self.lim[0], particle.pos[0], particle.pos[1])
+                self.lim[1] = max(self.lim[1], particle.pos[0], particle.pos[1])
+
+        # Define frame range
+        frames = list(range(frame, frame + 1, 1))
+
+        folder = destination_path.parent / "frames"
+        self.generate_frame_images(frames, folder, prod=True)
 
     # def animate_mass(self, destination_path: pathlib.Path,
     #                  skip_frames: int = 50, start: int = 0,
@@ -413,11 +494,18 @@ class PSO:
                 x.append(i)
                 y.append(particle.fitness)
 
-        ax.scatter(x, y, s=0.01, label=label, rasterized=True) 
+        # if "gsa" in label.lower():
+        #     color = "#1f77b4"
+        # else:
+        #     color = "#ff0000"
+        scatter = ax.scatter(x, y, s=0.01, rasterized=True)
+
+        ax.scatter(x[0] + 10000, y[0], s=10.0, label=label, color=scatter.get_facecolor()[0])
+
         ax.set_yscale("log")
         return ax
 
-    def plot_progress(self, ax: Axes, label: str):
+    def plot_progress(self, ax: Axes, label: str, color: str, width: float):
         self.load_full()
         y = []
         for i, iteration in enumerate(self.iterations):
@@ -426,9 +514,21 @@ class PSO:
                 min_fitness = min(min_fitness, particle.fitness)
             y.append(min_fitness)
 
-        window_size = 100  # Adjust as needed
-        # smoothed_y = np.convolve(y, np.ones(window_size)/window_size, mode='valid')
-        ax.plot(range(len(y)), y, label=label, linewidth=0.8)
+        window_size = 40
+        smoothed_percentages = np.convolve(y, 
+                                           np.ones(window_size)/window_size, mode='valid')
+        # plt.plot(range(len(percentages_of_large_eigenvalues)),
+        #          percentages_of_large_eigenvalues, linestyle='-', linewidth=0.5, alpha=0.5,
+        #          label=problem)
+
+        # Original x-axis and new x-axis after smoothing
+        original_x = np.arange(len(y))
+        smoothed_x = np.arange(len(smoothed_percentages))
+        
+        # Interpolate the smoothed data back to the original size
+        interpolated_y = np.interp(original_x, smoothed_x, smoothed_percentages)
+ 
+        ax.plot(original_x, interpolated_y, label=label, linewidth=width, color=color)
         ax.set_yscale("log")
         return ax
 

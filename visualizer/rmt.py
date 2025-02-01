@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt  # type: ignore
+import warnings
 from scipy.stats import gaussian_kde
 from pso import PSO
 import matplotlib.animation as animation
@@ -6,6 +7,7 @@ from typing import Any
 from tqdm import tqdm
 import numpy as np
 from constants import DATA, GRAPHS
+import utils
 
 def wigner_dyson(s, beta):
     """
@@ -97,7 +99,8 @@ def unfold_eigenvalues(eigenvals, poly_degree=6):
     
     # Fit a polynomial: level_index = p(eigenvalue)
     # i.e. we fit p(\lambda) ~ i
-    p = np.polyfit(eigenvals, level_indices, deg=poly_degree)
+    with warnings.catch_warnings():
+        p = np.polyfit(eigenvals, level_indices, deg=poly_degree)
     
     # Create a callable polynomial
     poly = np.poly1d(p)
@@ -180,7 +183,7 @@ def process_attempt(args):
 
     return eigenvalues_local, spacings_local, positions.shape[1], positions.shape[0]
 
-def plot_percentage_of_outside_eigenvalues(eigenvalues, lambda_plus, lambda_minus, problem, analysis_content, save):
+def plot_percentage_of_outside_eigenvalues(eigenvalues, lambda_plus, lambda_minus, problem, analysis_content, save, graph_type):
     percentages_of_large_eigenvalues = []
 
     prod = True
@@ -194,31 +197,65 @@ def plot_percentage_of_outside_eigenvalues(eigenvalues, lambda_plus, lambda_minu
             percentage = (count / total) * 100
             percentages_of_large_eigenvalues.append(percentage)
 
-    try:
-        name = str(int(problem.parent.name.split("_")[2])) + "%"
-    except Exception:
-        name = "Default"
-    # name = int(problem.name.split("F")[1])
-    # label = r"$F_{" + str(name) + "}$"
+    if graph_type == 'Different algorithms':
+        try:
+            name = str(int(problem.parent.name.split("_")[2])) + "\\%"
+        except Exception:
+            name = "Default"
+        # color_dict = {
+        #     "Default": "#2ca02c",
+        #     "5\\%": "#259df4",
+        #     "10\\%": "#2876bc",
+        #     "25\\%": "#225287",
+        #     "50\\%": "#163055",
+        #     "100\\%": "#061228"}
+        # color = color_dict[name]
+        color_dict = {
+                "Default": "#1f77b4",
+                "5\\%": "#2ECC71",
+                "10\\%": "#27AE60",
+                "25\\%": "#16A085",
+                "50\\%": "#147D6F",
+                "100\\%": "#126E82"
+        }
+        color = color_dict[name]
+    else:
+        number = int(problem.name.split("F")[1])
+        name = r"$F_{" + str(number) + "}$"
+
     window_size = 20  # Adjust as needed
     smoothed_percentages = np.convolve(percentages_of_large_eigenvalues, 
                                        np.ones(window_size)/window_size, mode='valid')
     # plt.plot(range(len(percentages_of_large_eigenvalues)),
     #          percentages_of_large_eigenvalues, linestyle='-', linewidth=0.5, alpha=0.5,
     #          label=problem)
-    x = range(len(smoothed_percentages))
-    y = smoothed_percentages
 
-    line, = plt.plot(x, y, linewidth=0.8, label=name)
+    # Original x-axis and new x-axis after smoothing
+    original_x = np.arange(len(percentages_of_large_eigenvalues))
+    smoothed_x = np.arange(len(smoothed_percentages))
+    
+    # Interpolate the smoothed data back to the original size
+    interpolated_y = np.interp(original_x, smoothed_x, smoothed_percentages)
+    
+    # Plomx
+    # plt.plot(original_x, percentages_of_large_eigenvalues, alpha=0.5, label='Original Data')
+    # plt.plot(original_x, interpolated_y, linewidth=0.8, label='Smoothed (stretched to original size)')
+    
+    if graph_type == 'Different algorithms':
+        assert color is not None
+        line, = plt.plot(original_x, interpolated_y, linewidth=1.4 if name == "Default" else 0.8, label=name, color=color)
+    else:
+        line, = plt.plot(original_x, interpolated_y, linewidth=0.8, label=name)
     # for i in range(0, len(smoothed_percentages), 100):  # Place markers every 20 points
     #     plt.text(x[i], y[i], name, fontsize=8, color=line.get_color())
 
     if not prod:
         plt.title("Percentage of Eigenvalues Exceeding MP Upper Bound")
+
     plt.xlim(0, len(eigenvalues))
     plt.xlabel("Iteration")
-    plt.ylabel("Percentage (%)")
-    plt.ylim(0, 20)
+    plt.ylabel("Percentage (\\%)")
+    # plt.ylim(0, 20)
 
     if save:
         if prod:
@@ -237,7 +274,8 @@ def plot_average_of_largest_eigenvalues(max_eigenvalues, lambda_plus, problem, a
     plt.xlabel("Iteration")
     plt.ylabel("Percentage (%)")
     plt.ylim(0, 15)
-    plt.legend()
+    # plt.legend()
+    utils.style_legend(plt)
     plt.grid()
     plt.savefig(GRAPHS / problem / f'esa_{analysis_content}_max.png')
     plt.close()
@@ -258,7 +296,8 @@ def plot_mean_average(means, problem, analysis_content):
     plt.plot(np.mean(means, axis=1), label=f"{problem} ({analysis_content})")
     plt.title(f'{analysis_content} (mean)')
     plt.yscale("log")
-    plt.legend()
+    # plt.legend()
+    utils.style_legend(plt)
     plt.savefig(GRAPHS / problem / f'esa_{analysis_content}_mean.png')
     plt.close()
 
@@ -266,31 +305,34 @@ def plot_std_average(stds, problem, analysis_content):
     plt.plot(np.mean(stds, axis=1), label=f"{problem} ({analysis_content})")
     plt.title(f'{analysis_content} (std)')
     plt.yscale("log")
-    plt.legend()
+    # plt.legend()
+    utils.style_legend(plt)
     plt.savefig(GRAPHS / problem / f'esa_{analysis_content}_std.png')
     plt.close()
 
 def plot_esd(q, eigenvalues, problem, analysis_content, iteration):
     plt.rcParams['font.family'] = 'Times New Roman'
-    fig, ax = plt.subplots()
+    plt.rcParams['text.usetex'] = True
+
+    fig, ax = plt.subplots(figsize=(4, 3))
     max_ev = max([max(ev) if ev else 0 for ev in eigenvalues]) * 1.1
     x = np.linspace(0, max_ev, 10000)
     theoretical_pdf, lambda_min, lambda_max= marchenko_pastur_pdf(x, q)
     bin_edges = np.arange(0, 10 + 0.5, 0.1)
-    if analysis_content == "position":
-        color = "C0"
+    if "gsa" in problem.parent.name:
+        color = "#1f77b4"
     else:
-        color = "C1"
+        color = "#ff7f0e"
 
     if eigenvalues[iteration]:
         valid_idx = (x >= 0) & (x <= lambda_max)
         ax.plot(x[valid_idx], theoretical_pdf[valid_idx], color="black", linestyle='-', label="Marchenko-Pastur", linewidth=1)
         ax.hist(eigenvalues[iteration], bins=bin_edges, density=True, alpha=0.7, color=color)
-        ax.set_ylim(0, 4.0)
-        ax.set_xlim(0, 10)
+        ax.set_ylim(0, 2.0)
+        ax.set_xlim(0, 5.0)
         ax.set_xlabel("Eigenvalue")
         ax.set_ylabel("Density")
-        ax.legend()
+        utils.style_legend(plt)
     else:
         ax.text(
             0.5, 0.5, f"No data at iteration {iteration+1}", ha='center', va='center')
@@ -299,9 +341,42 @@ def plot_esd(q, eigenvalues, problem, analysis_content, iteration):
                 bbox_inches="tight", pad_inches=0.05)
     plt.close()
 
-def plot_esa(spacings, problem, analysis_content, iteration):
+def plot_esd_model(q, eigenvalues, n_local):
     plt.rcParams['font.family'] = 'Times New Roman'
-    fig, ax = plt.subplots()
+    plt.rcParams['text.usetex'] = True
+
+    fig, ax = plt.subplots(figsize=(4, 3))
+    # max_ev = max([max(ev) if ev else 0 for ev in eigenvalues]) * 1.1
+    max_ev = max(max(eigenvalues)) * 1.1
+    max_ev = 3.5
+    print(max_ev)
+    x = np.linspace(0, max_ev, 10000)
+    theoretical_pdf, lambda_min, lambda_max= marchenko_pastur_pdf(x, q)
+    bin_edges = np.arange(0, 10 + 0.5, 0.1)
+
+    if eigenvalues[0] is not None:
+        valid_idx = (x >= 0) & (x <= lambda_max)
+        ax.plot(x[valid_idx], theoretical_pdf[valid_idx], color="black", linestyle='-', label="Marchenko-Pastur", linewidth=1)
+        ax.hist(eigenvalues[0], bins=bin_edges, density=True, color='#1f77b4', alpha=0.7)
+        # ax.hist(eigenvalues[0], density=True, alpha=0.7)
+        ax.set_ylim(0, 1.5)
+        ax.set_xlim(0, 4.0)
+        ax.set_xlabel("Eigenvalue")
+        ax.set_ylabel("Density")
+        utils.style_legend(plt)
+    else:
+        ax.text(
+            0.5, 0.5, f"No data", ha='center', va='center')
+
+    plt.savefig(GRAPHS / "rmt_model" / f'esd_{n_local}.svg',
+                bbox_inches="tight", pad_inches=0.05)
+    plt.close()
+
+
+def plot_esa(spacings, problem, analysis_content, iteration):
+    plt.rcParams['text.usetex'] = True
+    plt.rcParams['font.family'] = 'Times New Roman'
+    fig, ax = plt.subplots(figsize=(4, 3))
     standardized_spacings = np.array(spacings)
     # for i in range(len(standardized_spacings)):
     #     standardized_spacings[i] /= np.average(standardized_spacings[i])
@@ -311,10 +386,10 @@ def plot_esa(spacings, problem, analysis_content, iteration):
     wigner_dyson_goe_pdf = wigner_dyson(x, 1)
     poisson_pdf = poisson(x)
     bin_edges = np.arange(0, 10 + 0.5, 0.1)
-    if analysis_content == "position":
-        color = "C0"
+    if "gsa" in problem.parent.name:
+        color = "#1f77b4"
     else:
-        color = "C1"
+        color = "#ff7f0e"
 
     ax.hist(standardized_spacings[iteration], bins=bin_edges, density=True, alpha=0.7, color=color)
     ax.plot(x, wigner_dyson_goe_pdf, color="black", linestyle='--', label="Wigner-Dyson (GOE)", linewidth=1)
@@ -323,7 +398,7 @@ def plot_esa(spacings, problem, analysis_content, iteration):
     ax.set_xlim(0, 5)
     ax.set_xlabel("Spacing")
     ax.set_ylabel("Density")
-    ax.legend()
+    utils.style_legend(plt)
         
     save_path = GRAPHS / problem / f'esa_{analysis_content}_{iteration}.svg'
     save_path.parent.mkdir(parents=True, exist_ok=True)
@@ -331,39 +406,78 @@ def plot_esa(spacings, problem, analysis_content, iteration):
     plt.savefig(save_path, bbox_inches="tight", pad_inches=0.05)
     plt.close()
 
+def plot_esa_model(spacings, n_local):
+    plt.rcParams['text.usetex'] = True
+    plt.rcParams['font.family'] = 'Times New Roman'
+    fig, ax = plt.subplots(figsize=(4, 3))
+    standardized_spacings = np.array(spacings)
+    # for i in range(len(standardized_spacings)):
+    #     standardized_spacings[i] /= np.average(standardized_spacings[i])
+    standardized_spacings = [row[row <= 10] for row in standardized_spacings]
+    # max_evs = max([max(evs) for evs in standardized_spacings]) * 1.1
+    max_evs = 5.5
+    x = np.linspace(0, max_evs, 500)
+    wigner_dyson_goe_pdf = wigner_dyson(x, 1)
+    poisson_pdf = poisson(x)
+    bin_edges = np.arange(0, 10 + 0.5, 0.1)
+    color = "#1f77b4"
+
+    ax.hist(standardized_spacings[0], bins=bin_edges, density=True, alpha=0.7, color=color)
+    ax.plot(x, wigner_dyson_goe_pdf, color="black", linestyle='--', label="Wigner-Dyson (GOE)", linewidth=1)
+    ax.plot(x, poisson_pdf, color="black", linestyle='-', label="Poisson")
+    ax.set_ylim(0, 1.2)
+    ax.set_xlim(0, 5)
+    ax.set_xlabel("Spacing")
+    ax.set_ylabel("Density")
+    utils.style_legend(plt)
+        
+    save_path = GRAPHS / "rmt_model" / f'esa_{n_local}.svg'
+    save_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    plt.savefig(save_path, bbox_inches="tight", pad_inches=0.05)
+    plt.close()
+
 def animate_esd(q, eigenvalues, frames, problem, analysis_content):
-    fig, ax = plt.subplots()
+    plt.rcParams['text.usetex'] = True
+    plt.rcParams['font.family'] = 'Times New Roman'
+
+    fig, ax = plt.subplots(figsize=(4.5, 3.3753))
     max_ev = max([max(ev) if ev else 0 for ev in eigenvalues]) * 1.1
     x = np.linspace(0, max_ev, 500)
     theoretical_pdf, _, _ = marchenko_pastur_pdf(x, q)
     progress_bar = tqdm(total=len(frames), desc="Graphing ESD")
     bin_edges = np.arange(0, 10 + 0.5, 0.1)
-    if analysis_content == "position":
-        color = "C0"
+    if "gsa" in problem.parent.name:
+        color = "#1f77b4"
     else:
-        color = "C1"
+        color = "#ff7f0e"
 
     def animate(i) -> Any:
         ax.clear()
         progress_bar.update(1)
         if eigenvalues[i]:
+
+            utils.style_legend(plt)
             ax.plot(x, theoretical_pdf, color="black", linestyle='-', label="Marchenko-Pastur")
             ax.hist(eigenvalues[i], bins=bin_edges, density=True, alpha=0.7, color=color)
             ax.set_ylim(0, 1.5)
             ax.set_xlim(0, 10)
             ax.set_title(f"Iteration {i}")
-            ax.legend()
+            utils.style_legend(plt)
         else:
             ax.text(
                 0.5, 0.5, f"No data at iteration {i+1}", ha='center', va='center')
 
     ani = animation.FuncAnimation(fig, animate, frames=frames, interval=100)
     ani.save(GRAPHS / problem /
-             f'esd_{analysis_content}.gif', writer='pillow')
+             f'esd_{analysis_content}.gif', writer='pillow', dpi=300)
     plt.close()
 
 def animate_esa(spacings, frames, problem, analysis_type):
-    fig, ax = plt.subplots()
+    plt.rcParams['text.usetex'] = True
+    plt.rcParams['font.family'] = 'Times New Roman'
+
+    fig, ax = plt.subplots(figsize=(4.5, 3.3753))
     standardized_spacings = np.array(spacings)
     for i in range(len(standardized_spacings)):
         standardized_spacings[i] /= np.average(standardized_spacings[i])
@@ -375,6 +489,12 @@ def animate_esa(spacings, frames, problem, analysis_type):
     # wigner_dyson_gse_pdf = wigner_dyson(x, 4)
     poisson_pdf = poisson(x)
     progress_bar = tqdm(total=len(frames), desc="Graphing ESA")
+    bin_edges = np.arange(0.1, 10 + 0.5, 0.1)
+
+    if "gsa" in problem.parent.name:
+        color = "#1f77b4"
+    else:
+        color = "#ff7f0e"
 
     def animate_spacing(i) -> Any:
         ax.clear()
@@ -388,24 +508,25 @@ def animate_esa(spacings, frames, problem, analysis_type):
 
         # ax.plot(x, kde_values, label="Empirical Spacing Density (KDE)")
         # plt.fill_between(x, kde_values, alpha=0.3)
-        ax.hist(standardized_spacings[i], bins=50, density=True, alpha=0.7, edgecolor="gray")
+        # ax.hist(standardized_spacings[900].reshape(-1, 29)[i], bins=bin_edges, density=True, alpha=0.7, edgecolor="gray")
+        ax.hist(standardized_spacings[i], bins=bin_edges, density=True, alpha=0.7, color=color)
         ax.plot(x, wigner_dyson_goe_pdf, color="black", linestyle='--', label="Wigner-Dyson (GOE)")
         # ax.plot(x, wigner_dyson_gue_pdf, color="black", linestyle='-.', label="Wigner-Dyson (GUE)")
         # ax.plot(x, wigner_dyson_gse_pdf, color="black", linestyle=':', label="Wigner-Dyson (GSE)")
         ax.plot(x, poisson_pdf, color="black", linestyle='-', label="Poisson")
-        ax.set_ylim(0, 1.5)
-        ax.set_xlim(0, 10)
+        ax.set_ylim(0, 1.2)
+        ax.set_xlim(0, 6)
         ax.set_title(f"Iteration {i}")
         ax.set_xlabel("Spacing")
         ax.set_ylabel("Density")
-        ax.legend()
-        
+        utils.style_legend(plt)
+    # frames = list(range(1, 994, 1))
     ani_spacing = animation.FuncAnimation(
         fig, animate_spacing, frames=frames, interval=100)
     
     # Create directories if they don't exist
     save_path = GRAPHS / problem / f'esa_{analysis_type}.gif'
     save_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    ani_spacing.save(save_path, writer='pillow')
+
+    ani_spacing.save(save_path, writer='pillow', dpi=300)
     plt.close()
