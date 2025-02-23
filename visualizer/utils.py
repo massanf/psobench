@@ -259,3 +259,13 @@ def get_singles_filepath(name: str, extension: str) -> pathlib.Path:
     filepath = GRAPHS / "custom_singles" / f"{name}_{filestem}.{extension}"
     print(f"Saving: {filepath}")
     return filepath
+
+
+def configure_matplotlib() -> None:
+    """Central configuration for matplotlib."""
+    plt.rcParams["text.usetex"] = True
+    # Set any additional configuration common to all graphs here.
+    # For production, you might set a preferred font.
+    PROD = True
+    if PROD:
+        plt.rcParams["font.family"] = "Times New Roman"

@@ -1,6 +1,4 @@
 import questionary
-import pickle
-import hashlib
 import pathlib
 import matplotlib.pyplot as plt  # type: ignore
 import rmt
@@ -10,104 +8,20 @@ from pso import PSO
 from tqdm import tqdm  # type: ignore
 from multiprocessing import Pool
 from constants import DATA, GRAPHS, CACHE
-from typing import Any
-
-# -----------------------------
-# Caching Functions (could be moved to caching.py)
-# -----------------------------
-
-
-def compute_attempt_checksum(attempt_path: pathlib.Path) -> str:
-    """Compute a lightweight checksum based on file metadata for an attempt."""
-    hash_sha256 = hashlib.sha256()
-    for file_path in sorted(attempt_path.iterdir()):
-        if file_path.is_file():
-            stat = file_path.stat()
-            # Incorporate file name, size, and modification time
-            hash_sha256.update(file_path.name.encode())
-            hash_sha256.update(str(stat.st_size).encode())
-            hash_sha256.update(str(stat.st_mtime).encode())
-    return hash_sha256.hexdigest()
-
-
-def load_attempt_cache(
-    problem: str, attempt: str, analysis_content: str
-) -> Any:
-    """Load cached result and checksum for a given problem and attempt."""
-    cache_file = CACHE / problem / f"{attempt}_{analysis_content}.pkl"
-    if cache_file.exists():
-        with open(cache_file, "rb") as f:
-            return pickle.load(f)
-    return None
-
-
-def save_attempt_cache(
-    problem: str,
-    attempt: str,
-    checksum: str,
-    result: Any,
-    analysis_content: str,
-) -> None:
-    """Save result and checksum to cache for a given problem and attempt."""
-    problem_cache_dir = CACHE / problem
-    problem_cache_dir.mkdir(parents=True, exist_ok=True)
-    cache_file = problem_cache_dir / f"{attempt}_{analysis_content}.pkl"
-    with open(cache_file, "wb") as f:
-        pickle.dump((checksum, result), f)
-
-
-def process_attempt_cached(args: Any) -> Any:
-    """
-    Wrapper function to handle caching for a single attempt.
-    'args' is expected to be a tuple: (attempt, problem, analysis_content)
-    """
-    attempt, problem, analysis_content = args
-    attempt_path = DATA / problem / attempt
-    checksum = compute_attempt_checksum(attempt_path)
-
-    cached = load_attempt_cache(problem, attempt, analysis_content)
-    if cached is not None:
-        cached_checksum, cached_result = cached
-    else:
-        cached_checksum, cached_result = None, None
-
-    if cached_checksum == checksum and cached_result is not None:
-        return cached_result
-    else:
-        try:
-            result = rmt.process_attempt(args)
-            save_attempt_cache(
-                problem, attempt, checksum, result, analysis_content
-            )
-            return result
-        except Exception as e:
-            print(f"Error on {problem} {attempt}: {e}")
-            return None
-
-
-# -----------------------------
-# Matplotlib Configuration
-# -----------------------------
-def configure_matplotlib() -> None:
-    """Central configuration for matplotlib."""
-    plt.rcParams["text.usetex"] = True
-    # Set any additional configuration common to all graphs here.
-    # For production, you might set a preferred font.
-    PROD = True
-    if PROD:
-        plt.rcParams["font.family"] = "Times New Roman"
-
+from cache import process_attempt_cached
 
 # -----------------------------
 # Graph Generation Functions
 # Each function encapsulates the code for one graph type.
 # -----------------------------
+
+
 def generate_single_graph() -> None:
     """Generate a single graph plot."""
     plt.close("all")
     plt.cla()
     plt.rcdefaults()
-    configure_matplotlib()
+    utils.configure_matplotlib()
 
     PROD = True
     attempts = utils.get_paths("attempts")
@@ -156,7 +70,7 @@ def generate_multiple_graphs() -> None:
     plt.close("all")
     plt.cla()
     plt.rcdefaults()
-    configure_matplotlib()
+    utils.configure_matplotlib()
 
     from cycler import cycler
 
@@ -326,7 +240,7 @@ def generate_rmt() -> None:
     for analysis_content in analysis_contents:
         plt.figure(figsize=(4, 3))
         for problem in problems:
-            configure_matplotlib()
+            utils.configure_matplotlib()
             print(problem)
             (GRAPHS / problem).mkdir(parents=True, exist_ok=True)
             attempts = sorted(
@@ -421,7 +335,6 @@ def generate_rmt() -> None:
             path = parent / f"deviation_from_MP_{analysis_content}.svg"
             plt.savefig(path, bbox_inches="tight", pad_inches=0.05)
             plt.close()
-
 
 # -----------------------------
 # Dispatcher Dictionary
