@@ -125,12 +125,12 @@ class GridSearch:
         ax.axis('off')
         ax.imshow(image, norm=norm,
                   cmap='viridis', origin='lower',
-                  extent=[self.x_values[0],
+                  extent=(self.x_values[0],
                           self.x_values[-1],
                           self.y_values[0],
-                          self.y_values[-1]],
+                          self.y_values[-1]),
                   aspect='auto')
-        newax = fig.add_axes(ax.get_position())
+        newax = fig.add_axes(ax.get_position().bounds)
         if log_1:
             newax.set_yscale('log')
         if log_2:

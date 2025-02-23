@@ -1,27 +1,33 @@
 from typing import List, Dict
 import questionary
 import pathlib
-from pso import PSO
 import matplotlib.pyplot as plt  # type: ignore
+from typing import Any
 from matplotlib.axes import Axes
 from grid_searches import GridSearches
 from tests import Tests
+import os
+import datetime
 import numpy as np
 from cycler import cycler
 from constants import HOME, DATA, GRAPHS
 
-def style_legend(plt):
-    plt.rcParams['text.usetex'] = True
+
+def style_legend(plt: Any) -> None:
+    plt.rcParams["text.usetex"] = True
     legend = plt.legend(
-        prop={'size': 'small'},
-        edgecolor='black',
-        fancybox=False
+        prop={"size": "small"}, edgecolor="black", fancybox=False
     )
     legend.get_frame().set_linewidth(0.8)
 
-def plot_and_fill(ax: Axes, iterations: List[List[float]],
-                  log: bool = True, label: str = "",
-                  alpha: float = 0.15) -> Axes:
+
+def plot_and_fill(
+    ax: Axes,
+    iterations: List[List[float]],
+    log: bool = True,
+    label: str = "",
+    alpha: float = 0.15,
+) -> Axes:
     t = np.linspace(0, len(iterations), len(iterations))
     top = []
     btm = []
@@ -32,15 +38,9 @@ def plot_and_fill(ax: Axes, iterations: List[List[float]],
         top.append(np.quantile(iteration, 0.75))
 
     if label != "":
-        if "tiled" in label:
-            # We're expecting 'tiled' to come right after the untiled one.
-            # This will break if this rule is not followed.
-            line, = ax.plot(t, mid, label=label, linestyle='--',
-                            color=ax.get_lines()[-1].get_color(), linewidth=1)
-        else:
-            line, = ax.plot(t, mid, label=label, linestyle='-', linewidth=1)
+        (line,) = ax.plot(t, mid, label=label, linestyle="-", linewidth=1)
     else:
-        line, = ax.plot(t, mid)
+        (line,) = ax.plot(t, mid)
 
     ax.fill_between(t, top, btm, color=line.get_color(), alpha=alpha)
     ax.set_xlim(0, len(iterations))
@@ -51,9 +51,15 @@ def plot_and_fill(ax: Axes, iterations: List[List[float]],
         ax.set_yscale("linear")
     return ax
 
-def plot_and_fill_best_worst(ax: Axes, btm: List[float], top: List[float],
-                  log: bool = True, label: str = "",
-                  alpha: float = 0.15) -> Axes:
+
+def plot_and_fill_best_worst(
+    ax: Axes,
+    btm: List[float],
+    top: List[float],
+    log: bool = True,
+    label: str = "",
+    alpha: float = 0.15,
+) -> Axes:
     t = np.linspace(0, len(btm), len(top))
 
     line = ax.plot(t, btm)
@@ -67,8 +73,10 @@ def plot_and_fill_best_worst(ax: Axes, btm: List[float], top: List[float],
         ax.set_yscale("linear")
     return ax
 
-def generate_gridmap_collage(path: pathlib.Path,
-                             average_mse: bool = False) -> None:
+
+def generate_gridmap_collage(
+    path: pathlib.Path, average_mse: bool = False
+) -> None:
     optimizer = GridSearches(DATA, GRAPHS, path)
     optimizer.heatmap_collage("grid_search.png", True, True)
     if average_mse:
@@ -76,11 +84,19 @@ def generate_gridmap_collage(path: pathlib.Path,
 
 
 def generate_progress_comparison(name: pathlib.Path) -> None:
-    color_cycle = ['#377eb8', '#ff7f00', '#4daf4a',
-                   '#f781bf', '#a65628', '#984ea3',
-                   '#999999', '#e41a1c', '#dede00']
+    color_cycle = [
+        "#377eb8",
+        "#ff7f00",
+        "#4daf4a",
+        "#f781bf",
+        "#a65628",
+        "#984ea3",
+        "#999999",
+        "#e41a1c",
+        "#dede00",
+    ]
     color_cycler = cycler(color=color_cycle)
-    plt.rc('axes', prop_cycle=(color_cycler))
+    plt.rc("axes", prop_cycle=(color_cycler))
     data = HOME / "data" / name
     graphs = HOME / "graphs" / name
     graphs.mkdir(parents=True, exist_ok=True)
@@ -90,10 +106,6 @@ def generate_progress_comparison(name: pathlib.Path) -> None:
     plt.tight_layout()
     print(f"Saving: {graphs/ f'progress_comparison.png'}")
     plt.savefig(graphs / "progress_comparison.png")
-
-def print_last_positions(name: pathlib.Path) -> None:
-    data = HOME / "data" / name
-    tests = Tests(data)
 
 
 def generate_final_results(name: pathlib.Path) -> None:
@@ -106,6 +118,7 @@ def generate_final_results(name: pathlib.Path) -> None:
     plt.tight_layout()
     print(f"Saving: {graphs/ f'final_results.png'}")
     plt.savefig(graphs / "final_results.png")
+
 
 def get_final_results(name: pathlib.Path) -> Dict[str, Dict[str, List[float]]]:
     data = HOME / "data" / name
@@ -127,26 +140,12 @@ def generate_entropy_comparison(name: pathlib.Path) -> None:
     plt.savefig(graphs / "entropy_comparison.png")
 
 
-def generate_overview(name: pathlib.Path, skip: int = 1,
-                      end: int = 500, animate_mass: int = False) -> None:
-    data = HOME / "data" / name
-    graphs = HOME / "graphs" / name
-    graphs.mkdir(parents=True, exist_ok=True)
-    pso = PSO(data)
-    pso.load_full()
-    pso.overview(False, graphs)
-    # if pso.has_mass() and animate_mass:
-        #     pso.animate_mass(graphs / "mass.gif", skip, 0, end)
-    # print(f"Saving: {graphs / 'animation.gif'}")
-    # pso.animate_particles(graphs / "animation.gif", skip, 0, end)
-
-
 def shorter_names(names: List[str]) -> List[str]:
     # ["gsa_MinMax", "gsa_MinMax_tiled"] -> ["gM", "gMt"]
     result = []
     for name in names:
         ans = ""
-        words = name.split('_')
+        words = name.split("_")
         for word in words:
             ans += word[0]
             for i in range(1, len(word)):
@@ -155,59 +154,108 @@ def shorter_names(names: List[str]) -> List[str]:
         result.append(ans)
     return result
 
-def get_paths(level: str):
+
+def get_paths(level: str) -> List[pathlib.Path]:
     results = []
-    test_options = [folder.name for folder in DATA.iterdir()
-                    if folder.is_dir()]
-    tests = questionary.checkbox(
-        "Select tests:",
-        choices=test_options
-    ).ask()
+    test_options = [
+        folder.name for folder in DATA.iterdir() if folder.is_dir()
+    ]
+    tests = questionary.checkbox("Select tests:", choices=test_options).ask()
 
     for test in tests:
         if level == "tests":
             results.append(test)
             continue
 
-        dim_options = [str(x) for x in sorted([int(folder.name) for folder in (DATA / test).iterdir()
-                                               if folder.is_dir()])]
+        dim_options = [
+            str(x)
+            for x in sorted(
+                [
+                    int(folder.name)
+                    for folder in (DATA / test).iterdir()
+                    if folder.is_dir()
+                ]
+            )
+        ]
         dims = questionary.checkbox(
-            f"Select dimensions ({test}):", choices=dim_options).ask()
+            f"Select dimensions ({test}):", choices=dim_options
+        ).ask()
 
         for dim in dims:
             if level == "dims":
                 results.append(pathlib.Path(test) / dim)
                 continue
 
-            optimizer_options = sorted([folder.name for folder in (DATA / test / dim).iterdir()
-                                        if folder.is_dir()])
+            optimizer_options = sorted(
+                [
+                    folder.name
+                    for folder in (DATA / test / dim).iterdir()
+                    if folder.is_dir()
+                ]
+            )
             optimizers = questionary.checkbox(
-                f"Select problems ({pathlib.Path(test) / dim}):", choices=optimizer_options).ask()
+                f"Select problems ({pathlib.Path(test) / dim}):",
+                choices=optimizer_options,
+            ).ask()
 
             for optimizer in optimizers:
                 if level == "optimizers":
                     results.append(pathlib.Path(test) / dim / optimizer)
                     continue
 
-                problem_options = sorted([folder.name for folder in (DATA / test / dim / optimizer).iterdir()
-                                          if folder.is_dir()])
+                problem_options = sorted(
+                    [
+                        folder.name
+                        for folder in (DATA / test / dim / optimizer).iterdir()
+                        if folder.is_dir()
+                    ]
+                )
+                path = pathlib.Path(test) / dim / optimizer
                 problems = questionary.checkbox(
-                    f"Select problems ({pathlib.Path(test) / dim / optimizer}):", choices=problem_options).ask()
+                    f"Select problems ({path}):",
+                    choices=problem_options,
+                ).ask()
 
                 for problem in problems:
                     if level == "problems":
-                        results.append(pathlib.Path(test) /
-                                       dim / optimizer / problem)
+                        results.append(
+                            pathlib.Path(test) / dim / optimizer / problem
+                        )
                         continue
 
-                    attempt_options = sorted([folder.name for folder in (DATA / test / dim / optimizer / problem).iterdir()
-                                              if folder.is_dir()])
+                    attempt_options = sorted(
+                        [
+                            folder.name
+                            for folder in (
+                                DATA / test / dim / optimizer / problem
+                            ).iterdir()
+                            if folder.is_dir()
+                        ]
+                    )
+                    path = pathlib.Path(test) / dim / optimizer / problem
                     attempts = questionary.checkbox(
-                        f"Select attempts ({pathlib.Path(test) / dim / optimizer / problem}):", choices=attempt_options).ask()
+                        f"Select attempts ({path}):",
+                        choices=attempt_options,
+                    ).ask()
 
                     for attempt in attempts:
                         if level == "attempts":
                             results.append(
-                                pathlib.Path(test) / dim / optimizer / problem / attempt)
+                                pathlib.Path(test)
+                                / dim
+                                / optimizer
+                                / problem
+                                / attempt
+                            )
     return results
 
+
+def get_singles_filepath(name: str, extension: str) -> pathlib.Path:
+    if not (GRAPHS / "custom_singles").exists():
+        os.makedirs(GRAPHS / "custom_singles")
+    filestem = questionary.text("Filename:").ask()
+    if filestem == "":
+        filestem = str(int(datetime.datetime.now().timestamp()))
+    filepath = GRAPHS / "custom_singles" / f"{name}_{filestem}.{extension}"
+    print(f"Saving: {filepath}")
+    return filepath

@@ -1,5 +1,5 @@
 import pathlib
-from tqdm import tqdm
+from tqdm import tqdm  # type: ignore
 from matplotlib.ticker import LogLocator, LogFormatterMathtext
 import matplotlib.pyplot as plt  # type: ignore
 from typing import Any
@@ -9,8 +9,9 @@ import numpy as np
 
 
 class GridSearches:
-    def __init__(self, data: pathlib.Path,
-                 graphs: pathlib.Path, path: pathlib.Path):
+    def __init__(
+        self, data: pathlib.Path, graphs: pathlib.Path, path: pathlib.Path
+    ):
         self.path = path
         self.data = data / path
         self.graphs = graphs / path
@@ -46,15 +47,15 @@ class GridSearches:
             if i < len(self.graph_paths):
                 img = mpimg.imread(self.graph_paths[i] / filename)
                 ax.imshow(img)
-            ax.axis('off')
+            ax.axis("off")
 
         plt.subplots_adjust(wspace=0.1, hspace=0.1)
         print(f"Saving: {self.graphs / filename}")
-        plt.savefig(self.graphs / filename, bbox_inches='tight',
-                    pad_inches=0.1)
+        plt.savefig(
+            self.graphs / filename, bbox_inches="tight", pad_inches=0.1
+        )
 
-    def average_mse(
-            self, log_1: bool, log_2: bool) -> float:
+    def average_mse(self, log_1: bool, log_2: bool) -> float:
         maps = []
         for idx, function_dir in enumerate(self.data_paths):
             grid = GridSearch(function_dir)
@@ -86,7 +87,8 @@ class GridSearches:
             grid = GridSearch(self.data_paths[i])
             axs[i].yaxis.set_major_locator(LogLocator(base=10.0))
             axs[i].yaxis.set_major_formatter(
-                LogFormatterMathtext(base=10.0, labelOnlyBase=False))
+                LogFormatterMathtext(base=10.0, labelOnlyBase=False)
+            )
             axs[i].plot(grid.best_global_progress(), label=self.path.name)
             axs[i].set_title(grid.name)
             axs[i].legend()

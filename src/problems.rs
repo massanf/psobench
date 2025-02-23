@@ -121,12 +121,7 @@ pub fn f1_skewed(dim: usize) -> Problem {
 
 #[allow(dead_code)]
 pub fn sphere_100(dim: usize) -> Problem {
-  Problem::new(
-    "Sphere100".to_owned(),
-    Arc::new(functions::sphere),
-    (-100., 100.),
-    dim,
-  )
+  Problem::new("Sphere100".to_owned(), Arc::new(functions::sphere), (-100., 100.), dim)
 }
 
 #[allow(dead_code)]

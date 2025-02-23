@@ -110,6 +110,7 @@ pub trait OptimizationProblem {
 
 pub trait Data<T>: OptimizationProblem + GlobalBestPos {
   fn data(&self) -> &Vec<(f64, f64, Option<Vec<T>>)>;
+  #[allow(dead_code)]
   fn additional_data(&self) -> &Vec<Vec<Vec<(String, f64)>>>;
   fn add_data(&mut self, save: bool, gbest: f64, gworst: f64, particles: Vec<T>) {
     if save {
@@ -130,6 +131,7 @@ pub trait Data<T>: OptimizationProblem + GlobalBestPos {
 
 pub trait DataExporter<T: Position + Velocity + Clone>: Data<T> + Name + OptimizationProblem {
   fn out_directory(&self) -> &PathBuf;
+  #[allow(dead_code)]
   fn save_data(&mut self) -> Result<(), Box<dyn std::error::Error>> {
     // Serialize it to a JSON string
     let mut vec_data = Vec::new();
@@ -186,6 +188,7 @@ pub trait DataExporter<T: Position + Velocity + Clone>: Data<T> + Name + Optimiz
     Ok(serialized)
   }
 
+  #[allow(dead_code)]
   fn save_additional_data(&mut self) -> Result<(), Box<dyn std::error::Error>> {
     // Serialize it to a JSON string
     let mut vec_data = Vec::new();

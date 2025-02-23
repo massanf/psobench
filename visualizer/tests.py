@@ -2,7 +2,7 @@ import pathlib
 import questionary
 import numpy as np
 from attempts import Attempts
-from tqdm import tqdm
+from tqdm import tqdm  # type: ignore
 import utils
 from typing import List, Dict
 from matplotlib.ticker import LogLocator, LogFormatterMathtext
@@ -18,16 +18,19 @@ class Tests:
             for function in pso_type.glob("*"):
                 self.data[pso_type.name][function.name] = Attempts(function)
 
-    def plot_best_global_progress(self, axs: np.ndarray,
-                                  pso_type: str) -> np.ndarray:
+    def plot_best_global_progress(
+        self, axs: np.ndarray, pso_type: str
+    ) -> np.ndarray:
         axs = axs.flatten()
         for i, function in enumerate(tqdm(sorted(self.data[pso_type]))):
             attempts = self.data[pso_type][function]
             axs[i].yaxis.set_major_locator(LogLocator(base=10.0))
             axs[i].yaxis.set_major_formatter(
-                LogFormatterMathtext(base=10.0, labelOnlyBase=True))
-            utils.plot_and_fill(axs[i], attempts.global_best_progress(),
-                                label=pso_type)
+                LogFormatterMathtext(base=10.0, labelOnlyBase=True)
+            )
+            utils.plot_and_fill(
+                axs[i], attempts.global_best_progress(), label=pso_type
+            )
             axs[i].set_title(function)
             if i == 0:
                 axs[i].legend()
@@ -46,7 +49,8 @@ class Tests:
 
     def plot_all(self, axs: np.ndarray) -> np.ndarray:
         psos = questionary.checkbox(
-            "Select tests to plot progress:", choices=list(self.data.keys())).ask()
+            "Select tests to plot progress:", choices=list(self.data.keys())
+        ).ask()
         for pso in psos:
             axs = self.plot_best_global_progress(axs, pso)
         return axs
@@ -62,7 +66,8 @@ class Tests:
         result: Dict[str, Dict[str, List[float]]] = {}
 
         psos = questionary.checkbox(
-            "Select tests to plot entropy:", choices=list(self.data.keys())).ask()
+            "Select tests to plot entropy:", choices=list(self.data.keys())
+        ).ask()
         for pso_type in sorted(psos):
             pso_result = self.get_final_result(pso_type)
             for fn in pso_result:
@@ -82,21 +87,28 @@ class Tests:
             err_btm = []
             for datum in data:
                 err_top.append(
-                    np.quantile(datum, 0.75) - np.quantile(datum, 0.5))
+                    np.quantile(datum, 0.75) - np.quantile(datum, 0.5)
+                )
                 err_btm.append(
-                    np.quantile(datum, 0.5) - np.quantile(datum, 0.25))
+                    np.quantile(datum, 0.5) - np.quantile(datum, 0.25)
+                )
                 avg.append(np.average(datum) - i * 100)
-            axs[i].bar(utils.shorter_names(list(result[function].keys())),
-                       avg, yerr=[err_top, err_btm], capsize=4)
+            axs[i].bar(
+                utils.shorter_names(list(result[function].keys())),
+                avg,
+                yerr=[err_top, err_btm],
+                capsize=4,
+            )
             axs[i].set_ylim(0)
         return axs
 
     def plot_all_entropy(self, axs: np.ndarray) -> np.ndarray:
         for pso_type in sorted(self.data):
-            if pso_type[0] == '_':
+            if pso_type[0] == "_":
                 continue
         psos = questionary.checkbox(
-            "Select tests to plot entropy:", choices=list(self.data.keys())).ask()
+            "Select tests to plot entropy:", choices=list(self.data.keys())
+        ).ask()
         for pso in psos:
             axs = self.plot_entropy(axs, pso)
         return axs
