@@ -1,13 +1,10 @@
 import pathlib
-from matplotlib.axes import Axes
 from matplotlib.animation import FuncAnimation  # type: ignore
 from scipy.spatial import distance_matrix  # type: ignore
 import matplotlib.pyplot as plt  # type: ignore
 import concurrent.futures
 from tqdm import tqdm  # type: ignore
-import utils
 import numpy as np
-import os
 import json
 from particle import Particle
 import re
@@ -278,31 +275,6 @@ class PSO:
 
         return fig
 
-    def update_particles_for_histogram_frame(self, frame: int) -> Any:
-        """
-        Renders a single frame of particles as a plot and returns the figure.
-        """
-        fig, ax = plt.subplots()
-        assert self.fully_loaded
-        iteration = self.iterations[frame]
-
-        assert self.has_mass()
-
-        masses = [particle.mass for particle in iteration.particles]
-
-        ax.hist(masses, bins=20, alpha=0.7)
-
-        # ax.grid()
-        ax.set_title(
-            f"Iteration: {frame}"
-            + f" Best: {self.iterations[frame].global_best_fitness:.3e}"
-        )
-        ax.set_xlim(0.0, 0.05)
-        ax.set_ylim(0.0, 50)
-        # ax.set_aspect('equal', adjustable='box')
-
-        return fig
-
     def generate_frame_images(
         self, frames: List[int], output_dir: pathlib.Path, prod: bool = False
     ) -> None:
@@ -328,83 +300,6 @@ class PSO:
                     future.result()
                 except Exception as e:
                     print(f"Error generating frame {frame}: {e}")
-
-    def generate_histogram_frame_images(
-        self, frames: List[int], output_dir: pathlib.Path
-    ) -> None:
-        """
-        Generate images for the specified frames in parallel.
-        """
-        if not output_dir.exists():
-            output_dir.mkdir(parents=True)
-
-        with concurrent.futures.ProcessPoolExecutor() as executor:
-            futures = {
-                executor.submit(
-                    self.save_histogram_frame_image, frame, output_dir
-                ): frame
-                for frame in frames
-            }
-
-            for future in tqdm(
-                concurrent.futures.as_completed(futures), total=len(futures)
-            ):
-                frame = futures[future]
-                try:
-                    future.result()
-                except Exception as e:
-                    print(f"Error generating frame {frame}: {e}")
-
-    def animate_fitness_histogram(
-        self,
-        destination_path: pathlib.Path,
-        skip_frames: int = 50,
-        start: int = 0,
-        end: int = -1,
-    ) -> None:
-        """
-        Generate animation from particle frames using parallel image
-        generation.
-        """
-        assert self.fully_loaded
-
-        # Define frame range
-        if end == -1:
-            end = len(self.iterations)
-        frames = list(range(start, end, skip_frames))
-
-        # Temporary directory for storing frames
-        temp_dir = destination_path.parent / "temp_histogram_frames"
-        self.generate_histogram_frame_images(frames, temp_dir)
-
-        # Create animation from generated frames
-        fig, ax = plt.subplots()
-        img_paths = [temp_dir / f"frame_{frame:04d}.png" for frame in frames]
-
-        def update(frame_idx: int) -> Any:
-            img = plt.imread(img_paths[frame_idx])
-            ax.clear()
-            ax.imshow(img)
-            ax.axis("off")
-
-        ani = FuncAnimation(fig, update, frames=len(img_paths))
-        ani.save(destination_path, fps=10)
-
-        # Cleanup temporary frame files
-        for img_path in img_paths:
-            os.remove(img_path)
-        temp_dir.rmdir()
-
-    def save_histogram_frame_image(
-        self, frame: int, output_dir: pathlib.Path
-    ) -> None:
-        """
-        Saves a single frame image.
-        """
-        fig = self.update_particles_for_histogram_frame(frame)
-        frame_path = output_dir / f"frame_{frame:04d}.png"
-        fig.savefig(frame_path, dpi=150)
-        plt.close(fig)
 
     def save_frame_image(
         self, frame: int, output_dir: pathlib.Path, prod: bool
@@ -472,11 +367,6 @@ class PSO:
         ani = FuncAnimation(fig, update, frames=len(img_paths))
         ani.save(destination_path, fps=10, dpi=300)
 
-        # Cleanup temporary frame files
-        # for img_path in img_paths:
-        #    os.remove(img_path)
-        # temp_dir.rmdir()
-
     def animate_particles_frame(
         self, destination_path: pathlib.Path, frame: int
     ) -> None:
@@ -502,144 +392,3 @@ class PSO:
 
         folder = destination_path.parent / "frames"
         self.generate_frame_images(frames, folder, prod=True)
-
-    # def animate_mass(self, destination_path: pathlib.Path,
-    #                  skip_frames: int = 50, start: int = 0,
-    #                  end: int = -1) -> None:
-    #     assert self.fully_loaded
-    #     mass = []
-    #     for iteration in self.iterations:
-    #         mass_ = []
-    #         for particle in iteration.particles:
-    #             mass_.append(particle.mass)
-    #         mass.append(mass_)
-    #     num_bins = 40
-    #     flat_mass = np.array(mass).flatten()
-    #     self.bins = np.linspace(min(flat_mass), max(flat_mass), num_bins + 1)
-    #     max_y = 0
-    #     for mass_ in mass:
-    #         counts, _ = np.histogram(mass_, self.bins)
-    #         max_y = max(max_y, counts.max())
-    #     self.max_y = max_y
-    #     self.animate(self.update_mass_for_animate, destination_path,
-    #                  skip_frames, start, end)
-
-    def plot_global_best_fitness_progress(
-        self, out_directory: pathlib.Path
-    ) -> None:
-        if not out_directory.exists():
-            os.makedirs(out_directory)
-        plt.close()
-        plt.cla()
-        plt.rcdefaults()
-        plt.plot(self.global_best_fitness_progress())
-        plt.gca().autoscale(axis="y", tight=False)
-        print(f"Saving: {out_directory / 'fitness_over_time.png'}")
-        plt.savefig(out_directory / "fitness_over_time.png")
-        plt.close()
-
-    def scatter_progress(self, ax: Axes, label: str) -> Any:
-        self.load_full()
-        x = []
-        y = []
-        for i, iteration in enumerate(self.iterations):
-            for particle in iteration.particles:
-                x.append(i)
-                y.append(particle.fitness)
-
-        # if "gsa" in label.lower():
-        #     color = "#1f77b4"
-        # else:
-        #     color = "#ff0000"
-        scatter = ax.scatter(x, y, s=0.01, rasterized=True)
-
-        ax.scatter(
-            x[0] + 10000,
-            y[0],
-            s=10.0,
-            label=label,
-            color=scatter.get_facecolor()[0],
-        )
-
-        ax.set_yscale("log")
-        return ax
-
-    def plot_progress(
-        self, ax: Axes, label: str, color: str, width: float
-    ) -> Any:
-        self.load_full()
-        y = []
-        for i, iteration in enumerate(self.iterations):
-            min_fitness = 1e20
-            for particle in iteration.particles:
-                min_fitness = min(min_fitness, particle.fitness)
-            y.append(min_fitness)
-
-        window_size = 40
-        smoothed_percentages = np.convolve(
-            y, np.ones(window_size) / window_size, mode="valid"
-        )
-
-        # Original x-axis and new x-axis after smoothing
-        original_x = np.arange(len(y))
-        smoothed_x = np.arange(len(smoothed_percentages))
-
-        # Interpolate the smoothed data back to the original size
-        interpolated_y = np.interp(
-            original_x, smoothed_x, smoothed_percentages
-        )
-
-        ax.plot(
-            original_x,
-            interpolated_y,
-            label=label,
-            linewidth=width,
-            color=color,
-        )
-        ax.set_yscale("log")
-        return ax
-
-    def overview(self, animate: bool, out_directory: pathlib.Path) -> None:
-        assert self.fully_loaded
-        if not out_directory.exists():
-            os.makedirs(out_directory)
-        plt.close()
-
-        plt.cla()
-        plt.rcdefaults()
-        _fig, ax = plt.subplots()
-        ax = utils.plot_and_fill(ax, self.fitness())
-        plt.gca().autoscale(axis="y", tight=False)
-        print(f"Saving: {out_directory / 'fitness_over_time.png'}")
-        plt.savefig(out_directory / "fitness_over_time.png")
-        plt.close()
-
-        plt.cla()
-        plt.rcdefaults()
-        _fig, ax = plt.subplots()
-        ax = utils.plot_and_fill(ax, self.speed())
-        print(f"Saving: {out_directory / 'speed_over_time.png'}")
-        plt.savefig(out_directory / "speed_over_time.png")
-        plt.close()
-
-        # plt.cla()
-        # plt.rcdefaults()
-        # fig, ax = plt.subplots()
-        # ax.plot(self.entropy())
-        # print(f"Saving: {out_directory / 'entropy_over_time.png'}")
-        # plt.savefig(out_directory / "entropy_over_time.png")
-        # plt.close()
-
-        if self.has_mass():
-            plt.cla()
-            plt.rcdefaults()
-            _fig, ax = plt.subplots()
-            ax = utils.plot_and_fill(ax, self.mass(), False)
-            print(f"Saving: {out_directory / 'mass_over_time.png'}")
-            plt.savefig(out_directory / "mass_over_time.png")
-            plt.close()
-
-        if animate:
-            print(f"Saving: {out_directory / 'test.gif'}")
-            self.animate_particles(out_directory / "test.gif")
-            plt.close()

@@ -5,6 +5,7 @@ import rmt
 import utils
 import numpy as np
 from pso import PSO
+from graphers import scatter_progress, plot_progress
 from tqdm import tqdm  # type: ignore
 from multiprocessing import Pool
 from constants import DATA, GRAPHS, CACHE
@@ -36,9 +37,8 @@ def generate_single_graph() -> None:
         pso = PSO(data)
 
         name_dict = {"pso": "PSO", "ogsa": "GSA"}
-        pso.scatter_progress(
-            ax=ax, label=name_dict[attempt.parent.parent.name.split("_")[0]]
-        )
+        name = attempt.parent.parent.name.split("_")[0]
+        scatter_progress(pso, ax=ax, label=name_dict[name])
         iterations.append(len(pso.iterations))
 
     legend = plt.legend(
@@ -109,7 +109,8 @@ def generate_multiple_graphs() -> None:
             name = str(int(attempt.parent.parent.name.split("_")[2])) + "\\%"
         except Exception:
             name = "Default"
-        pso.plot_progress(
+        plot_progress(
+            pso,
             ax=ax,
             label=name,
             color=color_dict.get(name, "#1f77b4"),
@@ -169,20 +170,6 @@ def generate_animation_frame() -> None:
             pso.animate_particles_frame(
                 GRAPHS / attempt / "animation.gif", frame - 1
             )
-
-
-def generate_fitness_histogram_animation() -> None:
-    """Animate fitness histogram evolution."""
-    for attempt in utils.get_paths("attempts"):
-        pso = PSO(DATA / attempt)
-        pso.load_full()
-        skip = int(questionary.text("Skip count: ", default="1").ask())
-        end = int(
-            questionary.text("End: ", default=str(len(pso.iterations))).ask()
-        )
-        pso.animate_fitness_histogram(
-            GRAPHS / attempt / "fitness.gif", skip, 0, end
-        )
 
 
 def generate_collage() -> None:
@@ -348,7 +335,6 @@ GRAPH_DISPATCH = {
     "grid": generate_grid,
     "animation": generate_animation,
     "animation_frame": generate_animation_frame,
-    "fitness histogram animation": generate_fitness_histogram_animation,
     "collage": generate_collage,
     "rmt": generate_rmt,
 }
